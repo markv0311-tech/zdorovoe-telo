@@ -14,24 +14,22 @@ let isAuthenticated = false;
 
 // Static frontend configuration
 
+// Hide all modals/overlays on app start - safe initialization
+(function initModals() {
+    document.querySelectorAll('.modal, .overlay').forEach(el => {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    });
+    document.body.style.overflow = '';
+    console.log('✅ All modals/overlays initialized as hidden');
+})();
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing app...');
     
     // Initialize Supabase
     initializeSupabase();
-    
-    // Kill-switch: Force hide ALL modals and overlays on startup
-    ['pin-modal', 'subscription-overlay', 'developer-panel'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-    });
-    
-    // Also hide program and exercise modals
-    const programModal = document.getElementById('program-modal');
-    const exerciseModal = document.getElementById('exercise-modal');
-    if (programModal) programModal.style.display = 'none';
-    if (exerciseModal) exerciseModal.style.display = 'none';
     
     initializeTelegram();
     initializeApp();
@@ -211,6 +209,19 @@ function setupEventListeners() {
             closeAllModals();
         }
     });
+    
+    // Click-outside-to-close handler for modals
+    ['program-modal', 'exercise-modal', 'pin-modal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', (e) => {
+            if (e.target === el) {
+                if (id === 'exercise-modal') closeExerciseModal();
+                if (id === 'program-modal') closeProgramModal();
+                if (id === 'pin-modal') closePinModal();
+            }
+        });
+    });
 }
 
 // Navigation functions
@@ -364,7 +375,7 @@ async function loadPrograms() {
         } catch (error) {
             console.error('Failed to load programs from Supabase:', error);
             showToast('Ошибка загрузки программ. Используются локальные данные.', 'error');
-            loadDefaultPrograms();
+    loadDefaultPrograms();
         }
     } else {
         loadDefaultPrograms();
@@ -598,7 +609,9 @@ function openProgramModal(program) {
             </div>
         `;
         
+        modal.classList.remove('hidden');
         modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
     } else {
         console.error('Modal elements not found');
     }
@@ -608,7 +621,9 @@ function closeProgramModal() {
     console.log('Closing program modal');
     const modal = document.getElementById('program-modal');
     if (modal) {
+        modal.classList.add('hidden');
         modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
 }
 
@@ -654,7 +669,9 @@ function openExerciseModule(programId) {
         exercisesHTML += `</div>`;
         
         modalBody.innerHTML = exercisesHTML;
+        modal.classList.remove('hidden');
         modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
     } else {
         console.error('Exercise modal elements not found');
     }
@@ -664,8 +681,35 @@ function closeExerciseModal() {
     console.log('Closing exercise modal');
     const modal = document.getElementById('exercise-modal');
     if (modal) {
+        modal.classList.add('hidden');
         modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
+}
+
+// Close all modals function
+function closeAllModals() {
+    console.log('Closing all modals...');
+    closeProgramModal();
+    closeExerciseModal();
+    closePinModal();
+    // Hide subscription overlay if visible
+    const subOverlay = document.getElementById('subscription-overlay');
+    if (subOverlay && !subOverlay.classList.contains('hidden')) {
+        subOverlay.classList.add('hidden');
+        subOverlay.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+}
+
+// Kill all modals - emergency reset function for dev testing
+function killAllModals() {
+    document.querySelectorAll('.modal, .overlay').forEach(el => {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    });
+    document.body.style.overflow = '';
+    console.log('✅ All modals/overlays hidden.');
 }
 
 // Profile functions
@@ -799,6 +843,8 @@ function showPinModal() {
     const modal = document.getElementById('pin-modal');
     if (modal) {
         modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
         setTimeout(() => {
             const input = document.getElementById('pin-input');
             if (input) input.focus();
@@ -811,6 +857,8 @@ function closePinModal() {
     const modal = document.getElementById('pin-modal');
     if (modal) {
         modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
         const input = document.getElementById('pin-input');
         if (input) input.value = '';
     }
@@ -828,8 +876,8 @@ function checkPin() {
         
         // Check if user is authenticated
         if (isAuthenticated) {
-            showDeveloperPanel();
-            loadDeveloperContent();
+        showDeveloperPanel();
+        loadDeveloperContent();
         } else {
             showLoginForm();
         }
@@ -1031,22 +1079,22 @@ async function loadDeveloperPrograms() {
         programsList.innerHTML = '';
         
         programsData.forEach((program, index) => {
-            const programDiv = document.createElement('div');
-            programDiv.className = 'dev-program-item';
-            programDiv.innerHTML = `
-                <div>
-                    <h4>${program.title} ${program.is_published ? '✅' : '❌'}</h4>
-                    <p>${program.description}</p>
-                    <small>ID: ${program.id} | Slug: ${program.slug}</small>
-                </div>
-                <div>
+        const programDiv = document.createElement('div');
+        programDiv.className = 'dev-program-item';
+        programDiv.innerHTML = `
+            <div>
+                <h4>${program.title} ${program.is_published ? '✅' : '❌'}</h4>
+                <p>${program.description}</p>
+                <small>ID: ${program.id} | Slug: ${program.slug}</small>
+            </div>
+            <div>
                     <button onclick="editProgram(${program.id})">Редактировать</button>
                     <button onclick="toggleProgramPublished(${program.id})">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
                     <button onclick="deleteProgram(${program.id})">Удалить</button>
-                </div>
-            `;
-            programsList.appendChild(programDiv);
-        });
+            </div>
+        `;
+        programsList.appendChild(programDiv);
+    });
         
         console.log('Developer programs loaded:', programsData.length);
     } catch (error) {
@@ -1101,11 +1149,11 @@ async function addNewProgram() {
             const { data, error } = await supabase
                 .from('programs')
                 .insert({
-                    slug: slug,
-                    title: title,
-                    description: 'Описание программы',
-                    image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-                    details_md: 'Подробное описание программы в формате Markdown.',
+            slug: slug,
+            title: title,
+            description: 'Описание программы',
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Подробное описание программы в формате Markdown.',
                     is_published: false
                 })
                 .select()
@@ -1117,7 +1165,7 @@ async function addNewProgram() {
             
             console.log('New program created:', data);
             showToast('Программа создана', 'success');
-            loadDeveloperPrograms();
+        loadDeveloperPrograms();
             loadPrograms(); // Refresh public view
         } catch (error) {
             console.error('Failed to create program:', error);
@@ -1297,7 +1345,7 @@ async function deleteProgram(programId) {
             
             console.log('Program deleted:', programId);
             showToast('Программа удалена', 'success');
-            loadDeveloperPrograms();
+    loadDeveloperPrograms();
             loadPrograms(); // Refresh public view
         } catch (error) {
             console.error('Failed to delete program:', error);
@@ -1335,7 +1383,7 @@ async function toggleProgramPublished(programId) {
         
         console.log('Program published status toggled:', programId);
         showToast('Статус программы обновлен', 'success');
-        loadDeveloperPrograms();
+    loadDeveloperPrograms();
         loadPrograms(); // Refresh public view
     } catch (error) {
         console.error('Failed to toggle program published status:', error);
@@ -1416,8 +1464,8 @@ async function addDay(programId) {
         
         console.log('Day created:', data);
         showToast('День добавлен', 'success');
-        
-        // Refresh the editor
+            
+            // Refresh the editor
         editProgram(programId);
     } catch (error) {
         console.error('Failed to add day:', error);
@@ -1446,8 +1494,8 @@ async function deleteDay(dayId) {
             showToast('День удален', 'success');
             
             // Find the program being edited and refresh
-            const editorDiv = document.querySelector('.program-editor');
-            if (editorDiv) {
+    const editorDiv = document.querySelector('.program-editor');
+    if (editorDiv) {
                 const programId = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
                 editProgram(programId);
             }
@@ -1483,10 +1531,10 @@ async function addExercise(dayId) {
             .from('exercises')
             .insert({
                 program_day_id: dayId,
-                order_index: maxOrderIndex + 1,
-                title: 'Новое упражнение',
-                video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-                description: 'Описание упражнения'
+            order_index: maxOrderIndex + 1,
+            title: 'Новое упражнение',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            description: 'Описание упражнения'
             })
             .select()
             .single();
@@ -1894,13 +1942,14 @@ window.openProgramModal = openProgramModal;
 window.closeProgramModal = closeProgramModal;
 window.openExerciseModule = openExerciseModule;
 window.closeExerciseModal = closeExerciseModal;
+window.closeAllModals = closeAllModals;
+window.killAllModals = killAllModals;
 window.saveProfile = saveProfile;
 window.renewSubscription = renewSubscription;
 window.openDeveloperAccess = openDeveloperAccess;
 window.checkPin = checkPin;
 window.closePinModal = closePinModal;
 window.closeDeveloperPanel = closeDeveloperPanel;
-window.closeAllModals = closeAllModals;
 window.saveHomeContent = saveHomeContent;
 window.addNewProgram = addNewProgram;
 window.editProgram = editProgram;
@@ -1920,7 +1969,3 @@ window.loginUser = loginUser;
 window.logoutUser = logoutUser;
 window.exportContent = exportContent;
 window.importContent = importContent;
-window.openProgramModal   = openProgramModal;
-window.closeProgramModal  = closeProgramModal;
-window.openExerciseModule = openExerciseModule;
-window.closeExerciseModal = closeExerciseModal;
