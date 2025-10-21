@@ -9,8 +9,7 @@ let subscriptionData = null;
 let isDeveloperMode = false;
 let developerContent = JSON.parse(localStorage.getItem('developerContent') || '{}');
 
-// API Configuration
-const API_BASE_URL = window.location.origin + '/api';
+// Static frontend configuration
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -20,13 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     loadUserData();
     
-    // Add developer tab event listeners
-    document.querySelectorAll('.dev-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            switchDeveloperTab(tabName);
+    // Add developer tab event listeners after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        document.querySelectorAll('.dev-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                switchDeveloperTab(tabName);
+            });
         });
-    });
+    }, 100);
 });
 
 // Initialize Telegram WebApp
@@ -70,6 +71,11 @@ function initializeApp() {
     }
     if (userProfile.problem) {
         document.getElementById('user-problem').value = userProfile.problem;
+    }
+    
+    // Load developer content if available
+    if (developerContent.home) {
+        updateHomePage(developerContent.home);
     }
     
     // Check developer mode
@@ -204,27 +210,8 @@ async function toggleDayCompletion(dayElement) {
         userProgress[date] = true;
     }
     
-    // Save progress locally
+    // Save progress locally only
     localStorage.setItem('userProgress', JSON.stringify(userProgress));
-    
-    // Save to server if user is available
-    if (user) {
-        try {
-            await fetch(`${API_BASE_URL}/user/${user.id}/progress`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    date: date,
-                    completed: !isCompleted
-                })
-            });
-        } catch (error) {
-            console.error('Error saving progress:', error);
-        }
-    }
-    
     updateProgressStats();
 }
 
@@ -252,34 +239,8 @@ function updateProgressStats() {
 
 // Programs data
 async function loadPrograms() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/programs`);
-        if (response.ok) {
-            const data = await response.json();
-            programs = data.map(program => ({
-                id: program.slug,
-                title: program.title,
-                description: program.description,
-                image: program.image_url,
-                exercises: program.program_days?.map(day => ({
-                    day: day.day_index,
-                    exercises: day.exercises?.map(exercise => ({
-                        title: exercise.title,
-                        video: exercise.video_url,
-                        description: exercise.description
-                    })) || []
-                })) || []
-            }));
-        } else {
-            // Fallback to default programs
-            loadDefaultPrograms();
-        }
-    } catch (error) {
-        console.error('Error loading programs:', error);
-        // Fallback to default programs
-        loadDefaultPrograms();
-    }
-    
+    // Always use default programs for static deployment
+    loadDefaultPrograms();
     renderPrograms();
 }
 
@@ -485,27 +446,8 @@ async function saveProfile() {
         problem: problem
     };
     
-    // Save locally
+    // Save locally only
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    
-    // Save to server if user is available
-    if (user) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/user/${user.id}/profile`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userProfile)
-            });
-            
-            if (!response.ok) {
-                console.error('Failed to save profile to server');
-            }
-        } catch (error) {
-            console.error('Error saving profile:', error);
-        }
-    }
     
     // Show success message
     const button = document.querySelector('.save-button');
@@ -519,69 +461,9 @@ async function saveProfile() {
     }, 2000);
 }
 
-// API Functions
-async function loadUserData() {
-    if (!user) return;
-    
-    try {
-        // Load user profile
-        const profileResponse = await fetch(`${API_BASE_URL}/user/${user.id}/profile`);
-        if (profileResponse.ok) {
-            const profile = await profileResponse.json();
-            if (profile.name) {
-                userProfile = { ...userProfile, ...profile };
-                updateProfileForm();
-            }
-        }
-        
-        // Load subscription data
-        const subscriptionResponse = await fetch(`${API_BASE_URL}/user/${user.id}/subscription`);
-        if (subscriptionResponse.ok) {
-            subscriptionData = await subscriptionResponse.json();
-            updateSubscriptionDisplay();
-        } else {
-            // Create default subscription if none exists
-            await createDefaultSubscription();
-        }
-        
-        // Load progress data
-        const progressResponse = await fetch(`${API_BASE_URL}/user/${user.id}/progress`);
-        if (progressResponse.ok) {
-            const progress = await progressResponse.json();
-            // Merge with local progress
-            userProgress = { ...userProgress, ...progress };
-        }
-        
-    } catch (error) {
-        console.error('Error loading user data:', error);
-        // Fallback to local data
-        checkSubscription();
-    }
-}
-
-async function createDefaultSubscription() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/user/${user.id}/subscription`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                plan: 'basic',
-                durationDays: 30
-            })
-        });
-        
-        if (response.ok) {
-            subscriptionData = await response.json();
-            updateSubscriptionDisplay();
-        }
-    } catch (error) {
-        console.error('Error creating subscription:', error);
-    }
-}
-
-function updateProfileForm() {
+// Load user data
+function loadUserData() {
+    // Load saved profile data
     if (userProfile.name) {
         document.getElementById('user-name').value = userProfile.name;
     }
@@ -591,36 +473,20 @@ function updateProfileForm() {
     if (userProfile.problem) {
         document.getElementById('user-problem').value = userProfile.problem;
     }
+    
+    // Set default subscription
+    checkSubscription();
 }
 
-function updateSubscriptionDisplay() {
-    if (subscriptionData && subscriptionData.expiresAt) {
-        const subscriptionDate = new Date(subscriptionData.expiresAt);
-        document.getElementById('subscription-date').textContent = 
-            subscriptionDate.toLocaleDateString('ru-RU');
-        
-        // Check if subscription is expired
-        if (subscriptionDate < new Date()) {
-            showSubscriptionOverlay();
-        }
-    } else {
-        document.getElementById('subscription-date').textContent = 'Не активна';
-    }
-}
 
 // Subscription management
 function checkSubscription() {
-    // Fallback method when API is not available
+    // Set default subscription for 30 days
     const subscriptionDate = new Date();
-    subscriptionDate.setDate(subscriptionDate.getDate() + 30); // 30 days from now
+    subscriptionDate.setDate(subscriptionDate.getDate() + 30);
     
     document.getElementById('subscription-date').textContent = 
         subscriptionDate.toLocaleDateString('ru-RU');
-    
-    // Check if subscription is expired
-    if (subscriptionDate < new Date()) {
-        showSubscriptionOverlay();
-    }
 }
 
 function showSubscriptionOverlay() {
@@ -637,12 +503,16 @@ function renewSubscription() {
 window.onclick = function(event) {
     const programModal = document.getElementById('program-modal');
     const exerciseModal = document.getElementById('exercise-modal');
+    const pinModal = document.getElementById('pin-modal');
     
     if (event.target === programModal) {
         closeProgramModal();
     }
     if (event.target === exerciseModal) {
         closeExerciseModal();
+    }
+    if (event.target === pinModal) {
+        closePinModal();
     }
 }
 
