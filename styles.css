@@ -451,6 +451,168 @@ body {
     margin-left: 10px;
 }
 
+/* Developer Panel Styles */
+.developer-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    z-index: 2000;
+    overflow-y: auto;
+}
+
+.developer-panel.hidden {
+    display: none;
+}
+
+.developer-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.developer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.close-dev-panel {
+    background: #dc3545;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.developer-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.dev-tab {
+    padding: 15px 25px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.dev-tab:hover {
+    background-color: #f8f9fa;
+}
+
+.dev-tab.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+}
+
+.dev-tab-content {
+    display: none;
+}
+
+.dev-tab-content.active {
+    display: block;
+}
+
+.dev-program-item {
+    background: #f8f9fa;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dev-program-item h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.dev-program-item p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.dev-program-item button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.dev-program-item button:first-of-type {
+    background: #007bff;
+    color: white;
+}
+
+.dev-program-item button:last-of-type {
+    background: #dc3545;
+    color: white;
+}
+
+/* PIN Modal Styles */
+#pin-modal .modal-content {
+    max-width: 400px;
+    margin: 10% auto;
+}
+
+#pin-modal .modal-body {
+    text-align: center;
+}
+
+#pin-modal input {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-actions .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
 /* Overlay */
 .overlay {
     position: fixed;

@@ -134,15 +134,90 @@
                     
                     <!-- Developer Access Section -->
                     <div class="developer-access-section">
-                        <h3>Доступ разработчика</h3>
+                        <h3>Режим разработчика</h3>
                         <p>Редактирование контента приложения</p>
                         <button class="developer-access-button" onclick="openDeveloperAccess()">
-                            Доступ разработчика
+                            Разработчик
                         </button>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Developer Editor Panel -->
+        <section id="developer-panel" class="section developer-panel hidden">
+            <div class="developer-container">
+                <div class="developer-header">
+                    <h2>Редактор контента</h2>
+                    <button class="close-dev-panel" onclick="closeDeveloperPanel()">&times;</button>
+                </div>
+                
+                <div class="developer-tabs">
+                    <div class="dev-tab active" data-tab="home-content">Главная</div>
+                    <div class="dev-tab" data-tab="programs-content">Программы</div>
+                    <div class="dev-tab" data-tab="settings-content">Настройки</div>
+                </div>
+                
+                <!-- Home Content Editor -->
+                <div id="home-content" class="dev-tab-content active">
+                    <h3>Редактирование главной страницы</h3>
+                    <div class="form-group">
+                        <label for="dev-hero-image">URL изображения героя</label>
+                        <input type="url" id="dev-hero-image" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="dev-headline">Заголовок</label>
+                        <input type="text" id="dev-headline" placeholder="Здоровое тело">
+                    </div>
+                    <div class="form-group">
+                        <label for="dev-greeting">Приветствие</label>
+                        <textarea id="dev-greeting" placeholder="Добро пожаловать в ваше путешествие к здоровому образу жизни!"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="dev-cta">Текст кнопки</label>
+                        <input type="text" id="dev-cta" placeholder="Перейти к упражнениям">
+                    </div>
+                    <button class="save-button" onclick="saveHomeContent()">Сохранить</button>
+                </div>
+                
+                <!-- Programs Content Editor -->
+                <div id="programs-content" class="dev-tab-content">
+                    <h3>Управление программами</h3>
+                    <div class="programs-list" id="dev-programs-list">
+                        <!-- Programs will be loaded here -->
+                    </div>
+                    <button class="save-button" onclick="addNewProgram()">Добавить программу</button>
+                </div>
+                
+                <!-- Settings Editor -->
+                <div id="settings-content" class="dev-tab-content">
+                    <h3>Настройки приложения</h3>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="dev-calendar-enabled" checked>
+                            <span class="checkmark"></span>
+                            Включить календарь
+                        </label>
+                    </div>
+                    <button class="save-button" onclick="saveSettings()">Сохранить</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PIN Modal -->
+        <div id="pin-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3>Введите пароль</h3>
+                    <p>Для доступа к режиму разработчика введите пароль</p>
+                    <input type="password" id="pin-input" placeholder="Пароль" maxlength="4">
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="checkPin()">Войти</button>
+                        <button class="btn btn-secondary" onclick="closePinModal()">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Subscription Expired Overlay -->
         <div id="subscription-overlay" class="overlay hidden">

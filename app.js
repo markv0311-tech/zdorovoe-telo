@@ -6,6 +6,8 @@ let programs = [];
 let userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
 let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
 let subscriptionData = null;
+let isDeveloperMode = false;
+let developerContent = JSON.parse(localStorage.getItem('developerContent') || '{}');
 
 // API Configuration
 const API_BASE_URL = window.location.origin + '/api';
@@ -17,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPrograms();
     setupEventListeners();
     loadUserData();
+    
+    // Add developer tab event listeners
+    document.querySelectorAll('.dev-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            switchDeveloperTab(tabName);
+        });
+    });
 });
 
 // Initialize Telegram WebApp
@@ -62,34 +72,21 @@ function initializeApp() {
         document.getElementById('user-problem').value = userProfile.problem;
     }
     
-    // Check if user is editor and show badge
-    checkEditorStatus();
+    // Check developer mode
+    checkDeveloperMode();
     
     // Initialize calendar
     updateCalendar();
     updateProgressStats();
 }
 
-// Check if user is editor and show badge
-function checkEditorStatus() {
-    const allowedIds = process.env.ALLOWED_EDITOR_IDS?.split(',').map(id => parseInt(id.trim())) || [];
-    const isAllowed = user && allowedIds.includes(user.id);
-    const hasDevOverride = localStorage.getItem('dev_override') === 'true';
+// Check developer mode
+function checkDeveloperMode() {
+    isDeveloperMode = sessionStorage.getItem('isDev') === 'true';
     
-    if (isAllowed || hasDevOverride) {
-        // Add editor badge to header
-        const header = document.querySelector('.navbar');
-        if (header && !document.querySelector('.editor-badge')) {
-            const badge = document.createElement('div');
-            badge.className = 'editor-badge';
-            badge.textContent = 'Editor';
-            badge.style.position = 'absolute';
-            badge.style.top = '10px';
-            badge.style.right = '10px';
-            badge.style.zIndex = '1001';
-            header.style.position = 'relative';
-            header.appendChild(badge);
-        }
+    if (isDeveloperMode) {
+        showDeveloperPanel();
+        loadDeveloperContent();
     }
 }
 
@@ -650,58 +647,188 @@ window.onclick = function(event) {
 }
 
 // Developer Access functionality
-async function openDeveloperAccess() {
-    // Check if user is in allow list
-    const allowedIds = process.env.ALLOWED_EDITOR_IDS?.split(',').map(id => parseInt(id.trim())) || [];
-    const isAllowed = user && allowedIds.includes(user.id);
-    
-    if (isAllowed) {
-        // User is in allow list, redirect to editor
-        window.location.href = '/editor.html';
-        return;
+function openDeveloperAccess() {
+    if (isDeveloperMode) {
+        showDeveloperPanel();
+    } else {
+        showPinModal();
     }
-    
-    // Show PIN modal
-    showPinModal();
 }
 
 function showPinModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-body">
-                <h3>Введите PIN код</h3>
-                <p>Для доступа к редактору введите PIN код</p>
-                <input type="password" id="pin-input" placeholder="PIN код" maxlength="4" style="width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px;">
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-primary" onclick="checkPin()" style="flex: 1; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Войти</button>
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Отмена</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Focus on PIN input
+    document.getElementById('pin-modal').classList.remove('hidden');
     setTimeout(() => {
         document.getElementById('pin-input').focus();
     }, 100);
 }
 
+function closePinModal() {
+    document.getElementById('pin-modal').classList.add('hidden');
+    document.getElementById('pin-input').value = '';
+}
+
 function checkPin() {
     const pin = document.getElementById('pin-input').value;
-    const devPin = '1234'; // This should come from environment variable
+    const devPin = '1234';
     
     if (pin === devPin) {
-        // Set dev override flag
-        localStorage.setItem('dev_override', 'true');
-        document.querySelector('.modal').remove();
-        window.location.href = '/editor.html';
+        isDeveloperMode = true;
+        sessionStorage.setItem('isDev', 'true');
+        closePinModal();
+        showDeveloperPanel();
+        loadDeveloperContent();
     } else {
-        alert('Неверный PIN код');
+        alert('Неверный пароль');
     }
+}
+
+// Developer panel functions
+function showDeveloperPanel() {
+    document.getElementById('developer-panel').classList.remove('hidden');
+    // Switch to profile section to show the panel
+    navigateToSection('profile');
+}
+
+function closeDeveloperPanel() {
+    document.getElementById('developer-panel').classList.add('hidden');
+}
+
+function loadDeveloperContent() {
+    // Load home content
+    const homeContent = developerContent.home || {
+        hero_image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        headline: 'Здоровое тело',
+        greeting: 'Добро пожаловать в ваше путешествие к здоровому образу жизни!',
+        cta_text: 'Перейти к упражнениям'
+    };
+    
+    document.getElementById('dev-hero-image').value = homeContent.hero_image_url;
+    document.getElementById('dev-headline').value = homeContent.headline;
+    document.getElementById('dev-greeting').value = homeContent.greeting;
+    document.getElementById('dev-cta').value = homeContent.cta_text;
+    
+    // Load programs
+    loadDeveloperPrograms();
+    
+    // Load settings
+    const settings = developerContent.settings || { calendar_enabled: true };
+    document.getElementById('dev-calendar-enabled').checked = settings.calendar_enabled;
+}
+
+function loadDeveloperPrograms() {
+    const programsList = document.getElementById('dev-programs-list');
+    programsList.innerHTML = '';
+    
+    const devPrograms = developerContent.programs || programs;
+    
+    devPrograms.forEach((program, index) => {
+        const programDiv = document.createElement('div');
+        programDiv.className = 'dev-program-item';
+        programDiv.innerHTML = `
+            <div>
+                <h4>${program.title}</h4>
+                <p>${program.description}</p>
+            </div>
+            <div>
+                <button onclick="editProgram(${index})">Редактировать</button>
+                <button onclick="deleteProgram(${index})">Удалить</button>
+            </div>
+        `;
+        programsList.appendChild(programDiv);
+    });
+}
+
+function saveHomeContent() {
+    const homeContent = {
+        hero_image_url: document.getElementById('dev-hero-image').value,
+        headline: document.getElementById('dev-headline').value,
+        greeting: document.getElementById('dev-greeting').value,
+        cta_text: document.getElementById('dev-cta').value
+    };
+    
+    developerContent.home = homeContent;
+    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    
+    // Update the actual home page
+    updateHomePage(homeContent);
+    
+    alert('Главная страница сохранена');
+}
+
+function updateHomePage(homeContent) {
+    const heroImg = document.querySelector('.hero-image img');
+    const headline = document.querySelector('.main-title');
+    const greeting = document.querySelector('.greeting');
+    const ctaButton = document.querySelector('.cta-button');
+    
+    if (heroImg) heroImg.src = homeContent.hero_image_url;
+    if (headline) headline.textContent = homeContent.headline;
+    if (greeting) greeting.textContent = homeContent.greeting;
+    if (ctaButton) ctaButton.textContent = homeContent.cta_text;
+}
+
+function addNewProgram() {
+    const title = prompt('Название программы:');
+    if (title) {
+        const newProgram = {
+            id: 'program-' + Date.now(),
+            title: title,
+            description: 'Описание программы',
+            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            exercises: []
+        };
+        
+        if (!developerContent.programs) {
+            developerContent.programs = [];
+        }
+        developerContent.programs.push(newProgram);
+        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        loadDeveloperPrograms();
+    }
+}
+
+function editProgram(index) {
+    const program = developerContent.programs[index];
+    const newTitle = prompt('Название программы:', program.title);
+    if (newTitle) {
+        program.title = newTitle;
+        developerContent.programs[index] = program;
+        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        loadDeveloperPrograms();
+    }
+}
+
+function deleteProgram(index) {
+    if (confirm('Удалить программу?')) {
+        developerContent.programs.splice(index, 1);
+        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        loadDeveloperPrograms();
+    }
+}
+
+function saveSettings() {
+    const settings = {
+        calendar_enabled: document.getElementById('dev-calendar-enabled').checked
+    };
+    
+    developerContent.settings = settings;
+    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    
+    alert('Настройки сохранены');
+}
+
+function switchDeveloperTab(tabName) {
+    // Update tab navigation
+    document.querySelectorAll('.dev-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.dev-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
 }
 
 // Export functions for global access
@@ -715,3 +842,10 @@ window.saveProfile = saveProfile;
 window.renewSubscription = renewSubscription;
 window.openDeveloperAccess = openDeveloperAccess;
 window.checkPin = checkPin;
+window.closePinModal = closePinModal;
+window.closeDeveloperPanel = closeDeveloperPanel;
+window.saveHomeContent = saveHomeContent;
+window.addNewProgram = addNewProgram;
+window.editProgram = editProgram;
+window.deleteProgram = deleteProgram;
+window.saveSettings = saveSettings;
