@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Здоровое тело</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-item active" data-section="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Главная</span>
+            </div>
+            <div class="nav-item" data-section="reports">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Отчеты</span>
+            </div>
+            <div class="nav-item" data-section="exercises">
+                <span class="nav-icon">💪</span>
+                <span class="nav-text">Упражнения</span>
+            </div>
+            <div class="nav-item" data-section="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Профиль</span>
+            </div>
+        </nav>
+
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="home-container">
+                <div class="hero-image">
+                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Здоровое тело">
+                </div>
+                <div class="home-content">
+                    <h1 class="main-title">Здоровое тело</h1>
+                    <p class="greeting">Добро пожаловать в ваше путешествие к здоровому образу жизни!</p>
+                    <button class="cta-button" onclick="navigateToSection('exercises')">
+                        Перейти к упражнениям
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="section">
+            <div class="reports-container">
+                <h2 class="section-title">Ваш прогресс</h2>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
+                        <h3 id="current-month"></h3>
+                        <button class="calendar-nav" onclick="changeMonth(1)">›</button>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid"></div>
+                </div>
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="completed-days">0</span>
+                        <span class="stat-label">Дней выполнено</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="current-streak">0</span>
+                        <span class="stat-label">Текущая серия</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Exercises Section -->
+        <section id="exercises" class="section">
+            <div class="exercises-container">
+                <h2 class="section-title">Программы упражнений</h2>
+                <div class="programs-grid" id="programs-grid">
+                    <!-- Programs will be loaded dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Program Detail Modal -->
+        <div id="program-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeProgramModal()">&times;</span>
+                <div class="modal-body" id="program-modal-body">
+                    <!-- Program details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Exercise Module Modal -->
+        <div id="exercise-modal" class="modal">
+            <div class="modal-content exercise-modal-content">
+                <span class="close" onclick="closeExerciseModal()">&times;</span>
+                <div class="modal-body" id="exercise-modal-body">
+                    <!-- Exercise details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <div class="profile-container">
+                <h2 class="section-title">Мой профиль</h2>
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label for="user-name">Имя</label>
+                        <input type="text" id="user-name" placeholder="Введите ваше имя">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-birthdate">Дата рождения</label>
+                        <input type="date" id="user-birthdate">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-problem">Проблемная зона</label>
+                        <select id="user-problem">
+                            <option value="">Выберите проблемную зону</option>
+                            <option value="shoulders">Плечевой пояс</option>
+                            <option value="back">Спина</option>
+                            <option value="core">Пресс</option>
+                            <option value="legs">Ноги</option>
+                            <option value="full-body">Все тело</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Подписка действует до</label>
+                        <div class="subscription-info" id="subscription-date">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <button class="save-button" onclick="saveProfile()">Сохранить изменения</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Subscription Expired Overlay -->
+        <div id="subscription-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h3>Подписка истекла</h3>
+                <p>Для доступа к материалам необходимо продлить подписку.</p>
+                <button class="cta-button" onclick="renewSubscription()">Продлить подписку</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
