@@ -907,6 +907,11 @@ body {
     }
 }
 /* Ensure modals are hidden by default */
+<<<<<<< HEAD
 .modal.hidden, .overlay.hidden {
     display: none !important;
+=======
+#pin-modal.hidden, #subscription-overlay.hidden {
+  display: none !important;
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
 }

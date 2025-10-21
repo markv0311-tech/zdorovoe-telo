@@ -276,6 +276,7 @@ function updateProgressStats() {
 
 // Programs data
 function loadPrograms() {
+<<<<<<< HEAD
     // Load programs from localStorage or use defaults
     if (developerContent.programs && developerContent.programs.length > 0) {
         programs = developerContent.programs;
@@ -284,6 +285,10 @@ function loadPrograms() {
         loadDefaultPrograms();
         seedDefaultProgramsToStorage();
     }
+=======
+    // Always use default programs for static deployment
+    loadDefaultPrograms();
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
     renderPrograms();
 }
 
@@ -449,10 +454,17 @@ function openProgramModal(program) {
     if (modal && modalBody) {
         modalBody.innerHTML = `
             <div class="program-detail">
+<<<<<<< HEAD
                 <img src="${program.image_url}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
                 <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
                 <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
                 <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на ${program.days.length} дней, по ${program.days[0]?.exercises.length || 0} упражнений в день</p>
+=======
+                <img src="${program.image}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
+                <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
+                <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на 10 дней, по 6 упражнений в день</p>
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
                 <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
                     Выбрать программу
                 </button>
@@ -490,6 +502,7 @@ function openExerciseModule(programId) {
         let exercisesHTML = `
             <div class="exercise-module">
                 <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+<<<<<<< HEAD
                 <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">${program.days.length}-дневная программа упражнений</p>
         `;
         
@@ -497,13 +510,27 @@ function openExerciseModule(programId) {
             exercisesHTML += `
                 <div class="exercise-day">
                     <h4>День ${day.day_index}</h4>
+=======
+                <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">10-дневная программа упражнений</p>
+        `;
+        
+        program.exercises.forEach(day => {
+            exercisesHTML += `
+                <div class="exercise-day">
+                    <h4>День ${day.day}</h4>
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
             `;
             
             day.exercises.forEach((exercise, index) => {
                 exercisesHTML += `
                     <div class="exercise-item">
+<<<<<<< HEAD
                         <div class="exercise-title">${exercise.order_index}. ${exercise.title}</div>
                         <iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>
+=======
+                        <div class="exercise-title">${index + 1}. ${exercise.title}</div>
+                        <iframe class="exercise-video" src="${exercise.video}" frameborder="0" allowfullscreen></iframe>
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
                         <div class="exercise-description">${exercise.description}</div>
                     </div>
                 `;
@@ -655,6 +682,36 @@ function showPinModal() {
             const input = document.getElementById('pin-input');
             if (input) input.focus();
         }, 100);
+<<<<<<< HEAD
+=======
+    }
+}
+
+function closePinModal() {
+    console.log('Closing PIN modal...');
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        const input = document.getElementById('pin-input');
+        if (input) input.value = '';
+    }
+}
+
+function checkPin() {
+    const pin = document.getElementById('pin-input').value;
+    console.log('Checking PIN...');
+    
+    if (pin === DEV_PIN) {
+        console.log('PIN correct, entering developer mode');
+        isDeveloperMode = true;
+        sessionStorage.setItem(DEV_FLAG, 'true');
+        closePinModal();
+        showDeveloperPanel();
+        loadDeveloperContent();
+    } else {
+        console.log('PIN incorrect');
+        alert('Неверный пароль');
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
     }
 }
 
@@ -683,6 +740,7 @@ function checkPin() {
 function showDeveloperPanel() {
     console.log('Showing developer panel...');
     const panel = document.getElementById('developer-panel');
+<<<<<<< HEAD
     if (!panel) return;
   
     // скрыть все секции
@@ -703,6 +761,21 @@ function closeDeveloperPanel() {
     // вернёмся на Главную (или профиль)
     document.getElementById('home')?.classList.add('active');
     sessionStorage.removeItem(DEV_FLAG);
+=======
+    if (panel) {
+        panel.classList.remove('hidden');
+        // Switch to profile section to show the panel
+        navigateToSection('profile');
+    }
+}
+
+function closeDeveloperPanel() {
+    console.log('Closing developer panel...');
+    const panel = document.getElementById('developer-panel');
+    if (panel) {
+        panel.classList.add('hidden');
+    }
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
 }
 
 function loadDeveloperContent() {
@@ -762,7 +835,11 @@ function saveHomeContent() {
     };
     
     developerContent.home = homeContent;
+<<<<<<< HEAD
     localStorage.setItem('dev_content', JSON.stringify(developerContent));
+=======
+    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
     console.log('Home content saved to localStorage:', homeContent);
     
     // Update the actual home page
@@ -803,7 +880,11 @@ function addNewProgram() {
             developerContent.programs = [];
         }
         developerContent.programs.push(newProgram);
+<<<<<<< HEAD
         localStorage.setItem('dev_content', JSON.stringify(developerContent));
+=======
+        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
         console.log('New program added to localStorage:', newProgram);
         loadDeveloperPrograms();
         // Update public programs view
@@ -1080,7 +1161,11 @@ function saveSettings() {
     };
     
     developerContent.settings = settings;
+<<<<<<< HEAD
     localStorage.setItem('dev_content', JSON.stringify(developerContent));
+=======
+    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+>>>>>>> b8ef80cf510f22c976333a2a04aff074ea457967
     console.log('Settings saved to localStorage:', settings);
     
     alert('Настройки сохранены');
