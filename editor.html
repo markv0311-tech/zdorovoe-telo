@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Здоровое тело - Редактор</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="editor.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header with Editor Badge -->
+        <header class="editor-header">
+            <div class="header-content">
+                <h1>Редактор контента</h1>
+                <div class="editor-badge">Editor</div>
+            </div>
+            <button class="back-button" onclick="goBack()">← Назад</button>
+        </header>
+
+        <!-- Editor Navigation -->
+        <nav class="editor-nav">
+            <div class="editor-nav-item active" data-tab="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Главная</span>
+            </div>
+            <div class="editor-nav-item" data-tab="programs">
+                <span class="nav-icon">💪</span>
+                <span class="nav-text">Программы</span>
+            </div>
+            <div class="editor-nav-item" data-tab="reports">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Отчеты</span>
+            </div>
+            <div class="editor-nav-item" data-tab="tools">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">Инструменты</span>
+            </div>
+        </nav>
+
+        <!-- Home Page Editor -->
+        <section id="editor-home" class="editor-section active">
+            <div class="editor-container">
+                <h2>Редактирование главной страницы</h2>
+                <div class="editor-form">
+                    <div class="form-group">
+                        <label for="home-hero-image">URL изображения героя</label>
+                        <input type="url" id="home-hero-image" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="home-headline">Заголовок</label>
+                        <input type="text" id="home-headline" placeholder="Здоровое тело">
+                    </div>
+                    <div class="form-group">
+                        <label for="home-greeting">Приветствие</label>
+                        <textarea id="home-greeting" placeholder="Добро пожаловать в ваше путешествие к здоровому образу жизни!"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="home-cta">Текст кнопки</label>
+                        <input type="text" id="home-cta" placeholder="Перейти к упражнениям">
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveHomePage()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="previewHomePage()">Предварительный просмотр</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Programs Editor -->
+        <section id="editor-programs" class="editor-section">
+            <div class="editor-container">
+                <div class="programs-header">
+                    <h2>Управление программами</h2>
+                    <button class="btn btn-primary" onclick="showCreateProgramModal()">Создать программу</button>
+                </div>
+                
+                <div class="programs-list" id="programs-list">
+                    <!-- Programs will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Settings Editor -->
+        <section id="editor-reports" class="editor-section">
+            <div class="editor-container">
+                <h2>Настройки отчетов</h2>
+                <div class="editor-form">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="calendar-enabled" checked>
+                            <span class="checkmark"></span>
+                            Включить календарь
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveReportsSettings()">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tools Section -->
+        <section id="editor-tools" class="editor-section">
+            <div class="editor-container">
+                <h2>Инструменты</h2>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <h3>Экспорт данных</h3>
+                        <p>Скачать все данные в формате JSON</p>
+                        <button class="btn btn-secondary" onclick="exportData()">Экспорт</button>
+                    </div>
+                    <div class="tool-card">
+                        <h3>Импорт данных</h3>
+                        <p>Загрузить данные из JSON файла</p>
+                        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Импорт</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Create Program Modal -->
+        <div id="create-program-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeCreateProgramModal()">&times;</span>
+                <div class="modal-body">
+                    <h3>Создать новую программу</h3>
+                    <div class="editor-form">
+                        <div class="form-group">
+                            <label for="new-program-title">Название</label>
+                            <input type="text" id="new-program-title" placeholder="Название программы">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-program-slug">Slug (URL)</label>
+                            <input type="text" id="new-program-slug" placeholder="program-slug">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-program-description">Описание</label>
+                            <textarea id="new-program-description" placeholder="Краткое описание программы"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-program-image">URL изображения</label>
+                            <input type="url" id="new-program-image" placeholder="https://example.com/image.jpg">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-program-details">Детали (Markdown)</label>
+                            <textarea id="new-program-details" rows="6" placeholder="Подробное описание программы в формате Markdown"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="new-program-published" checked>
+                                <span class="checkmark"></span>
+                                Опубликовать программу
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="createProgram()">Создать</button>
+                            <button class="btn btn-secondary" onclick="closeCreateProgramModal()">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Program Modal -->
+        <div id="edit-program-modal" class="modal">
+            <div class="modal-content large-modal">
+                <span class="close" onclick="closeEditProgramModal()">&times;</span>
+                <div class="modal-body">
+                    <div class="program-editor-tabs">
+                        <div class="tab-nav">
+                            <div class="tab-item active" data-tab="program-info">Информация</div>
+                            <div class="tab-item" data-tab="program-days">Дни</div>
+                        </div>
+                        
+                        <!-- Program Info Tab -->
+                        <div id="tab-program-info" class="tab-content active">
+                            <h3>Редактирование программы</h3>
+                            <div class="editor-form">
+                                <div class="form-group">
+                                    <label for="edit-program-title">Название</label>
+                                    <input type="text" id="edit-program-title">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-program-slug">Slug (URL)</label>
+                                    <input type="text" id="edit-program-slug">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-program-description">Описание</label>
+                                    <textarea id="edit-program-description"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-program-image">URL изображения</label>
+                                    <input type="url" id="edit-program-image">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-program-details">Детали (Markdown)</label>
+                                    <textarea id="edit-program-details" rows="6"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="edit-program-published">
+                                        <span class="checkmark"></span>
+                                        Опубликовать программу
+                                    </label>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-primary" onclick="updateProgram()">Сохранить</button>
+                                    <button class="btn btn-danger" onclick="deleteProgram()">Удалить</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Program Days Tab -->
+                        <div id="tab-program-days" class="tab-content">
+                            <div class="days-header">
+                                <h3>Дни программы</h3>
+                                <button class="btn btn-primary" onclick="addProgramDay()">Добавить день</button>
+                            </div>
+                            <div class="days-list" id="days-list">
+                                <!-- Days will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Day Modal -->
+        <div id="edit-day-modal" class="modal">
+            <div class="modal-content large-modal">
+                <span class="close" onclick="closeEditDayModal()">&times;</span>
+                <div class="modal-body">
+                    <div class="day-header">
+                        <h3>День <span id="day-number"></span></h3>
+                        <button class="btn btn-primary" onclick="addExercise()">Добавить упражнение</button>
+                    </div>
+                    <div class="exercises-list" id="exercises-list">
+                        <!-- Exercises will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Exercise Modal -->
+        <div id="edit-exercise-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeEditExerciseModal()">&times;</span>
+                <div class="modal-body">
+                    <h3>Редактирование упражнения</h3>
+                    <div class="editor-form">
+                        <div class="form-group">
+                            <label for="edit-exercise-title">Название</label>
+                            <input type="text" id="edit-exercise-title">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-exercise-video">URL видео</label>
+                            <input type="url" id="edit-exercise-video" placeholder="https://www.youtube.com/embed/...">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-exercise-description">Описание</label>
+                            <textarea id="edit-exercise-description" rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-exercise-order">Порядок</label>
+                            <input type="number" id="edit-exercise-order" min="1">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="updateExercise()">Сохранить</button>
+                            <button class="btn btn-danger" onclick="deleteExercise()">Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="editor.js"></script>
+</body>
+</html>

@@ -402,6 +402,55 @@ body {
     box-shadow: 0 4px 15px rgba(40,167,69,0.3);
 }
 
+/* Developer Access Section */
+.developer-access-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid #e9ecef;
+}
+
+.developer-access-section h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.developer-access-section p {
+    color: #6c757d;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.developer-access-button {
+    width: 100%;
+    background: linear-gradient(135deg, #6f42c1, #5a32a3);
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.developer-access-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(111,66,193,0.3);
+}
+
+/* Editor Badge in Header */
+.editor-badge {
+    background: linear-gradient(135deg, #6f42c1, #5a32a3);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
 /* Overlay */
 .overlay {
     position: fixed;

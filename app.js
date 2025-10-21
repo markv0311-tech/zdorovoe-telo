@@ -62,9 +62,35 @@ function initializeApp() {
         document.getElementById('user-problem').value = userProfile.problem;
     }
     
+    // Check if user is editor and show badge
+    checkEditorStatus();
+    
     // Initialize calendar
     updateCalendar();
     updateProgressStats();
+}
+
+// Check if user is editor and show badge
+function checkEditorStatus() {
+    const allowedIds = process.env.ALLOWED_EDITOR_IDS?.split(',').map(id => parseInt(id.trim())) || [];
+    const isAllowed = user && allowedIds.includes(user.id);
+    const hasDevOverride = localStorage.getItem('dev_override') === 'true';
+    
+    if (isAllowed || hasDevOverride) {
+        // Add editor badge to header
+        const header = document.querySelector('.navbar');
+        if (header && !document.querySelector('.editor-badge')) {
+            const badge = document.createElement('div');
+            badge.className = 'editor-badge';
+            badge.textContent = 'Editor';
+            badge.style.position = 'absolute';
+            badge.style.top = '10px';
+            badge.style.right = '10px';
+            badge.style.zIndex = '1001';
+            header.style.position = 'relative';
+            header.appendChild(badge);
+        }
+    }
 }
 
 // Setup event listeners
@@ -228,7 +254,39 @@ function updateProgressStats() {
 }
 
 // Programs data
-function loadPrograms() {
+async function loadPrograms() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/programs`);
+        if (response.ok) {
+            const data = await response.json();
+            programs = data.map(program => ({
+                id: program.slug,
+                title: program.title,
+                description: program.description,
+                image: program.image_url,
+                exercises: program.program_days?.map(day => ({
+                    day: day.day_index,
+                    exercises: day.exercises?.map(exercise => ({
+                        title: exercise.title,
+                        video: exercise.video_url,
+                        description: exercise.description
+                    })) || []
+                })) || []
+            }));
+        } else {
+            // Fallback to default programs
+            loadDefaultPrograms();
+        }
+    } catch (error) {
+        console.error('Error loading programs:', error);
+        // Fallback to default programs
+        loadDefaultPrograms();
+    }
+    
+    renderPrograms();
+}
+
+function loadDefaultPrograms() {
     programs = [
         {
             id: 'shoulders',
@@ -287,8 +345,6 @@ function loadPrograms() {
             exercises: generateExerciseProgram('Восстановление')
         }
     ];
-    
-    renderPrograms();
 }
 
 function generateExerciseProgram(programType) {
@@ -593,6 +649,61 @@ window.onclick = function(event) {
     }
 }
 
+// Developer Access functionality
+async function openDeveloperAccess() {
+    // Check if user is in allow list
+    const allowedIds = process.env.ALLOWED_EDITOR_IDS?.split(',').map(id => parseInt(id.trim())) || [];
+    const isAllowed = user && allowedIds.includes(user.id);
+    
+    if (isAllowed) {
+        // User is in allow list, redirect to editor
+        window.location.href = '/editor.html';
+        return;
+    }
+    
+    // Show PIN modal
+    showPinModal();
+}
+
+function showPinModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3>Введите PIN код</h3>
+                <p>Для доступа к редактору введите PIN код</p>
+                <input type="password" id="pin-input" placeholder="PIN код" maxlength="4" style="width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px;">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="checkPin()" style="flex: 1; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Войти</button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Отмена</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Focus on PIN input
+    setTimeout(() => {
+        document.getElementById('pin-input').focus();
+    }, 100);
+}
+
+function checkPin() {
+    const pin = document.getElementById('pin-input').value;
+    const devPin = '1234'; // This should come from environment variable
+    
+    if (pin === devPin) {
+        // Set dev override flag
+        localStorage.setItem('dev_override', 'true');
+        document.querySelector('.modal').remove();
+        window.location.href = '/editor.html';
+    } else {
+        alert('Неверный PIN код');
+    }
+}
+
 // Export functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
@@ -602,3 +713,5 @@ window.openExerciseModule = openExerciseModule;
 window.closeExerciseModal = closeExerciseModal;
 window.saveProfile = saveProfile;
 window.renewSubscription = renewSubscription;
+window.openDeveloperAccess = openDeveloperAccess;
+window.checkPin = checkPin;

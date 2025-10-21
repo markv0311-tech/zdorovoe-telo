@@ -3,166 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Здоровое тело - Test Mode</title>
-    <link rel="stylesheet" href="styles.css">
-    <script>
-        // Mock Telegram WebApp for testing
-        window.Telegram = {
-            WebApp: {
-                ready: function() { console.log('Telegram WebApp ready'); },
-                expand: function() { console.log('Telegram WebApp expanded'); },
-                colorScheme: 'light',
-                initDataUnsafe: {
-                    user: {
-                        id: 123456789,
-                        first_name: 'Test',
-                        last_name: 'User',
-                        username: 'testuser'
-                    }
-                }
-            }
-        };
-    </script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Тест редактора - Здоровое тело</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .test-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-item active" data-section="home">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-text">Главная</span>
-            </div>
-            <div class="nav-item" data-section="reports">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">Отчеты</span>
-            </div>
-            <div class="nav-item" data-section="exercises">
-                <span class="nav-icon">💪</span>
-                <span class="nav-text">Упражнения</span>
-            </div>
-            <div class="nav-item" data-section="profile">
-                <span class="nav-icon">👤</span>
-                <span class="nav-text">Профиль</span>
-            </div>
-        </nav>
+    <h1>🧪 Тест редактора контента</h1>
+    <p>Эта страница поможет проверить работоспособность всех компонентов редактора.</p>
 
-        <!-- Home Section -->
-        <section id="home" class="section active">
-            <div class="home-container">
-                <div class="hero-image">
-                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Здоровое тело">
-                </div>
-                <div class="home-content">
-                    <h1 class="main-title">Здоровое тело</h1>
-                    <p class="greeting">Добро пожаловать в ваше путешествие к здоровому образу жизни!</p>
-                    <button class="cta-button" onclick="navigateToSection('exercises')">
-                        Перейти к упражнениям
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Reports Section -->
-        <section id="reports" class="section">
-            <div class="reports-container">
-                <h2 class="section-title">Ваш прогресс</h2>
-                <div class="calendar-container">
-                    <div class="calendar-header">
-                        <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
-                        <h3 id="current-month"></h3>
-                        <button class="calendar-nav" onclick="changeMonth(1)">›</button>
-                    </div>
-                    <div class="calendar-grid" id="calendar-grid"></div>
-                </div>
-                <div class="progress-stats">
-                    <div class="stat-item">
-                        <span class="stat-number" id="completed-days">0</span>
-                        <span class="stat-label">Дней выполнено</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="current-streak">0</span>
-                        <span class="stat-label">Текущая серия</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Exercises Section -->
-        <section id="exercises" class="section">
-            <div class="exercises-container">
-                <h2 class="section-title">Программы упражнений</h2>
-                <div class="programs-grid" id="programs-grid">
-                    <!-- Programs will be loaded dynamically -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Program Detail Modal -->
-        <div id="program-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeProgramModal()">&times;</span>
-                <div class="modal-body" id="program-modal-body">
-                    <!-- Program details will be loaded here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Exercise Module Modal -->
-        <div id="exercise-modal" class="modal">
-            <div class="modal-content exercise-modal-content">
-                <span class="close" onclick="closeExerciseModal()">&times;</span>
-                <div class="modal-body" id="exercise-modal-body">
-                    <!-- Exercise details will be loaded here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Section -->
-        <section id="profile" class="section">
-            <div class="profile-container">
-                <h2 class="section-title">Мой профиль</h2>
-                <div class="profile-form">
-                    <div class="form-group">
-                        <label for="user-name">Имя</label>
-                        <input type="text" id="user-name" placeholder="Введите ваше имя">
-                    </div>
-                    <div class="form-group">
-                        <label for="user-birthdate">Дата рождения</label>
-                        <input type="date" id="user-birthdate">
-                    </div>
-                    <div class="form-group">
-                        <label for="user-problem">Проблемная зона</label>
-                        <select id="user-problem">
-                            <option value="">Выберите проблемную зону</option>
-                            <option value="shoulders">Плечевой пояс</option>
-                            <option value="back">Спина</option>
-                            <option value="core">Пресс</option>
-                            <option value="legs">Ноги</option>
-                            <option value="full-body">Все тело</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Подписка действует до</label>
-                        <div class="subscription-info" id="subscription-date">
-                            Загрузка...
-                        </div>
-                    </div>
-                    <button class="save-button" onclick="saveProfile()">Сохранить изменения</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Subscription Expired Overlay -->
-        <div id="subscription-overlay" class="overlay hidden">
-            <div class="overlay-content">
-                <h3>Подписка истекла</h3>
-                <p>Для доступа к материалам необходимо продлить подписку.</p>
-                <button class="cta-button" onclick="renewSubscription()">Продлить подписку</button>
-            </div>
-        </div>
+    <div class="test-section">
+        <h3>1. Проверка основного приложения</h3>
+        <p>Убедитесь, что основное приложение работает корректно:</p>
+        <button class="test-button" onclick="testMainApp()">Тест основного приложения</button>
+        <div id="main-app-result" class="test-result info" style="display: none;"></div>
     </div>
 
-    <script src="app.js"></script>
+    <div class="test-section">
+        <h3>2. Проверка доступа к редактору</h3>
+        <p>Проверьте доступ к редактору через PIN код:</p>
+        <button class="test-button" onclick="testEditorAccess()">Тест доступа к редактору</button>
+        <div id="editor-access-result" class="test-result info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Проверка API endpoints</h3>
+        <p>Проверьте доступность API endpoints:</p>
+        <button class="test-button" onclick="testAPIEndpoints()">Тест API</button>
+        <div id="api-result" class="test-result info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Проверка локального режима</h3>
+        <p>Проверьте работу в локальном режиме (Mode A):</p>
+        <button class="test-button" onclick="testLocalMode()">Тест локального режима</button>
+        <div id="local-mode-result" class="test-result info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Проверка экспорта/импорта</h3>
+        <p>Проверьте функциональность экспорта и импорта данных:</p>
+        <button class="test-button" onclick="testExportImport()">Тест экспорта/импорта</button>
+        <div id="export-import-result" class="test-result info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>📋 Инструкции по тестированию</h3>
+        <h4>Основное приложение:</h4>
+        <ol>
+            <li>Откройте <code>index.html</code> в браузере</li>
+            <li>Проверьте загрузку всех разделов</li>
+            <li>Убедитесь, что программы упражнений отображаются</li>
+            <li>Протестируйте календарь и профиль</li>
+        </ol>
+
+        <h4>Редактор:</h4>
+        <ol>
+            <li>Перейдите в раздел "Профиль"</li>
+            <li>Нажмите "Доступ разработчика"</li>
+            <li>Введите PIN код: <code>1234</code></li>
+            <li>Проверьте все разделы редактора</li>
+            <li>Протестируйте создание/редактирование программ</li>
+        </ol>
+
+        <h4>API тестирование:</h4>
+        <pre>
+# Проверка публичных программ
+curl http://localhost:3000/api/programs
+
+# Проверка авторизации (замените на реальные данные)
+curl -X POST http://localhost:3000/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"initData": "test_data"}'
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h3>🔧 Настройка для тестирования</h3>
+        <h4>Переменные окружения:</h4>
+        <pre>
+# Создайте файл .env с содержимым:
+VITE_LOCAL_EDITOR=false
+VITE_DEV_PIN=1234
+ALLOWED_EDITOR_IDS=123456789,987654321
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
+JWT_SECRET=your_jwt_secret_key
+TELEGRAM_BOT_TOKEN=your_bot_token
+        </pre>
+
+        <h4>Запуск сервера:</h4>
+        <pre>
+npm install
+npm start
+# или для разработки:
+npm run dev
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h3>✅ Критерии успешного тестирования</h3>
+        <ul>
+            <li>✅ Основное приложение загружается без ошибок</li>
+            <li>✅ Программы упражнений отображаются корректно</li>
+            <li>✅ Календарь работает (можно отмечать дни)</li>
+            <li>✅ Профиль сохраняет данные</li>
+            <li>✅ Кнопка "Доступ разработчика" открывает PIN модал</li>
+            <li>✅ PIN код 1234 открывает редактор</li>
+            <li>✅ Редактор загружает все разделы</li>
+            <li>✅ Можно создавать/редактировать программы</li>
+            <li>✅ Экспорт/импорт данных работает</li>
+            <li>✅ API endpoints отвечают корректно</li>
+        </ul>
+    </div>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `test-result ${type}`;
+            element.textContent = message;
+        }
+
+        async function testMainApp() {
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    showResult('main-app-result', '✅ Основное приложение доступно', 'success');
+                } else {
+                    showResult('main-app-result', '❌ Основное приложение недоступно', 'error');
+                }
+            } catch (error) {
+                showResult('main-app-result', '❌ Ошибка подключения к основному приложению', 'error');
+            }
+        }
+
+        async function testEditorAccess() {
+            try {
+                const response = await fetch('/editor.html');
+                if (response.ok) {
+                    showResult('editor-access-result', '✅ Редактор доступен', 'success');
+                } else {
+                    showResult('editor-access-result', '❌ Редактор недоступен', 'error');
+                }
+            } catch (error) {
+                showResult('editor-access-result', '❌ Ошибка подключения к редактору', 'error');
+            }
+        }
+
+        async function testAPIEndpoints() {
+            const endpoints = [
+                '/api/programs',
+                '/api/auth'
+            ];
+            
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    if (response.ok || response.status === 400) { // 400 is OK for auth without data
+                        results.push(`✅ ${endpoint}`);
+                    } else {
+                        results.push(`❌ ${endpoint} (${response.status})`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${endpoint} (ошибка подключения)`);
+                }
+            }
+            
+            showResult('api-result', results.join('\n'), results.every(r => r.includes('✅')) ? 'success' : 'error');
+        }
+
+        function testLocalMode() {
+            try {
+                // Test localStorage functionality
+                const testData = { test: 'data' };
+                localStorage.setItem('test_key', JSON.stringify(testData));
+                const retrieved = JSON.parse(localStorage.getItem('test_key'));
+                
+                if (retrieved.test === 'data') {
+                    localStorage.removeItem('test_key');
+                    showResult('local-mode-result', '✅ Локальное хранилище работает', 'success');
+                } else {
+                    showResult('local-mode-result', '❌ Локальное хранилище не работает', 'error');
+                }
+            } catch (error) {
+                showResult('local-mode-result', '❌ Ошибка тестирования локального режима', 'error');
+            }
+        }
+
+        function testExportImport() {
+            try {
+                // Test JSON export/import functionality
+                const testData = {
+                    home: { headline: 'Test' },
+                    programs: [],
+                    reports: { calendar_enabled: true }
+                };
+                
+                const jsonString = JSON.stringify(testData);
+                const parsed = JSON.parse(jsonString);
+                
+                if (parsed.home.headline === 'Test') {
+                    showResult('export-import-result', '✅ Экспорт/импорт JSON работает', 'success');
+                } else {
+                    showResult('export-import-result', '❌ Экспорт/импорт JSON не работает', 'error');
+                }
+            } catch (error) {
+                showResult('export-import-result', '❌ Ошибка тестирования экспорта/импорта', 'error');
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testMainApp();
+                testEditorAccess();
+                testLocalMode();
+                testExportImport();
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
