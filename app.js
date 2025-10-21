@@ -1829,6 +1829,58 @@ function switchDeveloperTab(tabName) {
     });
     document.getElementById(tabName).classList.add('active');
 }
+// ОТКРЫТЬ МОДУЛЬ УПРАЖНЕНИЙ (грузим из Supabase)
+async function openExerciseModule(programId, dayIndex = 1) {
+    try {
+      // 1) находим день (по умолчанию день 1)
+      const { data: day, error: dayErr } = await supabase
+        .from('program_days')
+        .select('id')
+        .eq('program_id', programId)
+        .eq('day_index', dayIndex)
+        .single();
+      if (dayErr || !day) {
+        alert('Для этой программы пока не создан день ' + dayIndex);
+        return;
+      }
+  
+      // 2) берём упражнения дня
+      const { data: exs, error: exErr } = await supabase
+        .from('exercises')
+        .select('order_index, title, video_url, description')
+        .eq('program_day_id', day.id)
+        .order('order_index', { ascending: true });
+      if (exErr) {
+        alert('Не удалось загрузить упражнения');
+        return;
+      }
+  
+      // 3) рендерим в модалку
+      const body = document.getElementById('exercise-modal-body');
+      body.innerHTML = (exs && exs.length)
+        ? exs.map(ex => `
+            <div class="exercise-item">
+              <h4>${ex.order_index}. ${ex.title}</h4>
+              ${ex.video_url ? `<div class="video-wrap">
+                <iframe width="100%" height="200" src="${ex.video_url}" frameborder="0" allowfullscreen></iframe>
+              </div>` : ''}
+              <p>${ex.description || ''}</p>
+            </div>
+          `).join('')
+        : <p>Для дня ${dayIndex} ещё нет упражнений.</p>;
+  
+      // 4) показываем модалку
+      const modal = document.getElementById('exercise-modal');
+      modal.classList.remove('hidden');
+      modal.style.display = 'block';
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка при открытии программы');
+    }
+  }
+  
+  // экспортируем, чтобы работал onclick в HTML
+  window.openExerciseModule = openExerciseModule;
 
 // Developer mode constants
 const DEV_PIN = '1234';
@@ -1868,3 +1920,7 @@ window.loginUser = loginUser;
 window.logoutUser = logoutUser;
 window.exportContent = exportContent;
 window.importContent = importContent;
+window.openProgramModal   = openProgramModal;
+window.closeProgramModal  = closeProgramModal;
+window.openExerciseModule = openExerciseModule;
+window.closeExerciseModal = closeExerciseModal;
