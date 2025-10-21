@@ -5,7 +5,6 @@ let currentMonth = new Date();
 let programs = [];
 let userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
 let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-let subscriptionData = null;
 let isDeveloperMode = false;
 let developerContent = JSON.parse(localStorage.getItem('developerContent') || '{}');
 
@@ -13,6 +12,21 @@ let developerContent = JSON.parse(localStorage.getItem('developerContent') || '{
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing app...');
+    
+    // Ensure ALL modals and overlays are hidden on page load
+    const pinModal = document.getElementById('pin-modal');
+    const subOverlay = document.getElementById('subscription-overlay');
+    const developerPanel = document.getElementById('developer-panel');
+    const programModal = document.getElementById('program-modal');
+    const exerciseModal = document.getElementById('exercise-modal');
+    
+    if (pinModal) pinModal.classList.add('hidden');
+    if (subOverlay) subOverlay.classList.add('hidden');
+    if (developerPanel) developerPanel.classList.add('hidden');
+    if (programModal) programModal.style.display = 'none';
+    if (exerciseModal) exerciseModal.style.display = 'none';
+    
     initializeTelegram();
     initializeApp();
     loadPrograms();
@@ -28,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }, 100);
+    
+    console.log('App initialization complete - all modals hidden');
 });
 
 // Initialize Telegram WebApp
@@ -88,11 +104,13 @@ function initializeApp() {
 
 // Check developer mode
 function checkDeveloperMode() {
-    isDeveloperMode = sessionStorage.getItem('isDev') === 'true';
+    isDeveloperMode = sessionStorage.getItem(DEV_FLAG) === 'true';
+    console.log('Developer mode status:', isDeveloperMode);
     
     if (isDeveloperMode) {
-        showDeveloperPanel();
-        loadDeveloperContent();
+        // Don't show panel immediately on page load, just set the flag
+        // User can click the button to show it
+        console.log('Developer mode is active');
     }
 }
 
@@ -104,23 +122,40 @@ function setupEventListeners() {
             toggleDayCompletion(e.target);
         }
     });
+    
+    // ESC key support for closing modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
 }
 
 // Navigation functions
 function navigateToSection(sectionName) {
+    console.log('Navigating to section:', sectionName);
+    
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
     
     // Show target section
-    document.getElementById(sectionName).classList.add('active');
+    const targetSection = document.getElementById(sectionName);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error('Section not found:', sectionName);
+    }
     
     // Update navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+    const navItem = document.querySelector(`[data-section="${sectionName}"]`);
+    if (navItem) {
+        navItem.classList.add('active');
+    }
     
     // Load section-specific content
     if (sectionName === 'reports') {
@@ -196,11 +231,12 @@ function changeMonth(direction) {
     updateCalendar();
 }
 
-async function toggleDayCompletion(dayElement) {
+function toggleDayCompletion(dayElement) {
     const date = dayElement.dataset.date;
     if (!date) return;
     
     const isCompleted = dayElement.classList.contains('completed');
+    console.log('Toggling day completion for:', date, 'currently completed:', isCompleted);
     
     if (isCompleted) {
         dayElement.classList.remove('completed');
@@ -212,6 +248,7 @@ async function toggleDayCompletion(dayElement) {
     
     // Save progress locally only
     localStorage.setItem('userProgress', JSON.stringify(userProgress));
+    console.log('Progress saved to localStorage:', userProgress);
     updateProgressStats();
 }
 
@@ -238,7 +275,7 @@ function updateProgressStats() {
 }
 
 // Programs data
-async function loadPrograms() {
+function loadPrograms() {
     // Always use default programs for static deployment
     loadDefaultPrograms();
     renderPrograms();
@@ -363,74 +400,96 @@ function renderPrograms() {
 
 // Modal functions
 function openProgramModal(program) {
+    console.log('Opening program modal for:', program.title);
     const modal = document.getElementById('program-modal');
     const modalBody = document.getElementById('program-modal-body');
     
-    modalBody.innerHTML = `
-        <div class="program-detail">
-            <img src="${program.image}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
-            <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
-            <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на 10 дней, по 6 упражнений в день</p>
-            <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
-                Выбрать программу
-            </button>
-        </div>
-    `;
-    
-    modal.style.display = 'block';
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="program-detail">
+                <img src="${program.image}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
+                <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
+                <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на 10 дней, по 6 упражнений в день</p>
+                <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
+                    Выбрать программу
+                </button>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
+    } else {
+        console.error('Modal elements not found');
+    }
 }
 
 function closeProgramModal() {
-    document.getElementById('program-modal').style.display = 'none';
+    console.log('Closing program modal');
+    const modal = document.getElementById('program-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function openExerciseModule(programId) {
+    console.log('Opening exercise module for program:', programId);
     const program = programs.find(p => p.id === programId);
-    if (!program) return;
+    if (!program) {
+        console.error('Program not found:', programId);
+        return;
+    }
     
     closeProgramModal();
     
     const modal = document.getElementById('exercise-modal');
     const modalBody = document.getElementById('exercise-modal-body');
     
-    let exercisesHTML = `
-        <div class="exercise-module">
-            <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
-            <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">10-дневная программа упражнений</p>
-    `;
-    
-    program.exercises.forEach(day => {
-        exercisesHTML += `
-            <div class="exercise-day">
-                <h4>День ${day.day}</h4>
+    if (modal && modalBody) {
+        let exercisesHTML = `
+            <div class="exercise-module">
+                <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+                <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">10-дневная программа упражнений</p>
         `;
         
-        day.exercises.forEach((exercise, index) => {
+        program.exercises.forEach(day => {
             exercisesHTML += `
-                <div class="exercise-item">
-                    <div class="exercise-title">${index + 1}. ${exercise.title}</div>
-                    <iframe class="exercise-video" src="${exercise.video}" frameborder="0" allowfullscreen></iframe>
-                    <div class="exercise-description">${exercise.description}</div>
-                </div>
+                <div class="exercise-day">
+                    <h4>День ${day.day}</h4>
             `;
+            
+            day.exercises.forEach((exercise, index) => {
+                exercisesHTML += `
+                    <div class="exercise-item">
+                        <div class="exercise-title">${index + 1}. ${exercise.title}</div>
+                        <iframe class="exercise-video" src="${exercise.video}" frameborder="0" allowfullscreen></iframe>
+                        <div class="exercise-description">${exercise.description}</div>
+                    </div>
+                `;
+            });
+            
+            exercisesHTML += `</div>`;
         });
         
         exercisesHTML += `</div>`;
-    });
-    
-    exercisesHTML += `</div>`;
-    
-    modalBody.innerHTML = exercisesHTML;
-    modal.style.display = 'block';
+        
+        modalBody.innerHTML = exercisesHTML;
+        modal.style.display = 'block';
+    } else {
+        console.error('Exercise modal elements not found');
+    }
 }
 
 function closeExerciseModal() {
-    document.getElementById('exercise-modal').style.display = 'none';
+    console.log('Closing exercise modal');
+    const modal = document.getElementById('exercise-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 // Profile functions
-async function saveProfile() {
+function saveProfile() {
+    console.log('Saving profile...');
     const name = document.getElementById('user-name').value;
     const birthdate = document.getElementById('user-birthdate').value;
     const problem = document.getElementById('user-problem').value;
@@ -448,6 +507,7 @@ async function saveProfile() {
     
     // Save locally only
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    console.log('Profile saved to localStorage:', userProfile);
     
     // Show success message
     const button = document.querySelector('.save-button');
@@ -499,11 +559,26 @@ function renewSubscription() {
     document.getElementById('subscription-overlay').classList.add('hidden');
 }
 
+// Close all modals function
+function closeAllModals() {
+    console.log('Closing all modals...');
+    closeProgramModal();
+    closeExerciseModal();
+    closePinModal();
+    closeDeveloperPanel();
+    // Hide subscription overlay if visible
+    const subOverlay = document.getElementById('subscription-overlay');
+    if (subOverlay && !subOverlay.classList.contains('hidden')) {
+        subOverlay.classList.add('hidden');
+    }
+}
+
 // Close modals when clicking outside
 window.onclick = function(event) {
     const programModal = document.getElementById('program-modal');
     const exerciseModal = document.getElementById('exercise-modal');
     const pinModal = document.getElementById('pin-modal');
+    const subOverlay = document.getElementById('subscription-overlay');
     
     if (event.target === programModal) {
         closeProgramModal();
@@ -514,10 +589,14 @@ window.onclick = function(event) {
     if (event.target === pinModal) {
         closePinModal();
     }
+    if (event.target === subOverlay) {
+        subOverlay.classList.add('hidden');
+    }
 }
 
 // Developer Access functionality
 function openDeveloperAccess() {
+    console.log('Opening developer access...');
     if (isDeveloperMode) {
         showDeveloperPanel();
     } else {
@@ -526,41 +605,61 @@ function openDeveloperAccess() {
 }
 
 function showPinModal() {
-    document.getElementById('pin-modal').classList.remove('hidden');
-    setTimeout(() => {
-        document.getElementById('pin-input').focus();
-    }, 100);
+    console.log('Showing PIN modal...');
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            const input = document.getElementById('pin-input');
+            if (input) input.focus();
+        }, 100);
+    }
 }
 
 function closePinModal() {
-    document.getElementById('pin-modal').classList.add('hidden');
-    document.getElementById('pin-input').value = '';
+    console.log('Closing PIN modal...');
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        const input = document.getElementById('pin-input');
+        if (input) input.value = '';
+    }
 }
 
 function checkPin() {
     const pin = document.getElementById('pin-input').value;
-    const devPin = '1234';
+    console.log('Checking PIN...');
     
-    if (pin === devPin) {
+    if (pin === DEV_PIN) {
+        console.log('PIN correct, entering developer mode');
         isDeveloperMode = true;
-        sessionStorage.setItem('isDev', 'true');
+        sessionStorage.setItem(DEV_FLAG, 'true');
         closePinModal();
         showDeveloperPanel();
         loadDeveloperContent();
     } else {
+        console.log('PIN incorrect');
         alert('Неверный пароль');
     }
 }
 
 // Developer panel functions
 function showDeveloperPanel() {
-    document.getElementById('developer-panel').classList.remove('hidden');
-    // Switch to profile section to show the panel
-    navigateToSection('profile');
+    console.log('Showing developer panel...');
+    const panel = document.getElementById('developer-panel');
+    if (panel) {
+        panel.classList.remove('hidden');
+        // Switch to profile section to show the panel
+        navigateToSection('profile');
+    }
 }
 
 function closeDeveloperPanel() {
-    document.getElementById('developer-panel').classList.add('hidden');
+    console.log('Closing developer panel...');
+    const panel = document.getElementById('developer-panel');
+    if (panel) {
+        panel.classList.add('hidden');
+    }
 }
 
 function loadDeveloperContent() {
@@ -609,6 +708,7 @@ function loadDeveloperPrograms() {
 }
 
 function saveHomeContent() {
+    console.log('Saving home content...');
     const homeContent = {
         hero_image_url: document.getElementById('dev-hero-image').value,
         headline: document.getElementById('dev-headline').value,
@@ -618,6 +718,7 @@ function saveHomeContent() {
     
     developerContent.home = homeContent;
     localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    console.log('Home content saved to localStorage:', homeContent);
     
     // Update the actual home page
     updateHomePage(homeContent);
@@ -638,6 +739,7 @@ function updateHomePage(homeContent) {
 }
 
 function addNewProgram() {
+    console.log('Adding new program...');
     const title = prompt('Название программы:');
     if (title) {
         const newProgram = {
@@ -653,6 +755,7 @@ function addNewProgram() {
         }
         developerContent.programs.push(newProgram);
         localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        console.log('New program added to localStorage:', newProgram);
         loadDeveloperPrograms();
     }
 }
@@ -677,12 +780,14 @@ function deleteProgram(index) {
 }
 
 function saveSettings() {
+    console.log('Saving settings...');
     const settings = {
         calendar_enabled: document.getElementById('dev-calendar-enabled').checked
     };
     
     developerContent.settings = settings;
     localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    console.log('Settings saved to localStorage:', settings);
     
     alert('Настройки сохранены');
 }
@@ -701,6 +806,11 @@ function switchDeveloperTab(tabName) {
     document.getElementById(tabName).classList.add('active');
 }
 
+// Developer mode constants
+const DEV_PIN = '1234';
+const DEV_FLAG = 'isDev';
+
+
 // Export functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
@@ -714,6 +824,7 @@ window.openDeveloperAccess = openDeveloperAccess;
 window.checkPin = checkPin;
 window.closePinModal = closePinModal;
 window.closeDeveloperPanel = closeDeveloperPanel;
+window.closeAllModals = closeAllModals;
 window.saveHomeContent = saveHomeContent;
 window.addNewProgram = addNewProgram;
 window.editProgram = editProgram;

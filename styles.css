@@ -7,6 +7,11 @@
 
 .hidden {
     display: none !important;
+  }
+  
+  .modal.hidden, 
+  .overlay.hidden {
+    display: none !important;
 }
 
 body {
@@ -316,6 +321,8 @@ body {
     backdrop-filter: blur(5px);
 }
 
+/* Modal visibility controlled by JavaScript */
+
 .modal-content {
     background-color: white;
     margin: 5% auto;
@@ -517,8 +524,10 @@ body {
 }
 
 .developer-panel.hidden {
-    display: none;
+    display: none !important;
 }
+
+/* Developer panel visibility controlled by JavaScript */
 
 .developer-container {
     max-width: 800px;
@@ -787,4 +796,8 @@ body {
     .main-title {
         font-size: 24px;
     }
+}
+/* Ensure modals are hidden by default */
+#pin-modal.hidden, #subscription-overlay.hidden {
+  display: none !important;
 }
