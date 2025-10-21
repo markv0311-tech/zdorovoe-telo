@@ -7,6 +7,11 @@
 
 .hidden {
     display: none !important;
+  }
+  
+  .modal.hidden, 
+  .overlay.hidden {
+    display: none !important;
 }
 
 body {
@@ -305,7 +310,7 @@ body {
 
 /* Modals */
 .modal {
-    display: none;
+    display: flex;
     position: fixed;
     z-index: 2000;
     left: 0;
@@ -315,6 +320,8 @@ body {
     background-color: rgba(0,0,0,0.5);
     backdrop-filter: blur(5px);
 }
+
+/* Modal visibility controlled by JavaScript */
 
 .modal-content {
     background-color: white;
@@ -517,8 +524,10 @@ body {
 }
 
 .developer-panel.hidden {
-    display: none;
+    display: none !important;
 }
+
+/* Developer panel visibility controlled by JavaScript */
 
 .developer-container {
     max-width: 800px;
@@ -618,6 +627,115 @@ body {
 .dev-program-item button:last-of-type {
     background: #dc3545;
     color: white;
+}
+
+/* Program Editor Styles */
+.program-editor {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.program-editor h3 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.program-editor h4 {
+    color: #007bff;
+    margin: 20px 0 15px 0;
+}
+
+.program-editor h5 {
+    color: #6c757d;
+    margin: 15px 0 10px 0;
+    font-size: 16px;
+}
+
+.day-editor {
+    background: #f8f9fa;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.day-actions {
+    margin-bottom: 10px;
+}
+
+.exercises-editor {
+    margin: 10px 0;
+}
+
+.exercise-editor {
+    background: white;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.exercise-editor .form-group {
+    margin-bottom: 10px;
+}
+
+.exercise-editor .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.editor-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
 }
 
 /* PIN Modal Styles */
@@ -787,4 +905,8 @@ body {
     .main-title {
         font-size: 24px;
     }
+}
+/* Ensure modals are hidden by default */
+.modal.hidden, .overlay.hidden {
+    display: none !important;
 }

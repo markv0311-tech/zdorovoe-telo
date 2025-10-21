@@ -5,14 +5,28 @@ let currentMonth = new Date();
 let programs = [];
 let userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
 let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-let subscriptionData = null;
 let isDeveloperMode = false;
-let developerContent = JSON.parse(localStorage.getItem('developerContent') || '{}');
+let developerContent = JSON.parse(localStorage.getItem('dev_content') || '{}');
 
 // Static frontend configuration
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing app...');
+    
+    // Ensure ALL modals and overlays are hidden on page load
+    const pinModal = document.getElementById('pin-modal');
+    const subOverlay = document.getElementById('subscription-overlay');
+    const developerPanel = document.getElementById('developer-panel');
+    const programModal = document.getElementById('program-modal');
+    const exerciseModal = document.getElementById('exercise-modal');
+    
+    if (pinModal) pinModal.classList.add('hidden');
+    if (subOverlay) subOverlay.classList.add('hidden');
+    if (developerPanel) developerPanel.classList.add('hidden');
+    if (programModal) programModal.style.display = 'none';
+    if (exerciseModal) exerciseModal.style.display = 'none';
+    
     initializeTelegram();
     initializeApp();
     loadPrograms();
@@ -28,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }, 100);
+    
+    console.log('App initialization complete - all modals hidden');
 });
 
 // Initialize Telegram WebApp
@@ -88,11 +104,13 @@ function initializeApp() {
 
 // Check developer mode
 function checkDeveloperMode() {
-    isDeveloperMode = sessionStorage.getItem('isDev') === 'true';
+    isDeveloperMode = sessionStorage.getItem(DEV_FLAG) === 'true';
+    console.log('Developer mode status:', isDeveloperMode);
     
     if (isDeveloperMode) {
-        showDeveloperPanel();
-        loadDeveloperContent();
+        // Don't show panel immediately on page load, just set the flag
+        // User can click the button to show it
+        console.log('Developer mode is active');
     }
 }
 
@@ -104,23 +122,40 @@ function setupEventListeners() {
             toggleDayCompletion(e.target);
         }
     });
+    
+    // ESC key support for closing modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
 }
 
 // Navigation functions
 function navigateToSection(sectionName) {
+    console.log('Navigating to section:', sectionName);
+    
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
     
     // Show target section
-    document.getElementById(sectionName).classList.add('active');
+    const targetSection = document.getElementById(sectionName);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error('Section not found:', sectionName);
+    }
     
     // Update navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+    const navItem = document.querySelector(`[data-section="${sectionName}"]`);
+    if (navItem) {
+        navItem.classList.add('active');
+    }
     
     // Load section-specific content
     if (sectionName === 'reports') {
@@ -196,11 +231,12 @@ function changeMonth(direction) {
     updateCalendar();
 }
 
-async function toggleDayCompletion(dayElement) {
+function toggleDayCompletion(dayElement) {
     const date = dayElement.dataset.date;
     if (!date) return;
     
     const isCompleted = dayElement.classList.contains('completed');
+    console.log('Toggling day completion for:', date, 'currently completed:', isCompleted);
     
     if (isCompleted) {
         dayElement.classList.remove('completed');
@@ -212,6 +248,7 @@ async function toggleDayCompletion(dayElement) {
     
     // Save progress locally only
     localStorage.setItem('userProgress', JSON.stringify(userProgress));
+    console.log('Progress saved to localStorage:', userProgress);
     updateProgressStats();
 }
 
@@ -238,9 +275,15 @@ function updateProgressStats() {
 }
 
 // Programs data
-async function loadPrograms() {
-    // Always use default programs for static deployment
-    loadDefaultPrograms();
+function loadPrograms() {
+    // Load programs from localStorage or use defaults
+    if (developerContent.programs && developerContent.programs.length > 0) {
+        programs = developerContent.programs;
+    } else {
+        // Seed default programs to localStorage on first load
+        loadDefaultPrograms();
+        seedDefaultProgramsToStorage();
+    }
     renderPrograms();
 }
 
@@ -248,65 +291,89 @@ function loadDefaultPrograms() {
     programs = [
         {
             id: 'shoulders',
+            slug: 'shoulders',
             title: 'Плечевой пояс',
             description: 'Укрепление и развитие мышц плечевого пояса',
-            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Плечевой пояс')
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Программа для укрепления плечевого пояса включает комплекс упражнений для развития силы и выносливости.',
+            is_published: true,
+            days: generateExerciseProgram('Плечевой пояс')
         },
         {
             id: 'back',
+            slug: 'back',
             title: 'Спина',
             description: 'Укрепление мышц спины и улучшение осанки',
-            image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Спина')
+            image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Комплекс упражнений для укрепления мышц спины и улучшения осанки.',
+            is_published: true,
+            days: generateExerciseProgram('Спина')
         },
         {
             id: 'core',
+            slug: 'core',
             title: 'Пресс',
             description: 'Развитие мышц пресса и кора',
-            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Пресс')
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Программа для развития мышц пресса и укрепления кора.',
+            is_published: true,
+            days: generateExerciseProgram('Пресс')
         },
         {
             id: 'legs',
+            slug: 'legs',
             title: 'Ноги',
             description: 'Укрепление мышц ног и ягодиц',
-            image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Ноги')
+            image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Комплекс упражнений для укрепления мышц ног и ягодиц.',
+            is_published: true,
+            days: generateExerciseProgram('Ноги')
         },
         {
             id: 'cardio',
+            slug: 'cardio',
             title: 'Кардио',
             description: 'Кардиотренировки для выносливости',
-            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Кардио')
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Кардиотренировки для развития выносливости и сжигания калорий.',
+            is_published: true,
+            days: generateExerciseProgram('Кардио')
         },
         {
             id: 'flexibility',
+            slug: 'flexibility',
             title: 'Гибкость',
             description: 'Упражнения на растяжку и гибкость',
-            image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Гибкость')
+            image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Программа упражнений на растяжку и развитие гибкости.',
+            is_published: true,
+            days: generateExerciseProgram('Гибкость')
         },
         {
             id: 'strength',
+            slug: 'strength',
             title: 'Сила',
             description: 'Силовые тренировки для набора мышечной массы',
-            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Сила')
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Силовые тренировки для набора мышечной массы и развития силы.',
+            is_published: true,
+            days: generateExerciseProgram('Сила')
         },
         {
             id: 'recovery',
+            slug: 'recovery',
             title: 'Восстановление',
             description: 'Упражнения для восстановления и релаксации',
-            image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: generateExerciseProgram('Восстановление')
+            image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Упражнения для восстановления и релаксации после тренировок.',
+            is_published: true,
+            days: generateExerciseProgram('Восстановление')
         }
     ];
 }
 
 function generateExerciseProgram(programType) {
-    const exercises = [];
+    const days = [];
     const exerciseTypes = {
         'Плечевой пояс': ['Жим гантелей', 'Разведение гантелей', 'Подъемы в стороны', 'Отжимания', 'Планка', 'Берпи'],
         'Спина': ['Подтягивания', 'Тяга гантелей', 'Гиперэкстензия', 'Планка', 'Супермен', 'Лодочка'],
@@ -320,36 +387,48 @@ function generateExerciseProgram(programType) {
     
     const programExercises = exerciseTypes[programType] || exerciseTypes['Пресс'];
     
-    for (let day = 1; day <= 10; day++) {
-        const dayExercises = [];
-        for (let i = 0; i < 6; i++) {
-            const exerciseIndex = (day - 1) * 6 + i;
+    for (let dayIndex = 1; dayIndex <= 10; dayIndex++) {
+        const exercises = [];
+        for (let orderIndex = 0; orderIndex < 6; orderIndex++) {
+            const exerciseIndex = (dayIndex - 1) * 6 + orderIndex;
             const exerciseName = programExercises[exerciseIndex % programExercises.length];
             
-            dayExercises.push({
+            exercises.push({
+                order_index: orderIndex + 1,
                 title: exerciseName,
-                video: `https://www.youtube.com/embed/dQw4w9WgXcQ`, // Placeholder video
+                video_url: `https://www.youtube.com/embed/dQw4w9WgXcQ`, // Placeholder video
                 description: `Подробное описание упражнения "${exerciseName}" для ${programType.toLowerCase()}. Выполняйте медленно и контролируемо, следите за дыханием.`
             });
         }
-        exercises.push({
-            day: day,
-            exercises: dayExercises
+        days.push({
+            day_index: dayIndex,
+            exercises: exercises
         });
     }
     
-    return exercises;
+    return days;
+}
+
+function seedDefaultProgramsToStorage() {
+    if (!developerContent.programs) {
+        developerContent.programs = programs;
+        localStorage.setItem('dev_content', JSON.stringify(developerContent));
+        console.log('Default programs seeded to localStorage');
+    }
 }
 
 function renderPrograms() {
     const programsGrid = document.getElementById('programs-grid');
     programsGrid.innerHTML = '';
     
-    programs.forEach(program => {
+    // Only show published programs in public view
+    const publishedPrograms = programs.filter(program => program.is_published);
+    
+    publishedPrograms.forEach(program => {
         const programCard = document.createElement('div');
         programCard.className = 'program-card';
         programCard.innerHTML = `
-            <img src="${program.image}" alt="${program.title}" class="program-image">
+            <img src="${program.image_url}" alt="${program.title}" class="program-image">
             <div class="program-content">
                 <h3 class="program-title">${program.title}</h3>
                 <p class="program-description">${program.description}</p>
@@ -363,74 +442,96 @@ function renderPrograms() {
 
 // Modal functions
 function openProgramModal(program) {
+    console.log('Opening program modal for:', program.title);
     const modal = document.getElementById('program-modal');
     const modalBody = document.getElementById('program-modal-body');
     
-    modalBody.innerHTML = `
-        <div class="program-detail">
-            <img src="${program.image}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
-            <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
-            <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на 10 дней, по 6 упражнений в день</p>
-            <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
-                Выбрать программу
-            </button>
-        </div>
-    `;
-    
-    modal.style.display = 'block';
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="program-detail">
+                <img src="${program.image_url}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
+                <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
+                <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на ${program.days.length} дней, по ${program.days[0]?.exercises.length || 0} упражнений в день</p>
+                <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
+                    Выбрать программу
+                </button>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
+    } else {
+        console.error('Modal elements not found');
+    }
 }
 
 function closeProgramModal() {
-    document.getElementById('program-modal').style.display = 'none';
+    console.log('Closing program modal');
+    const modal = document.getElementById('program-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function openExerciseModule(programId) {
+    console.log('Opening exercise module for program:', programId);
     const program = programs.find(p => p.id === programId);
-    if (!program) return;
+    if (!program) {
+        console.error('Program not found:', programId);
+        return;
+    }
     
     closeProgramModal();
     
     const modal = document.getElementById('exercise-modal');
     const modalBody = document.getElementById('exercise-modal-body');
     
-    let exercisesHTML = `
-        <div class="exercise-module">
-            <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
-            <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">10-дневная программа упражнений</p>
-    `;
-    
-    program.exercises.forEach(day => {
-        exercisesHTML += `
-            <div class="exercise-day">
-                <h4>День ${day.day}</h4>
+    if (modal && modalBody) {
+        let exercisesHTML = `
+            <div class="exercise-module">
+                <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+                <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">${program.days.length}-дневная программа упражнений</p>
         `;
         
-        day.exercises.forEach((exercise, index) => {
+        program.days.forEach(day => {
             exercisesHTML += `
-                <div class="exercise-item">
-                    <div class="exercise-title">${index + 1}. ${exercise.title}</div>
-                    <iframe class="exercise-video" src="${exercise.video}" frameborder="0" allowfullscreen></iframe>
-                    <div class="exercise-description">${exercise.description}</div>
-                </div>
+                <div class="exercise-day">
+                    <h4>День ${day.day_index}</h4>
             `;
+            
+            day.exercises.forEach((exercise, index) => {
+                exercisesHTML += `
+                    <div class="exercise-item">
+                        <div class="exercise-title">${exercise.order_index}. ${exercise.title}</div>
+                        <iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>
+                        <div class="exercise-description">${exercise.description}</div>
+                    </div>
+                `;
+            });
+            
+            exercisesHTML += `</div>`;
         });
         
         exercisesHTML += `</div>`;
-    });
-    
-    exercisesHTML += `</div>`;
-    
-    modalBody.innerHTML = exercisesHTML;
-    modal.style.display = 'block';
+        
+        modalBody.innerHTML = exercisesHTML;
+        modal.style.display = 'block';
+    } else {
+        console.error('Exercise modal elements not found');
+    }
 }
 
 function closeExerciseModal() {
-    document.getElementById('exercise-modal').style.display = 'none';
+    console.log('Closing exercise modal');
+    const modal = document.getElementById('exercise-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 // Profile functions
-async function saveProfile() {
+function saveProfile() {
+    console.log('Saving profile...');
     const name = document.getElementById('user-name').value;
     const birthdate = document.getElementById('user-birthdate').value;
     const problem = document.getElementById('user-problem').value;
@@ -448,6 +549,7 @@ async function saveProfile() {
     
     // Save locally only
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    console.log('Profile saved to localStorage:', userProfile);
     
     // Show success message
     const button = document.querySelector('.save-button');
@@ -499,11 +601,26 @@ function renewSubscription() {
     document.getElementById('subscription-overlay').classList.add('hidden');
 }
 
+// Close all modals function
+function closeAllModals() {
+    console.log('Closing all modals...');
+    closeProgramModal();
+    closeExerciseModal();
+    closePinModal();
+    closeDeveloperPanel();
+    // Hide subscription overlay if visible
+    const subOverlay = document.getElementById('subscription-overlay');
+    if (subOverlay && !subOverlay.classList.contains('hidden')) {
+        subOverlay.classList.add('hidden');
+    }
+}
+
 // Close modals when clicking outside
 window.onclick = function(event) {
     const programModal = document.getElementById('program-modal');
     const exerciseModal = document.getElementById('exercise-modal');
     const pinModal = document.getElementById('pin-modal');
+    const subOverlay = document.getElementById('subscription-overlay');
     
     if (event.target === programModal) {
         closeProgramModal();
@@ -514,10 +631,14 @@ window.onclick = function(event) {
     if (event.target === pinModal) {
         closePinModal();
     }
+    if (event.target === subOverlay) {
+        subOverlay.classList.add('hidden');
+    }
 }
 
 // Developer Access functionality
 function openDeveloperAccess() {
+    console.log('Opening developer access...');
     if (isDeveloperMode) {
         showDeveloperPanel();
     } else {
@@ -526,41 +647,62 @@ function openDeveloperAccess() {
 }
 
 function showPinModal() {
-    document.getElementById('pin-modal').classList.remove('hidden');
-    setTimeout(() => {
-        document.getElementById('pin-input').focus();
-    }, 100);
-}
-
-function closePinModal() {
-    document.getElementById('pin-modal').classList.add('hidden');
-    document.getElementById('pin-input').value = '';
-}
-
-function checkPin() {
-    const pin = document.getElementById('pin-input').value;
-    const devPin = '1234';
-    
-    if (pin === devPin) {
-        isDeveloperMode = true;
-        sessionStorage.setItem('isDev', 'true');
-        closePinModal();
-        showDeveloperPanel();
-        loadDeveloperContent();
-    } else {
-        alert('Неверный пароль');
+    console.log('Showing PIN modal...');
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            const input = document.getElementById('pin-input');
+            if (input) input.focus();
+        }, 100);
     }
 }
 
+function closePinModal() {
+    console.log('Closing PIN modal...');
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        const input = document.getElementById('pin-input');
+        if (input) input.value = '';
+    }
+}
+
+function checkPin() {
+    const val = (document.getElementById('pin-input')?.value || '').trim();
+    if (val === '1234') {
+      sessionStorage.setItem(DEV_FLAG, '1');
+      closePinModal();        // закрываем окно
+      showDeveloperPanel();   // ВКЛЮЧАЕМ панель
+    } else {
+      alert('Неверный пароль');
+    }
+  }
+
 // Developer panel functions
 function showDeveloperPanel() {
-    document.getElementById('developer-panel').classList.remove('hidden');
-    // Switch to profile section to show the panel
-    navigateToSection('profile');
+    console.log('Showing developer panel...');
+    const panel = document.getElementById('developer-panel');
+    if (!panel) return;
+  
+    // скрыть все секции
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  
+    // показать панель и сделать её активной секцией
+    panel.classList.remove('hidden');
+    panel.classList.add('active');
+  
+    window.scrollTo(0, 0);
 }
 
 function closeDeveloperPanel() {
-    document.getElementById('developer-panel').classList.add('hidden');
+    const panel = document.getElementById('developer-panel');
+    if (!panel) return;
+    panel.classList.add('hidden');
+    panel.classList.remove('active');
+    // вернёмся на Главную (или профиль)
+    document.getElementById('home')?.classList.add('active');
+    sessionStorage.removeItem(DEV_FLAG);
 }
 
 function loadDeveloperContent() {
@@ -596,11 +738,13 @@ function loadDeveloperPrograms() {
         programDiv.className = 'dev-program-item';
         programDiv.innerHTML = `
             <div>
-                <h4>${program.title}</h4>
+                <h4>${program.title} ${program.is_published ? '✅' : '❌'}</h4>
                 <p>${program.description}</p>
+                <small>ID: ${program.id} | Slug: ${program.slug}</small>
             </div>
             <div>
                 <button onclick="editProgram(${index})">Редактировать</button>
+                <button onclick="toggleProgramPublished(${index})">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
                 <button onclick="deleteProgram(${index})">Удалить</button>
             </div>
         `;
@@ -609,6 +753,7 @@ function loadDeveloperPrograms() {
 }
 
 function saveHomeContent() {
+    console.log('Saving home content...');
     const homeContent = {
         hero_image_url: document.getElementById('dev-hero-image').value,
         headline: document.getElementById('dev-headline').value,
@@ -617,7 +762,8 @@ function saveHomeContent() {
     };
     
     developerContent.home = homeContent;
-    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    localStorage.setItem('dev_content', JSON.stringify(developerContent));
+    console.log('Home content saved to localStorage:', homeContent);
     
     // Update the actual home page
     updateHomePage(homeContent);
@@ -638,51 +784,304 @@ function updateHomePage(homeContent) {
 }
 
 function addNewProgram() {
+    console.log('Adding new program...');
     const title = prompt('Название программы:');
     if (title) {
+        const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         const newProgram = {
             id: 'program-' + Date.now(),
+            slug: slug,
             title: title,
             description: 'Описание программы',
-            image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-            exercises: []
+            image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            details_md: 'Подробное описание программы в формате Markdown.',
+            is_published: false,
+            days: []
         };
         
         if (!developerContent.programs) {
             developerContent.programs = [];
         }
         developerContent.programs.push(newProgram);
-        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        localStorage.setItem('dev_content', JSON.stringify(developerContent));
+        console.log('New program added to localStorage:', newProgram);
         loadDeveloperPrograms();
+        // Update public programs view
+        programs = developerContent.programs;
+        renderPrograms();
     }
 }
 
 function editProgram(index) {
     const program = developerContent.programs[index];
-    const newTitle = prompt('Название программы:', program.title);
-    if (newTitle) {
-        program.title = newTitle;
-        developerContent.programs[index] = program;
-        localStorage.setItem('developerContent', JSON.stringify(developerContent));
-        loadDeveloperPrograms();
+    showProgramEditor(program, index);
+}
+
+function showProgramEditor(program, index) {
+    const programsList = document.getElementById('dev-programs-list');
+    programsList.innerHTML = '';
+    
+    const editorDiv = document.createElement('div');
+    editorDiv.className = 'program-editor';
+    editorDiv.innerHTML = `
+        <h3>Редактирование программы: ${program.title}</h3>
+        <div class="form-group">
+            <label>Название:</label>
+            <input type="text" id="edit-title" value="${program.title}">
+        </div>
+        <div class="form-group">
+            <label>Описание:</label>
+            <textarea id="edit-description">${program.description}</textarea>
+        </div>
+        <div class="form-group">
+            <label>URL изображения:</label>
+            <input type="url" id="edit-image-url" value="${program.image_url}">
+        </div>
+        <div class="form-group">
+            <label>Slug:</label>
+            <input type="text" id="edit-slug" value="${program.slug}">
+        </div>
+        <div class="form-group">
+            <label>Детали (Markdown):</label>
+            <textarea id="edit-details-md" rows="4">${program.details_md}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
+                <span class="checkmark"></span>
+                Опубликовано
+            </label>
+        </div>
+        
+        <h4>Дни программы</h4>
+        <div id="days-editor">
+            ${generateDaysEditorHTML(program.days)}
+        </div>
+        <button onclick="addDay(${index})" class="btn btn-secondary">Добавить день</button>
+        
+        <div class="editor-actions">
+            <button onclick="saveProgram(${index})" class="btn btn-primary">Сохранить</button>
+            <button onclick="cancelEdit()" class="btn btn-secondary">Отмена</button>
+        </div>
+    `;
+    
+    programsList.appendChild(editorDiv);
+}
+
+function generateDaysEditorHTML(days) {
+    if (!days || days.length === 0) {
+        return '<p>Нет дней в программе. Добавьте первый день.</p>';
     }
+    
+    return days.map((day, dayIndex) => `
+        <div class="day-editor" data-day-index="${dayIndex}">
+            <h5>День ${day.day_index}</h5>
+            <div class="day-actions">
+                <button onclick="deleteDay(${dayIndex})" class="btn btn-danger btn-sm">Удалить день</button>
+            </div>
+            <div class="exercises-editor">
+                ${generateExercisesEditorHTML(day.exercises, dayIndex)}
+            </div>
+            <button onclick="addExercise(${dayIndex})" class="btn btn-secondary btn-sm">Добавить упражнение</button>
+        </div>
+    `).join('');
+}
+
+function generateExercisesEditorHTML(exercises, dayIndex) {
+    if (!exercises || exercises.length === 0) {
+        return '<p>Нет упражнений в этом дне.</p>';
+    }
+    
+    return exercises.map((exercise, exerciseIndex) => `
+        <div class="exercise-editor" data-exercise-index="${exerciseIndex}">
+            <div class="form-group">
+                <label>Порядок:</label>
+                <input type="number" value="${exercise.order_index}" onchange="updateExerciseOrder(${dayIndex}, ${exerciseIndex}, this.value)">
+            </div>
+            <div class="form-group">
+                <label>Название:</label>
+                <input type="text" value="${exercise.title}" onchange="updateExerciseField(${dayIndex}, ${exerciseIndex}, 'title', this.value)">
+            </div>
+            <div class="form-group">
+                <label>URL видео:</label>
+                <input type="url" value="${exercise.video_url}" onchange="updateExerciseField(${dayIndex}, ${exerciseIndex}, 'video_url', this.value)">
+            </div>
+            <div class="form-group">
+                <label>Описание:</label>
+                <textarea onchange="updateExerciseField(${dayIndex}, ${exerciseIndex}, 'description', this.value)">${exercise.description}</textarea>
+            </div>
+            <button onclick="deleteExercise(${dayIndex}, ${exerciseIndex})" class="btn btn-danger btn-sm">Удалить упражнение</button>
+        </div>
+    `).join('');
 }
 
 function deleteProgram(index) {
     if (confirm('Удалить программу?')) {
         developerContent.programs.splice(index, 1);
-        localStorage.setItem('developerContent', JSON.stringify(developerContent));
+        localStorage.setItem('dev_content', JSON.stringify(developerContent));
         loadDeveloperPrograms();
+        // Update public programs view
+        programs = developerContent.programs;
+        renderPrograms();
+    }
+}
+
+function toggleProgramPublished(index) {
+    const program = developerContent.programs[index];
+    program.is_published = !program.is_published;
+    developerContent.programs[index] = program;
+    localStorage.setItem('dev_content', JSON.stringify(developerContent));
+    loadDeveloperPrograms();
+    // Update public programs view
+    programs = developerContent.programs;
+    renderPrograms();
+}
+
+function saveProgram(index) {
+    const program = developerContent.programs[index];
+    
+    // Update program fields
+    program.title = document.getElementById('edit-title').value;
+    program.description = document.getElementById('edit-description').value;
+    program.image_url = document.getElementById('edit-image-url').value;
+    program.slug = document.getElementById('edit-slug').value;
+    program.details_md = document.getElementById('edit-details-md').value;
+    program.is_published = document.getElementById('edit-published').checked;
+    
+    developerContent.programs[index] = program;
+    localStorage.setItem('dev_content', JSON.stringify(developerContent));
+    
+    // Update public programs view
+    programs = developerContent.programs;
+    renderPrograms();
+    
+    // Return to programs list
+    loadDeveloperPrograms();
+}
+
+function cancelEdit() {
+    loadDeveloperPrograms();
+}
+
+function addDay(programIndex) {
+    const program = developerContent.programs[programIndex];
+    const maxDayIndex = program.days.length > 0 ? Math.max(...program.days.map(d => d.day_index)) : 0;
+    
+    const newDay = {
+        day_index: maxDayIndex + 1,
+        exercises: []
+    };
+    
+    program.days.push(newDay);
+    developerContent.programs[programIndex] = program;
+    
+    // Refresh the editor
+    showProgramEditor(program, programIndex);
+}
+
+function deleteDay(dayIndex) {
+    if (confirm('Удалить этот день?')) {
+        // Find the program being edited
+        const editorDiv = document.querySelector('.program-editor');
+        if (editorDiv) {
+            const programIndex = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
+            const program = developerContent.programs[programIndex];
+            
+            program.days.splice(dayIndex, 1);
+            developerContent.programs[programIndex] = program;
+            
+            // Refresh the editor
+            showProgramEditor(program, programIndex);
+        }
+    }
+}
+
+function addExercise(dayIndex) {
+    // Find the program being edited
+    const editorDiv = document.querySelector('.program-editor');
+    if (editorDiv) {
+        const programIndex = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
+        const program = developerContent.programs[programIndex];
+        const day = program.days[dayIndex];
+        
+        const maxOrderIndex = day.exercises.length > 0 ? Math.max(...day.exercises.map(e => e.order_index)) : 0;
+        
+        const newExercise = {
+            order_index: maxOrderIndex + 1,
+            title: 'Новое упражнение',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            description: 'Описание упражнения'
+        };
+        
+        day.exercises.push(newExercise);
+        program.days[dayIndex] = day;
+        developerContent.programs[programIndex] = program;
+        
+        // Refresh the editor
+        showProgramEditor(program, programIndex);
+    }
+}
+
+function deleteExercise(dayIndex, exerciseIndex) {
+    if (confirm('Удалить это упражнение?')) {
+        // Find the program being edited
+        const editorDiv = document.querySelector('.program-editor');
+        if (editorDiv) {
+            const programIndex = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
+            const program = developerContent.programs[programIndex];
+            const day = program.days[dayIndex];
+            
+            day.exercises.splice(exerciseIndex, 1);
+            program.days[dayIndex] = day;
+            developerContent.programs[programIndex] = program;
+            
+            // Refresh the editor
+            showProgramEditor(program, programIndex);
+        }
+    }
+}
+
+function updateExerciseField(dayIndex, exerciseIndex, field, value) {
+    // Find the program being edited
+    const editorDiv = document.querySelector('.program-editor');
+    if (editorDiv) {
+        const programIndex = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
+        const program = developerContent.programs[programIndex];
+        const day = program.days[dayIndex];
+        const exercise = day.exercises[exerciseIndex];
+        
+        exercise[field] = value;
+        day.exercises[exerciseIndex] = exercise;
+        program.days[dayIndex] = day;
+        developerContent.programs[programIndex] = program;
+    }
+}
+
+function updateExerciseOrder(dayIndex, exerciseIndex, value) {
+    // Find the program being edited
+    const editorDiv = document.querySelector('.program-editor');
+    if (editorDiv) {
+        const programIndex = parseInt(editorDiv.querySelector('button[onclick*="addDay"]').onclick.toString().match(/addDay\((\d+)\)/)[1]);
+        const program = developerContent.programs[programIndex];
+        const day = program.days[dayIndex];
+        const exercise = day.exercises[exerciseIndex];
+        
+        exercise.order_index = parseInt(value);
+        day.exercises[exerciseIndex] = exercise;
+        program.days[dayIndex] = day;
+        developerContent.programs[programIndex] = program;
     }
 }
 
 function saveSettings() {
+    console.log('Saving settings...');
     const settings = {
         calendar_enabled: document.getElementById('dev-calendar-enabled').checked
     };
     
     developerContent.settings = settings;
-    localStorage.setItem('developerContent', JSON.stringify(developerContent));
+    localStorage.setItem('dev_content', JSON.stringify(developerContent));
+    console.log('Settings saved to localStorage:', settings);
     
     alert('Настройки сохранены');
 }
@@ -701,6 +1100,11 @@ function switchDeveloperTab(tabName) {
     document.getElementById(tabName).classList.add('active');
 }
 
+// Developer mode constants
+const DEV_PIN = '1234';
+const DEV_FLAG = 'isDev';
+
+
 // Export functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
@@ -714,8 +1118,19 @@ window.openDeveloperAccess = openDeveloperAccess;
 window.checkPin = checkPin;
 window.closePinModal = closePinModal;
 window.closeDeveloperPanel = closeDeveloperPanel;
+window.closeAllModals = closeAllModals;
 window.saveHomeContent = saveHomeContent;
 window.addNewProgram = addNewProgram;
 window.editProgram = editProgram;
 window.deleteProgram = deleteProgram;
+window.toggleProgramPublished = toggleProgramPublished;
+window.saveProgram = saveProgram;
+window.cancelEdit = cancelEdit;
+window.addDay = addDay;
+window.deleteDay = deleteDay;
+window.addExercise = addExercise;
+window.deleteExercise = deleteExercise;
+window.updateExerciseField = updateExerciseField;
+window.updateExerciseOrder = updateExerciseOrder;
 window.saveSettings = saveSettings;
+window.showDeveloperPanel = showDeveloperPanel;
