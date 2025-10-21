@@ -40,6 +40,16 @@ CREATE TABLE IF NOT EXISTS exercises (
     UNIQUE(program_day_id, order_index)
 );
 
+-- Create editors table for Telegram user verification
+CREATE TABLE IF NOT EXISTS editors (
+    id SERIAL PRIMARY KEY,
+    telegram_user_id BIGINT UNIQUE NOT NULL,
+    username VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_programs_slug ON programs(slug);
 CREATE INDEX IF NOT EXISTS idx_programs_published ON programs(is_published);
@@ -47,11 +57,13 @@ CREATE INDEX IF NOT EXISTS idx_program_days_program_id ON program_days(program_i
 CREATE INDEX IF NOT EXISTS idx_program_days_day_index ON program_days(day_index);
 CREATE INDEX IF NOT EXISTS idx_exercises_program_day_id ON exercises(program_day_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_order_index ON exercises(order_index);
+CREATE INDEX IF NOT EXISTS idx_editors_telegram_user_id ON editors(telegram_user_id);
 
 -- Enable Row Level Security on all tables
 ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE program_days ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE editors ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for programs table
 -- Public can read published programs
@@ -129,6 +141,23 @@ CREATE POLICY "Authenticated users can update exercises" ON exercises
 CREATE POLICY "Authenticated users can delete exercises" ON exercises
     FOR DELETE USING (auth.role() = 'authenticated');
 
+-- RLS Policies for editors table
+-- Public can read editors (needed for verification)
+CREATE POLICY "Public can read editors" ON editors
+    FOR SELECT USING (true);
+
+-- Authenticated users can insert editors (for admin setup)
+CREATE POLICY "Authenticated users can insert editors" ON editors
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Authenticated users can update editors
+CREATE POLICY "Authenticated users can update editors" ON editors
+    FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Authenticated users can delete editors
+CREATE POLICY "Authenticated users can delete editors" ON editors
+    FOR DELETE USING (auth.role() = 'authenticated');
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -168,8 +197,8 @@ SELECT id, generate_series(1, 10) FROM programs WHERE slug = 'shoulders';
 INSERT INTO exercises (program_day_id, order_index, title, video_url, description)
 SELECT 
     pd.id,
-    generate_series(1, 6),
-    CASE (generate_series(1, 6) % 6)
+    s.order_num,
+    CASE s.order_num
         WHEN 1 THEN 'Жим гантелей'
         WHEN 2 THEN 'Разведение гантелей'
         WHEN 3 THEN 'Подъемы в стороны'
@@ -181,7 +210,14 @@ SELECT
     'Подробное описание упражнения для плечевого пояса. Выполняйте медленно и контролируемо, следите за дыханием.'
 FROM program_days pd
 JOIN programs p ON p.id = pd.program_id
+CROSS JOIN generate_series(1, 6) AS s(order_num)
 WHERE p.slug = 'shoulders' AND pd.day_index = 1;
+
+-- Insert sample editor (replace with your actual Telegram user ID)
+-- You can find your Telegram user ID by messaging @userinfobot
+INSERT INTO editors (telegram_user_id, username, first_name, last_name) VALUES
+(886689538, 'vladimir_antt', 'Владимир', 'Антощук')
+ON CONFLICT (telegram_user_id) DO NOTHING;
 
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;

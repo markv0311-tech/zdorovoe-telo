@@ -322,6 +322,17 @@ body {
     backdrop-filter: blur(5px);
 }
 
+/* Ensure navigation is always clickable */
+.navbar {
+    pointer-events: auto;
+    z-index: 1001;
+}
+
+/* Ensure no overlays block navigation */
+.section {
+    pointer-events: auto;
+}
+
 /* Modal visibility controlled by JavaScript */
 
 .modal-content {
