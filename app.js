@@ -1844,10 +1844,15 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         const isVideoFile = exercise.video_url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
                         
                         if (isVideoFile) {
-                            // Direct video file - use HTML5 video player
+                            // Direct video file - use HTML5 video player with optimizations
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0;">
-                                    <video class="exercise-video" controls preload="none" style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
+                                    <video class="exercise-video" 
+                                           controls 
+                                           preload="metadata" 
+                                           style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;"
+                                           crossorigin="anonymous"
+                                           playsinline>
                                         <source src="${exercise.video_url}" type="video/mp4">
                                         <source src="${exercise.video_url}" type="video/webm">
                                         <source src="${exercise.video_url}" type="video/ogg">

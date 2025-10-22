@@ -43,11 +43,24 @@ video.exercise-video {
     background: transparent;
     border: 2px solid #e9ecef;
     object-fit: cover;
+    /* Optimize video rendering */
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 video.exercise-video::-webkit-media-controls {
     background: rgba(0, 0, 0, 0.8);
     border-radius: 0 0 10px 10px;
+}
+
+/* Force hardware acceleration for video */
+video.exercise-video {
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 /* Remove black overlay from video container */
