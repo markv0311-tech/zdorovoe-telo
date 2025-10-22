@@ -1693,17 +1693,13 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         // Already embed format
                         videoHTML = `<iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>`;
                     } else if (exercise.video_url.includes('getcourse.ru') || exercise.video_url.includes('fs.getcourse.ru')) {
-                        // GetCourse video - create embed iframe
-                        // GetCourse videos can be embedded using their file service URLs
-                        const embedUrl = exercise.video_url.replace('/download/', '/embed/');
+                        // GetCourse video - show as styled link (GetCourse doesn't support embedding)
                         videoHTML = `
-                            <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; background: #000; border-radius: 10px; overflow: hidden;">
-                                <iframe class="exercise-video" 
-                                        src="${embedUrl}" 
-                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
-                                        frameborder="0" 
-                                        allowfullscreen>
-                                </iframe>
+                            <div class="getcourse-video-container" style="margin: 10px 0;">
+                                <a href="${exercise.video_url}" target="_blank" class="getcourse-video-link" style="display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; text-decoration: none; color: white; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                                    <span style="font-size: 24px; margin-right: 10px;">🎥</span>
+                                    <span>Смотреть видео GetCourse</span>
+                                </a>
                             </div>
                         `;
                     } else if (exercise.video_url.includes('vimeo.com')) {
