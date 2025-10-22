@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS exercises (
 -- Create editors table for Telegram user verification
 CREATE TABLE IF NOT EXISTS editors (
     id SERIAL PRIMARY KEY,
-    telegram_user_id BIGINT UNIQUE NOT NULL,
+    tg_user_id BIGINT UNIQUE NOT NULL,
     username VARCHAR(255),
     first_name VARCHAR(255),
     last_name VARCHAR(255),
@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_program_days_program_id ON program_days(program_i
 CREATE INDEX IF NOT EXISTS idx_program_days_day_index ON program_days(day_index);
 CREATE INDEX IF NOT EXISTS idx_exercises_program_day_id ON exercises(program_day_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_order_index ON exercises(order_index);
-CREATE INDEX IF NOT EXISTS idx_editors_telegram_user_id ON editors(telegram_user_id);
+CREATE INDEX IF NOT EXISTS idx_editors_tg_user_id ON editors(tg_user_id);
 
 -- Enable Row Level Security on all tables
 ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
@@ -215,9 +215,9 @@ WHERE p.slug = 'shoulders' AND pd.day_index = 1;
 
 -- Insert sample editor (replace with your actual Telegram user ID)
 -- You can find your Telegram user ID by messaging @userinfobot
-INSERT INTO editors (telegram_user_id, username, first_name, last_name) VALUES
+INSERT INTO editors (tg_user_id, username, first_name, last_name) VALUES
 (886689538, 'vladimir_antt', 'Владимир', 'Антощук')
-ON CONFLICT (telegram_user_id) DO NOTHING;
+ON CONFLICT (tg_user_id) DO NOTHING;
 
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;

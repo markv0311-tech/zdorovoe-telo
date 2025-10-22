@@ -144,6 +144,10 @@ function initializeTelegram() {
         tg.ready();
         tg.expand();
         
+        // Diagnostics and initData
+        const initDataRaw = window.Telegram?.WebApp?.initData || '';
+        console.log('[TG] initData present:', !!initDataRaw);
+        console.log('[TG] initDataUnsafe.user:', window.Telegram?.WebApp?.initDataUnsafe?.user || null);
         // Get user data from Telegram
         user = tg.initDataUnsafe?.user;
         
@@ -151,6 +155,9 @@ function initializeTelegram() {
         if (tg.colorScheme === 'dark') {
             document.body.classList.add('dark-theme');
         }
+        
+        // Hide dev button by default until verified
+        hideDeveloperButton();
         
         // Check if user is editor
         checkEditorStatus();
@@ -161,33 +168,43 @@ function initializeTelegram() {
             console.log('Local dev mode - showing developer button');
             isEditor = true;
             showDeveloperButton();
+        } else {
+            showToast('Откройте приложение из Telegram-бота.', 'error');
         }
     }
 }
 
 // Check editor status via Telegram initData
 async function checkEditorStatus() {
-    if (!tg?.initData) {
+    const initDataRaw = window.Telegram?.WebApp?.initData || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!initDataRaw) {
         console.log('No Telegram initData available');
+        showToast('Откройте приложение из Telegram-бота.', 'error');
+        if (urlParams.get('dev') === '1') {
+            console.log('[DEV] Shortcut: treating as editor');
+            isEditor = true;
+            showDeveloperButton();
+        }
         return;
     }
     
     try {
         console.log('Checking editor status...');
-        const response = await fetch('/functions/v1/verify-editor', {
+        const response = await fetch(`${window.SUPABASE_URL}/functions/v1/verify-editor`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                initDataRaw: tg.initData
+                initDataRaw
             })
         });
         
         const result = await response.json();
-        console.log('Editor verification result:', result);
+        console.log('[EditorCheck] response:', result);
         
-        if (result.ok && result.is_editor) {
+        if (result && result.is_editor === true) {
             isEditor = true;
             showDeveloperButton();
         } else {
@@ -265,14 +282,13 @@ function setupEventListeners() {
     });
     
     // Click-outside-to-close handler for modals
-    ['program-modal', 'exercise-modal', 'pin-modal'].forEach(id => {
+    ['program-modal', 'exercise-modal'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('click', (e) => {
             if (e.target === el) {
                 if (id === 'exercise-modal') closeExerciseModal();
                 if (id === 'program-modal') closeProgramModal();
-                if (id === 'pin-modal') closePinModal();
             }
         });
     });
@@ -759,6 +775,19 @@ function loadUserData() {
     
     // Set default subscription
     checkSubscription();
+
+    // Dev-only debug line in Profile
+    const urlParams = new URLSearchParams(window.location.search);
+    const debugEl = document.getElementById('dev-debug-line');
+    if (debugEl) {
+        if (urlParams.get('dev') === '1') {
+            const initDataUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || null;
+            debugEl.style.display = 'block';
+            debugEl.textContent = `Debug: tg_user_id=${initDataUserId || 'n/a'}, is_editor=${isEditor}`;
+        } else {
+            debugEl.style.display = 'none';
+        }
+    }
 }
 
 // Subscription management
