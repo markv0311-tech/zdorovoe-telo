@@ -14,6 +14,16 @@
     display: none !important;
 }
 
+/* Ensure interactive elements are clickable */
+button, [data-action], .nav-item, .program-card, .exercise-item {
+    pointer-events: auto !important;
+}
+
+/* Ensure modals don't block clicks when hidden */
+.modal.hidden, .overlay.hidden {
+    pointer-events: none !important;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #f8f9fa;
@@ -42,6 +52,7 @@ body {
     padding: 10px 0;
     z-index: 1000;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    pointer-events: auto;
 }
 
 .nav-item {

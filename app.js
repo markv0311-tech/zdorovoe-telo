@@ -11,6 +11,30 @@ let isEditor = false;
 // Supabase client
 let supabase = null;
 
+// Admin function helper
+const ADMIN_BASE = `${window.SUPABASE_URL}/functions/v1/admin`;
+
+async function adminCall(path, method, payload) {
+    const initDataRaw = window.Telegram?.WebApp?.initData || '';
+    
+    console.log(`[Admin] ${method} ${path}`, payload);
+    
+    const res = await fetch(`${ADMIN_BASE}${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initDataRaw, payload })
+    });
+    
+    const json = await res.json().catch(() => ({}));
+    
+    if (!res.ok || !json.ok) {
+        throw new Error(json.error || `HTTP ${res.status}`);
+    }
+    
+    console.log(`[Admin] Success:`, json.data);
+    return json.data;
+}
+
 // Default programs for migration
 const DEFAULT_PROGRAMS = [
     {
@@ -105,6 +129,320 @@ const DEFAULT_PROGRAMS = [
     console.log('✅ All modals/overlays initialized as hidden');
 })();
 
+// Event delegation for editor actions
+function setupEditorEventDelegation() {
+    // Attach to stable parent containers
+    const containers = [
+        document.getElementById('dev-programs-list'),
+        document.getElementById('dev-days-list'),
+        document.getElementById('dev-exercises-list')
+    ].filter(Boolean);
+
+    containers.forEach(container => {
+        container.addEventListener('click', async (e) => {
+            const actionButton = e.target.closest('[data-action]');
+            if (!actionButton) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const action = actionButton.dataset.action;
+            const id = actionButton.dataset.id;
+
+            console.log(`[EventDelegation] Action: ${action}, ID: ${id}`);
+
+            try {
+                switch (action) {
+                    case 'program-edit':
+                        await handleEditProgram(id);
+                        break;
+                    case 'program-toggle':
+                        await handleToggleProgram(id);
+                        break;
+                    case 'program-delete':
+                        await handleDeleteProgram(id);
+                        break;
+                    case 'program-add':
+                        await handleAddProgram();
+                        break;
+                    case 'day-add':
+                        await handleAddDay(id);
+                        break;
+                    case 'exercise-add':
+                        await handleAddExercise(id);
+                        break;
+                    case 'exercise-edit':
+                        await handleEditExercise(id);
+                        break;
+                    case 'exercise-delete':
+                        await handleDeleteExercise(id);
+                        break;
+                    default:
+                        console.warn(`Unknown action: ${action}`);
+                }
+            } catch (error) {
+                console.error(`Error handling action ${action}:`, error);
+                showToast(`Ошибка: ${error.message}`, 'error');
+            }
+        });
+    });
+
+    console.log('✅ Event delegation setup complete');
+}
+
+// Handler functions for event delegation
+async function handleEditProgram(programId) {
+    console.log('handleEditProgram called with ID:', programId);
+    showToast('Начинаем редактирование...', 'info');
+    
+    try {
+        // Get current program data
+        const { data: program, error } = await supabase
+            .from('programs')
+            .select('*')
+            .eq('id', programId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Open edit modal
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="program-edit-form">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
+                    <form id="edit-program-form">
+                        <div class="form-group">
+                            <label>Название программы</label>
+                            <input type="text" id="edit-title" value="${program.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <textarea id="edit-description" rows="3">${program.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL изображения</label>
+                            <input type="url" id="edit-image-url" value="${program.image_url || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
+                                <span class="checkmark"></span>
+                                Опубликовано
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-primary" onclick="saveProgramEditViaAdmin('${programId}')">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    } catch (error) {
+        console.error('Failed to load program for editing:', error);
+        showToast('Ошибка загрузки программы: ' + error.message, 'error');
+    }
+}
+
+async function handleToggleProgram(programId) {
+    console.log('handleToggleProgram called with ID:', programId);
+    showToast('Изменяем статус...', 'info');
+    
+    try {
+        // Get current program
+        const { data: program, error: fetchError } = await supabase
+            .from('programs')
+            .select('id, title, is_published')
+            .eq('id', programId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        // Toggle via admin function
+        await adminCall(`/programs/${programId}`, 'PUT', {
+            is_published: !program.is_published
+        });
+        
+        showToast(`Программа "${program.title}" ${!program.is_published ? 'опубликована' : 'скрыта'}`, 'success');
+        
+        // Refresh views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
+    } catch (error) {
+        console.error('Failed to toggle program published:', error);
+        showToast('Ошибка изменения статуса: ' + error.message, 'error');
+    }
+}
+
+async function handleDeleteProgram(programId) {
+    console.log('handleDeleteProgram called with ID:', programId);
+    
+    if (!confirm('Удалить программу? Это действие нельзя отменить.')) {
+        return;
+    }
+    
+    showToast('Удаляем программу...', 'info');
+    
+    try {
+        await adminCall(`/programs/${programId}`, 'DELETE', {});
+        
+        showToast('Программа удалена', 'success');
+        
+        // Refresh views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
+    } catch (error) {
+        console.error('Failed to delete program:', error);
+        showToast('Ошибка удаления: ' + error.message, 'error');
+    }
+}
+
+async function handleAddProgram() {
+    console.log('handleAddProgram called');
+    showToast('Открываем форму создания...', 'info');
+    
+    const modal = document.getElementById('program-modal');
+    const modalBody = document.getElementById('program-modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="program-edit-form">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">Добавить новую программу</h2>
+                <form id="add-program-form">
+                    <div class="form-group">
+                        <label>Название программы</label>
+                        <input type="text" id="add-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea id="add-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>URL изображения</label>
+                        <input type="url" id="add-image-url">
+                    </div>
+                    <div class="form-group">
+                        <label>Slug (уникальный идентификатор)</label>
+                        <input type="text" id="add-slug" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="add-published" checked>
+                            <span class="checkmark"></span>
+                            Опубликовано
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-primary" onclick="saveNewProgramViaAdmin()">Создать</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Admin-based save functions
+async function saveProgramEditViaAdmin(programId) {
+    try {
+        const title = document.getElementById('edit-title').value;
+        const description = document.getElementById('edit-description').value;
+        const imageUrl = document.getElementById('edit-image-url').value;
+        const isPublished = document.getElementById('edit-published').checked;
+        
+        if (!title.trim()) {
+            showToast('Название программы обязательно', 'error');
+            return;
+        }
+        
+        showToast('Сохраняем изменения...', 'info');
+        
+        await adminCall(`/programs/${programId}`, 'PUT', {
+            title: title.trim(),
+            description: description.trim(),
+            image_url: imageUrl.trim(),
+            is_published: isPublished
+        });
+        
+        showToast('Программа обновлена', 'success');
+        
+        // Refresh views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
+        // Close modal
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    } catch (error) {
+        console.error('Failed to save program:', error);
+        showToast('Ошибка сохранения: ' + error.message, 'error');
+    }
+}
+
+async function saveNewProgramViaAdmin() {
+    try {
+        const title = document.getElementById('add-title').value;
+        const description = document.getElementById('add-description').value;
+        const imageUrl = document.getElementById('add-image-url').value;
+        const slug = document.getElementById('add-slug').value;
+        const isPublished = document.getElementById('add-published').checked;
+        
+        if (!title.trim()) {
+            showToast('Название программы обязательно', 'error');
+            return;
+        }
+        
+        if (!slug.trim()) {
+            showToast('Slug обязателен', 'error');
+            return;
+        }
+        
+        showToast('Создаем программу...', 'info');
+        
+        await adminCall('/programs', 'POST', {
+            title: title.trim(),
+            description: description.trim(),
+            image_url: imageUrl.trim(),
+            slug: slug.trim(),
+            is_published: isPublished
+        });
+        
+        showToast('Программа создана', 'success');
+        
+        // Refresh views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
+        // Close modal
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    } catch (error) {
+        console.error('Failed to create program:', error);
+        showToast('Ошибка создания: ' + error.message, 'error');
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing app...');
@@ -117,6 +455,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize app components
     initializeApp();
+    
+    // Setup event delegation for editor actions
+    setupEditorEventDelegation();
     loadPrograms();
     setupEventListeners();
     loadUserData();
@@ -1061,9 +1402,9 @@ async function loadDeveloperPrograms() {
                     <small style="color: #999;">ID: ${program.id} | Slug: ${program.slug}</small>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button onclick="if(typeof editProgram === 'function') { editProgram(${program.id}); } else { alert('Функция editProgram не найдена'); }" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
-                    <button onclick="if(typeof toggleProgramPublished === 'function') { toggleProgramPublished(${program.id}); } else { alert('Функция toggleProgramPublished не найдена'); }" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
-                    <button onclick="if(typeof deleteProgram === 'function') { deleteProgram(${program.id}); } else { alert('Функция deleteProgram не найдена'); }" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
+                    <button data-action="program-edit" data-id="${program.id}" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
+                    <button data-action="program-toggle" data-id="${program.id}" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
+                    <button data-action="program-delete" data-id="${program.id}" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
                 </div>
             `;
             programsList.appendChild(programDiv);
@@ -1572,6 +1913,8 @@ window.deleteProgram = deleteProgram;
 window.toggleProgramPublished = toggleProgramPublished;
 window.addNewProgram = addNewProgram;
 window.saveNewProgram = saveNewProgram;
+window.saveProgramEditViaAdmin = saveProgramEditViaAdmin;
+window.saveNewProgramViaAdmin = saveNewProgramViaAdmin;
 window.saveHomeContent = saveHomeContent;
 window.saveSettings = saveSettings;
 window.exportContent = exportContent;
