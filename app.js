@@ -1635,12 +1635,13 @@ function openProgramModal(program) {
     const modalBody = document.getElementById('program-modal-body');
     
     if (modal && modalBody) {
+        // Don't show days count since we're using lazy loading
         modalBody.innerHTML = `
             <div class="program-detail">
                 <img src="${program.image_url}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
                 <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
                 <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
-                <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на ${program.days.length} дней, по ${program.days[0]?.exercises.length || 0} упражнений в день</p>
+                <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Нажмите "Выбрать программу" для просмотра дней</p>
                 <button class="cta-button" onclick="openDaySelection('${program.id}')" style="width: 100%;">
                     Выбрать программу
                 </button>
@@ -1684,7 +1685,13 @@ async function openDaySelection(programId) {
         if (supabase) {
             // Find program in cached data
             program = programs.find(p => p.id === programId);
-            if (!program) throw new Error('Program not found');
+            if (!program) {
+                // Try to reload programs if not found in cache
+                console.log('Program not found in cache, reloading...');
+                await loadProgramsFromSupabase();
+                program = programs.find(p => p.id === programId);
+                if (!program) throw new Error('Program not found');
+            }
             
             // Lazy load days
             const daysData = await loadProgramDays(programId);
@@ -1699,6 +1706,18 @@ async function openDaySelection(programId) {
         
         const modal = document.getElementById('program-modal');
         const modalBody = document.getElementById('program-modal-body');
+        
+        // Show loading indicator
+        modalBody.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 18px; color: #6c757d; margin-bottom: 20px;">Загружаем дни программы...</div>
+                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex !important';
+        document.body.style.overflow = 'hidden';
         
         if (modal && modalBody) {
             let daysHTML = `
