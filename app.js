@@ -19,9 +19,9 @@ async function adminCall(path, method, payload) {
     
     console.log(`[Admin] ${method} ${path}`, payload);
     
-    // In dev mode without Telegram, use direct Supabase calls
-    if (!initDataRaw && isEditor) {
-        console.log('[Admin] Dev mode: using direct Supabase calls');
+    // Always use direct Supabase calls for now (until Edge Function is deployed)
+    if (isEditor) {
+        console.log('[Admin] Using direct Supabase calls (dev mode)');
         return await adminCallDirect(path, method, payload);
     }
     
