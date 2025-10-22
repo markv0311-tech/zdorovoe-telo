@@ -239,6 +239,7 @@ async function handleEditProgram(programId) {
     showToast('Начинаем редактирование...', 'info');
     
     try {
+        console.log('Fetching program data from Supabase...');
         // Get current program data
         const { data: program, error } = await supabase
             .from('programs')
@@ -246,13 +247,20 @@ async function handleEditProgram(programId) {
             .eq('id', programId)
             .single();
         
+        console.log('Program data result:', { program, error });
+        
         if (error) throw error;
+        
+        console.log('Program data loaded successfully:', program);
         
         // Open edit modal
         const modal = document.getElementById('program-modal');
         const modalBody = document.getElementById('program-modal-body');
         
+        console.log('Modal elements:', { modal, modalBody });
+        
         if (modal && modalBody) {
+            console.log('Creating edit form...');
             modalBody.innerHTML = `
                 <div class="program-edit-form">
                     <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
