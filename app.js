@@ -19,6 +19,12 @@ async function adminCall(path, method, payload) {
     
     console.log(`[Admin] ${method} ${path}`, payload);
     
+    // In dev mode without Telegram, use direct Supabase calls
+    if (!initDataRaw && isEditor) {
+        console.log('[Admin] Dev mode: using direct Supabase calls');
+        return await adminCallDirect(path, method, payload);
+    }
+    
     const res = await fetch(`${ADMIN_BASE}${path}`, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -33,6 +39,43 @@ async function adminCall(path, method, payload) {
     
     console.log(`[Admin] Success:`, json.data);
     return json.data;
+}
+
+// Direct Supabase calls for dev mode
+async function adminCallDirect(path, method, payload) {
+    if (method === 'POST' && path === '/programs') {
+        const { data, error } = await supabase
+            .from('programs')
+            .insert([payload])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+    
+    if (method === 'PUT' && path.startsWith('/programs/')) {
+        const programId = path.split('/')[2];
+        const { data, error } = await supabase
+            .from('programs')
+            .update(payload)
+            .eq('id', programId)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+    
+    if (method === 'DELETE' && path.startsWith('/programs/')) {
+        const programId = path.split('/')[2];
+        const { error } = await supabase
+            .from('programs')
+            .delete()
+            .eq('id', programId);
+        if (error) throw error;
+        return { deleted: true, id: programId };
+    }
+    
+    throw new Error(`Unsupported dev mode operation: ${method} ${path}`);
 }
 
 // Default programs for migration
@@ -511,9 +554,45 @@ function initializeTelegram() {
             isEditor = true;
             showDeveloperButton();
         } else {
-            showToast('Откройте приложение из Telegram-бота.', 'error');
+            showBrowserDevMode();
         }
     }
+}
+
+// Show browser dev mode button
+function showBrowserDevMode() {
+    // Create a temporary button for browser testing
+    const devButton = document.createElement('div');
+    devButton.id = 'browser-dev-mode';
+    devButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 9999;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    devButton.innerHTML = '🔧 Режим разработчика';
+    devButton.onclick = () => {
+        isEditor = true;
+        showDeveloperButton();
+        devButton.remove();
+        showToast('Режим разработчика включен', 'success');
+    };
+    
+    document.body.appendChild(devButton);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (devButton.parentNode) {
+            devButton.remove();
+        }
+    }, 10000);
 }
 
 // Check editor status via Telegram initData
