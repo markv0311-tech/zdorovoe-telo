@@ -7,7 +7,12 @@
 
 .hidden {
     display: none !important;
-  }
+}
+
+/* Override hidden for modals when they should be visible */
+.modal:not(.hidden) {
+    display: flex !important;
+}
   
   .modal.hidden, 
   .overlay.hidden {
