@@ -561,6 +561,7 @@ function initializeTelegram() {
 
 // Show browser dev mode button
 function showBrowserDevMode() {
+    console.log('Attempting to show browser dev mode button.');
     // Create a temporary button for browser testing
     const devButton = document.createElement('div');
     devButton.id = 'browser-dev-mode';
