@@ -259,6 +259,69 @@ function setupEditorEventDelegation() {
         console.log('✅ Direct add program button handler attached');
     }
 
+    // Add global event delegation for dynamically created buttons
+    document.addEventListener('click', async (e) => {
+        const actionButton = e.target.closest('[data-action]');
+        if (!actionButton) return;
+
+        // Skip if already handled by container delegation
+        if (containers.some(container => container.contains(actionButton))) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const action = actionButton.dataset.action;
+        const id = actionButton.dataset.id;
+
+        console.log(`[Global] Action: ${action}, ID: ${id}`);
+
+        try {
+            switch (action) {
+                case 'program-edit':
+                    await handleEditProgram(id);
+                    break;
+                case 'program-toggle':
+                    await handleToggleProgram(id);
+                    break;
+                case 'program-delete':
+                    await handleDeleteProgram(id);
+                    break;
+                case 'program-add':
+                    await handleAddProgram();
+                    break;
+                case 'program-days':
+                    await handleProgramDays(id);
+                    break;
+                case 'day-add':
+                    await handleAddDay(id);
+                    break;
+                case 'day-exercises':
+                    await handleDayExercises(id);
+                    break;
+                case 'day-edit':
+                    await handleEditDay(id);
+                    break;
+                case 'day-delete':
+                    await handleDeleteDay(id);
+                    break;
+                case 'exercise-add':
+                    await handleAddExercise(id);
+                    break;
+                case 'exercise-edit':
+                    await handleEditExercise(id);
+                    break;
+                case 'exercise-delete':
+                    await handleDeleteExercise(id);
+                    break;
+                default:
+                    console.warn(`Unknown global action: ${action}`);
+            }
+        } catch (error) {
+            console.error(`Error handling global action ${action}:`, error);
+            showToast(`Ошибка: ${error.message}`, 'error');
+        }
+    });
+
     console.log('✅ Event delegation setup complete');
 }
 
@@ -589,6 +652,157 @@ async function handleAddDay(programId) {
     } catch (error) {
         console.error('Failed to add day:', error);
         showToast('Ошибка добавления дня: ' + error.message, 'error');
+    }
+}
+
+async function handleEditDay(dayId) {
+    console.log('handleEditDay called with ID:', dayId);
+    showToast('Загружаем день для редактирования...', 'info');
+    
+    try {
+        // Get day data
+        const { data: day, error } = await supabase
+            .from('program_days')
+            .select('*')
+            .eq('id', dayId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Open edit modal
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="day-edit-form">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать день</h2>
+                    <form id="edit-day-form">
+                        <div class="form-group">
+                            <label>Название дня</label>
+                            <input type="text" id="edit-day-title" value="${day.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <textarea id="edit-day-description" rows="3">${day.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Номер дня</label>
+                            <input type="number" id="edit-day-index" value="${day.day_index}" min="1">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-primary" onclick="saveDayEditViaAdmin('${dayId}')">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" onclick="handleProgramDays('${day.program_id}')">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            // Ensure modal is attached to body and visible
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '9999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('Failed to load day for editing:', error);
+        showToast('Ошибка загрузки дня: ' + error.message, 'error');
+    }
+}
+
+async function handleDeleteDay(dayId) {
+    console.log('handleDeleteDay called with ID:', dayId);
+    
+    if (!confirm('Удалить день? Это также удалит все упражнения в этом дне. Действие нельзя отменить.')) {
+        return;
+    }
+    
+    showToast('Удаляем день...', 'info');
+    
+    try {
+        // Get program_id before deleting
+        const { data: day } = await supabase
+            .from('program_days')
+            .select('program_id')
+            .eq('id', dayId)
+            .single();
+        
+        const { error } = await supabase
+            .from('program_days')
+            .delete()
+            .eq('id', dayId);
+        
+        if (error) throw error;
+        
+        showToast('День удален', 'success');
+        
+        // Refresh the days list
+        await handleProgramDays(day.program_id);
+        
+    } catch (error) {
+        console.error('Failed to delete day:', error);
+        showToast('Ошибка удаления: ' + error.message, 'error');
+    }
+}
+
+async function saveDayEditViaAdmin(dayId) {
+    try {
+        const title = document.getElementById('edit-day-title').value;
+        const description = document.getElementById('edit-day-description').value;
+        const dayIndex = parseInt(document.getElementById('edit-day-index').value);
+        
+        if (!title.trim()) {
+            showToast('Название дня обязательно', 'error');
+            return;
+        }
+        
+        showToast('Сохраняем день...', 'info');
+        
+        const { data, error } = await supabase
+            .from('program_days')
+            .update({
+                title: title.trim(),
+                description: description.trim(),
+                day_index: dayIndex
+            })
+            .eq('id', dayId)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        showToast('День обновлен', 'success');
+        
+        // Get the program_id to refresh the days list
+        const { data: day } = await supabase
+            .from('program_days')
+            .select('program_id')
+            .eq('id', dayId)
+            .single();
+        
+        // Close modal and refresh
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        // Refresh the days list
+        await handleProgramDays(day.program_id);
+        
+    } catch (error) {
+        console.error('Failed to save day:', error);
+        showToast('Ошибка сохранения: ' + error.message, 'error');
     }
 }
 
@@ -2497,6 +2711,9 @@ window.handleAddExercise = handleAddExercise;
 window.handleEditExercise = handleEditExercise;
 window.saveExerciseEditViaAdmin = saveExerciseEditViaAdmin;
 window.handleDeleteExercise = handleDeleteExercise;
+window.handleEditDay = handleEditDay;
+window.handleDeleteDay = handleDeleteDay;
+window.saveDayEditViaAdmin = saveDayEditViaAdmin;
 window.saveHomeContent = saveHomeContent;
 window.saveSettings = saveSettings;
 window.exportContent = exportContent;
