@@ -1061,9 +1061,9 @@ async function loadDeveloperPrograms() {
                     <small style="color: #999;">ID: ${program.id} | Slug: ${program.slug}</small>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button onclick="console.log('Edit button clicked for program:', ${program.id}); editProgram(${program.id})" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
-                    <button onclick="console.log('Toggle button clicked for program:', ${program.id}); toggleProgramPublished(${program.id})" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
-                    <button onclick="console.log('Delete button clicked for program:', ${program.id}); deleteProgram(${program.id})" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
+                    <button onclick="editProgram(${program.id})" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
+                    <button onclick="toggleProgramPublished(${program.id})" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
+                    <button onclick="deleteProgram(${program.id})" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
                 </div>
             `;
             programsList.appendChild(programDiv);
@@ -1324,16 +1324,38 @@ async function deleteProgram(programId) {
     }
     
     try {
-        const { error } = await supabase
+        // First check if program exists
+        const { data: program, error: fetchError } = await supabase
+            .from('programs')
+            .select('id, title')
+            .eq('id', programId)
+            .single();
+        
+        if (fetchError) {
+            console.error('Program fetch error:', fetchError);
+            throw new Error(`Программа не найдена: ${fetchError.message}`);
+        }
+        
+        console.log('Deleting program:', program);
+        
+        // Delete program (cascade will handle days and exercises)
+        const { error: deleteError } = await supabase
             .from('programs')
             .delete()
             .eq('id', programId);
         
-        if (error) throw error;
+        if (deleteError) {
+            console.error('Delete error:', deleteError);
+            throw new Error(`Ошибка удаления: ${deleteError.message}`);
+        }
         
-        showToast('Программа удалена', 'success');
-        loadDeveloperPrograms();
-        loadPrograms(); // Refresh public view
+        console.log('Program deleted successfully');
+        showToast(`Программа "${program.title}" удалена`, 'success');
+        
+        // Refresh both views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
     } catch (error) {
         console.error('Failed to delete program:', error);
         showToast('Ошибка удаления: ' + error.message, 'error');
@@ -1346,23 +1368,35 @@ async function toggleProgramPublished(programId) {
         // Get current program
         const { data: program, error: fetchError } = await supabase
             .from('programs')
-            .select('is_published')
+            .select('id, title, is_published')
             .eq('id', programId)
             .single();
         
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+            console.error('Program fetch error:', fetchError);
+            throw new Error(`Программа не найдена: ${fetchError.message}`);
+        }
+        
+        console.log('Toggling program:', program);
         
         // Toggle published status
-        const { error } = await supabase
+        const { error: updateError } = await supabase
             .from('programs')
             .update({ is_published: !program.is_published })
             .eq('id', programId);
         
-        if (error) throw error;
+        if (updateError) {
+            console.error('Update error:', updateError);
+            throw new Error(`Ошибка обновления: ${updateError.message}`);
+        }
         
-        showToast(`Программа ${!program.is_published ? 'опубликована' : 'скрыта'}`, 'success');
-        loadDeveloperPrograms();
-        loadPrograms(); // Refresh public view
+        console.log('Program status toggled successfully');
+        showToast(`Программа "${program.title}" ${!program.is_published ? 'опубликована' : 'скрыта'}`, 'success');
+        
+        // Refresh both views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
     } catch (error) {
         console.error('Failed to toggle program published:', error);
         showToast('Ошибка изменения статуса: ' + error.message, 'error');
@@ -1371,7 +1405,119 @@ async function toggleProgramPublished(programId) {
 
 function addNewProgram() {
     console.log('Adding new program');
-    showToast('Функция добавления программы в разработке', 'info');
+    
+    const modal = document.getElementById('program-modal');
+    const modalBody = document.getElementById('program-modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="program-edit-form">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">Добавить новую программу</h2>
+                <form id="add-program-form">
+                    <div class="form-group">
+                        <label>Название программы *</label>
+                        <input type="text" id="add-title" placeholder="Введите название" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea id="add-description" rows="3" placeholder="Описание программы"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>URL изображения</label>
+                        <input type="url" id="add-image-url" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>Slug (уникальный идентификатор) *</label>
+                        <input type="text" id="add-slug" placeholder="program-slug" required>
+                        <small style="color: #6c757d;">Только латинские буквы, цифры и дефисы</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Статус публикации</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="add-published" checked>
+                            <span class="checkmark"></span>
+                            Опубликована
+                        </label>
+                    </div>
+                    <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-primary" onclick="saveNewProgram()">Создать программу</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+async function saveNewProgram() {
+    try {
+        const title = document.getElementById('add-title').value;
+        const description = document.getElementById('add-description').value;
+        const imageUrl = document.getElementById('add-image-url').value;
+        const slug = document.getElementById('add-slug').value;
+        const isPublished = document.getElementById('add-published').checked;
+        
+        if (!title.trim()) {
+            showToast('Введите название программы', 'error');
+            return;
+        }
+        
+        if (!slug.trim()) {
+            showToast('Введите slug программы', 'error');
+            return;
+        }
+        
+        // Validate slug format
+        if (!/^[a-z0-9-]+$/.test(slug)) {
+            showToast('Slug может содержать только латинские буквы, цифры и дефисы', 'error');
+            return;
+        }
+        
+        console.log('Creating new program:', { title, slug, isPublished });
+        
+        const { data: newProgram, error } = await supabase
+            .from('programs')
+            .insert({
+                title: title.trim(),
+                description: description.trim(),
+                image_url: imageUrl.trim(),
+                slug: slug.trim(),
+                is_published: isPublished
+            })
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Create program error:', error);
+            if (error.code === '23505') {
+                throw new Error('Программа с таким slug уже существует');
+            }
+            throw new Error(`Ошибка создания: ${error.message}`);
+        }
+        
+        console.log('Program created successfully:', newProgram);
+        showToast(`Программа "${newProgram.title}" создана`, 'success');
+        
+        // Close modal
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        // Refresh both views
+        await loadDeveloperPrograms();
+        await loadPrograms();
+        
+    } catch (error) {
+        console.error('Failed to create program:', error);
+        showToast('Ошибка создания программы: ' + error.message, 'error');
+    }
 }
 
 function saveHomeContent() {
@@ -1394,7 +1540,7 @@ function importContent() {
     showToast('Функция импорта в разработке', 'info');
 }
 
-// Export functions for global access
+// Export all functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
 window.openProgramModal = openProgramModal;
@@ -1414,6 +1560,7 @@ window.saveProgramEdit = saveProgramEdit;
 window.deleteProgram = deleteProgram;
 window.toggleProgramPublished = toggleProgramPublished;
 window.addNewProgram = addNewProgram;
+window.saveNewProgram = saveNewProgram;
 window.saveHomeContent = saveHomeContent;
 window.saveSettings = saveSettings;
 window.exportContent = exportContent;
