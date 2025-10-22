@@ -162,23 +162,6 @@ function initializeTelegram() {
         // Check if user is editor
         checkEditorStatus();
         
-        // ВРЕМЕННО: принудительно показываем кнопку для отладки
-        setTimeout(() => {
-            console.log('[DEBUG] Принудительно показываем кнопку разработчика');
-            isEditor = true;
-            showDeveloperButton();
-            
-            // Показываем логи на странице
-            const debugDiv = document.createElement('div');
-            debugDiv.id = 'debug-logs';
-            debugDiv.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:white;padding:10px;border-radius:5px;font-size:12px;z-index:10000;max-width:300px;';
-            debugDiv.innerHTML = `
-                <div>initData: ${!!window.Telegram?.WebApp?.initData}</div>
-                <div>user: ${JSON.stringify(window.Telegram?.WebApp?.initDataUnsafe?.user || null)}</div>
-                <div>isEditor: ${isEditor}</div>
-            `;
-            document.body.appendChild(debugDiv);
-        }, 2000);
     } else {
         // Local dev fallback
         const urlParams = new URLSearchParams(window.location.search);
@@ -864,6 +847,12 @@ function showDeveloperPanel() {
     // Show tabs and content
     const tabs = panel.querySelector('.developer-tabs');
     if (tabs) tabs.style.display = 'flex';
+    
+    // Setup tab click handlers
+    setupDeveloperTabs();
+    
+    // Load initial content
+    loadDeveloperContent();
   
     window.scrollTo(0, 0);
 }
@@ -877,26 +866,60 @@ function closeDeveloperPanel() {
     document.getElementById('home')?.classList.add('active');
 }
 
+// Setup developer tab handlers
+function setupDeveloperTabs() {
+    const tabs = document.querySelectorAll('.dev-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Remove active class from all tabs
+            tabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.dev-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            console.log('Switched to tab:', tabId);
+        });
+    });
+}
+
 function loadDeveloperContent() {
     // Load home content
-    const homeContent = developerContent.home || {
+    const homeContent = {
         hero_image_url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
         headline: 'Здоровое тело',
         greeting: 'Добро пожаловать в ваше путешествие к здоровому образу жизни!',
         cta_text: 'Перейти к упражнениям'
     };
     
-    document.getElementById('dev-hero-image').value = homeContent.hero_image_url;
-    document.getElementById('dev-headline').value = homeContent.headline;
-    document.getElementById('dev-greeting').value = homeContent.greeting;
-    document.getElementById('dev-cta').value = homeContent.cta_text;
+    const heroImageEl = document.getElementById('dev-hero-image');
+    const headlineEl = document.getElementById('dev-headline');
+    const greetingEl = document.getElementById('dev-greeting');
+    const ctaEl = document.getElementById('dev-cta');
+    
+    if (heroImageEl) heroImageEl.value = homeContent.hero_image_url;
+    if (headlineEl) headlineEl.value = homeContent.headline;
+    if (greetingEl) greetingEl.value = homeContent.greeting;
+    if (ctaEl) ctaEl.value = homeContent.cta_text;
     
     // Load programs
     loadDeveloperPrograms();
     
     // Load settings
-    const settings = developerContent.settings || { calendar_enabled: true };
-    document.getElementById('dev-calendar-enabled').checked = settings.calendar_enabled;
+    const settings = { calendar_enabled: true };
+    const calendarEl = document.getElementById('dev-calendar-enabled');
+    if (calendarEl) calendarEl.checked = settings.calendar_enabled;
 }
 
 async function loadDeveloperPrograms() {
