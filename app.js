@@ -230,6 +230,23 @@ function setupEditorEventDelegation() {
         });
     });
 
+    // Also attach directly to the add program button
+    const addProgramBtn = document.querySelector('[data-action="program-add"]');
+    if (addProgramBtn) {
+        addProgramBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Direct] Add program button clicked');
+            try {
+                await handleAddProgram();
+            } catch (error) {
+                console.error('Error in add program:', error);
+                showToast(`Ошибка: ${error.message}`, 'error');
+            }
+        });
+        console.log('✅ Direct add program button handler attached');
+    }
+
     console.log('✅ Event delegation setup complete');
 }
 
