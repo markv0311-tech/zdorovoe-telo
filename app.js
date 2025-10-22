@@ -1683,22 +1683,27 @@ async function openDaySelection(programId) {
         let program;
         
         if (supabase) {
+            // Convert programId to number for comparison
+            const programIdNum = parseInt(programId);
+            console.log('Looking for program ID:', programIdNum, 'in programs:', programs.map(p => p.id));
+            
             // Find program in cached data
-            program = programs.find(p => p.id === programId);
+            program = programs.find(p => p.id === programIdNum);
             if (!program) {
                 // Try to reload programs if not found in cache
                 console.log('Program not found in cache, reloading...');
                 await loadProgramsFromSupabase();
-                program = programs.find(p => p.id === programId);
-                if (!program) throw new Error('Program not found');
+                program = programs.find(p => p.id === programIdNum);
+                if (!program) throw new Error(`Program with ID ${programIdNum} not found`);
             }
             
             // Lazy load days
-            const daysData = await loadProgramDays(programId);
+            const daysData = await loadProgramDays(programIdNum);
             program.days = daysData;
         } else {
             // Fallback to local data
-            program = programs.find(p => p.id === programId);
+            const programIdNum = parseInt(programId);
+            program = programs.find(p => p.id === programIdNum);
             if (!program) throw new Error('Program not found');
         }
         
@@ -1764,13 +1769,16 @@ async function openExerciseModule(programId, dayIndex = 1) {
         let program, day, exercises;
         
         if (supabase) {
+            // Convert programId to number for comparison
+            const programIdNum = parseInt(programId);
+            
             // Find program in cached data
-            program = programs.find(p => p.id === programId);
+            program = programs.find(p => p.id === programIdNum);
             if (!program) throw new Error('Program not found');
             
             // Lazy load days if not already loaded
             if (!program.days) {
-                program.days = await loadProgramDays(programId);
+                program.days = await loadProgramDays(programIdNum);
             }
             
             // Find the specific day
@@ -1781,7 +1789,8 @@ async function openExerciseModule(programId, dayIndex = 1) {
             exercises = await loadDayExercises(day.id);
         } else {
             // Fallback to local data
-            program = programs.find(p => p.id === programId);
+            const programIdNum = parseInt(programId);
+            program = programs.find(p => p.id === programIdNum);
             if (!program) throw new Error('Program not found');
             day = program.days.find(d => d.day_index === dayIndex);
             if (!day) throw new Error('Day not found');
