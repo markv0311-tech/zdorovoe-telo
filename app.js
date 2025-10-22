@@ -161,6 +161,24 @@ function initializeTelegram() {
         
         // Check if user is editor
         checkEditorStatus();
+        
+        // ВРЕМЕННО: принудительно показываем кнопку для отладки
+        setTimeout(() => {
+            console.log('[DEBUG] Принудительно показываем кнопку разработчика');
+            isEditor = true;
+            showDeveloperButton();
+            
+            // Показываем логи на странице
+            const debugDiv = document.createElement('div');
+            debugDiv.id = 'debug-logs';
+            debugDiv.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:white;padding:10px;border-radius:5px;font-size:12px;z-index:10000;max-width:300px;';
+            debugDiv.innerHTML = `
+                <div>initData: ${!!window.Telegram?.WebApp?.initData}</div>
+                <div>user: ${JSON.stringify(window.Telegram?.WebApp?.initDataUnsafe?.user || null)}</div>
+                <div>isEditor: ${isEditor}</div>
+            `;
+            document.body.appendChild(debugDiv);
+        }, 2000);
     } else {
         // Local dev fallback
         const urlParams = new URLSearchParams(window.location.search);
