@@ -1052,16 +1052,18 @@ async function loadDeveloperPrograms() {
         programsData.forEach((program, index) => {
             const programDiv = document.createElement('div');
             programDiv.className = 'dev-program-item';
+            programDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px;';
+            
             programDiv.innerHTML = `
-                <div>
-                    <h4>${program.title} ${program.is_published ? '✅' : '❌'}</h4>
-                    <p>${program.description}</p>
-                    <small>ID: ${program.id} | Slug: ${program.slug}</small>
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${program.title} ${program.is_published ? '✅' : '❌'}</h4>
+                    <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${program.description || 'Без описания'}</p>
+                    <small style="color: #999;">ID: ${program.id} | Slug: ${program.slug}</small>
                 </div>
-                <div>
-                    <button onclick="editProgram(${program.id})">Редактировать</button>
-                    <button onclick="toggleProgramPublished(${program.id})">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
-                    <button onclick="deleteProgram(${program.id})">Удалить</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="console.log('Edit button clicked for program:', ${program.id}); editProgram(${program.id})" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
+                    <button onclick="console.log('Toggle button clicked for program:', ${program.id}); toggleProgramPublished(${program.id})" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
+                    <button onclick="console.log('Delete button clicked for program:', ${program.id}); deleteProgram(${program.id})" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
                 </div>
             `;
             programsList.appendChild(programDiv);
@@ -1215,7 +1217,7 @@ function showToast(message, type = 'info') {
 
 // Developer CRUD functions
 async function editProgram(programId) {
-    console.log('Editing program:', programId);
+    console.log('editProgram called with ID:', programId);
     
     try {
         // Get program data
@@ -1316,6 +1318,7 @@ async function saveProgramEdit(programId) {
 }
 
 async function deleteProgram(programId) {
+    console.log('deleteProgram called with ID:', programId);
     if (!confirm('Удалить программу? Это действие нельзя отменить.')) {
         return;
     }
@@ -1338,6 +1341,7 @@ async function deleteProgram(programId) {
 }
 
 async function toggleProgramPublished(programId) {
+    console.log('toggleProgramPublished called with ID:', programId);
     try {
         // Get current program
         const { data: program, error: fetchError } = await supabase
