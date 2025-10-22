@@ -59,7 +59,7 @@ serve(async (req) => {
     const { data: editorData, error: editorError } = await supabaseClient
       .from('editors')
       .select('*')
-      .eq('tg_user_id', telegramUserId)
+      .eq('telegram_user_id', telegramUserId)
       .single()
 
     if (editorError && editorError.code !== 'PGRST116') {
