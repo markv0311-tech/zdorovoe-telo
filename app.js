@@ -11,6 +11,86 @@ let isEditor = false;
 // Supabase client
 let supabase = null;
 
+// Cache system
+const CACHE_KEYS = {
+    PROGRAMS: 'zdorovoe_telo_programs',
+    PROGRAM_DAYS: 'zdorovoe_telo_program_days',
+    EXERCISES: 'zdorovoe_telo_exercises',
+    LAST_SYNC: 'zdorovoe_telo_last_sync'
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Cache functions
+function getCacheData(key) {
+    try {
+        const cached = localStorage.getItem(key);
+        if (!cached) return null;
+        
+        const data = JSON.parse(cached);
+        const now = Date.now();
+        
+        if (data.timestamp && (now - data.timestamp) < CACHE_DURATION) {
+            console.log(`[Cache] Hit for ${key}`);
+            return data.value;
+        } else {
+            console.log(`[Cache] Expired for ${key}`);
+            localStorage.removeItem(key);
+            return null;
+        }
+    } catch (error) {
+        console.error(`[Cache] Error reading ${key}:`, error);
+        return null;
+    }
+}
+
+function setCacheData(key, value) {
+    try {
+        const data = {
+            value: value,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+        console.log(`[Cache] Stored ${key}`);
+    } catch (error) {
+        console.error(`[Cache] Error storing ${key}:`, error);
+    }
+}
+
+function clearCache() {
+    Object.values(CACHE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+    });
+    // Clear all program-specific cache keys
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith(CACHE_KEYS.PROGRAM_DAYS + '_') || key.startsWith(CACHE_KEYS.EXERCISES + '_'))) {
+            localStorage.removeItem(key);
+        }
+    }
+    console.log('[Cache] Cleared all cache');
+}
+
+// Clear cache when data is modified
+function invalidateCache(type, id = null) {
+    if (type === 'program') {
+        localStorage.removeItem(CACHE_KEYS.PROGRAMS);
+        // Clear all program-specific caches
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith(CACHE_KEYS.PROGRAM_DAYS + '_') || key.startsWith(CACHE_KEYS.EXERCISES + '_'))) {
+                localStorage.removeItem(key);
+            }
+        }
+    } else if (type === 'day' && id) {
+        localStorage.removeItem(`${CACHE_KEYS.PROGRAM_DAYS}_${id}`);
+        localStorage.removeItem(`${CACHE_KEYS.EXERCISES}_${id}`);
+    } else if (type === 'exercise' && id) {
+        localStorage.removeItem(`${CACHE_KEYS.EXERCISES}_${id}`);
+    }
+    console.log(`[Cache] Invalidated ${type} cache for ${id || 'all'}`);
+}
+
 // Admin function helper
 const ADMIN_BASE = `${window.SUPABASE_URL}/functions/v1/admin`;
 
@@ -448,6 +528,9 @@ async function handleDeleteProgram(programId) {
         await adminCall(`/programs/${programId}`, 'DELETE', {});
         
         showToast('Программа удалена', 'success');
+        
+        // Invalidate cache
+        invalidateCache('program');
         
         // Remove program from UI immediately (optimistic update)
         const programElement = document.querySelector(`[data-id="${programId}"]`)?.closest('.program-item');
@@ -1362,6 +1445,16 @@ function updateProgressStats() {
 
 // Programs data
 async function loadPrograms() {
+    // Try cache first
+    const cachedPrograms = getCacheData(CACHE_KEYS.PROGRAMS);
+    if (cachedPrograms) {
+        console.log('[Load] Using cached programs');
+        programs = cachedPrograms;
+        renderPrograms();
+        return;
+    }
+    
+    // Load from Supabase if no cache
     if (supabase) {
         try {
             await loadProgramsFromSupabase();
@@ -1382,7 +1475,7 @@ async function loadProgramsFromSupabase() {
     
     console.log('Loading programs from Supabase...');
     
-    // Load published programs
+    // Load published programs only (lazy loading - no days/exercises yet)
     const { data: programsData, error: programsError } = await supabase
         .from('programs')
         .select('*')
@@ -1393,41 +1486,82 @@ async function loadProgramsFromSupabase() {
         throw new Error(`Failed to load programs: ${programsError.message}`);
     }
     
-    // Load days for each program
-    for (let program of programsData) {
+    // Store programs in cache
+    setCacheData(CACHE_KEYS.PROGRAMS, programsData);
+    programs = programsData;
+    console.log('Programs loaded from Supabase:', programs.length);
+}
+
+// Lazy load days for a specific program
+async function loadProgramDays(programId) {
+    const cacheKey = `${CACHE_KEYS.PROGRAM_DAYS}_${programId}`;
+    
+    // Try cache first
+    const cachedDays = getCacheData(cacheKey);
+    if (cachedDays) {
+        console.log(`[Load] Using cached days for program ${programId}`);
+        return cachedDays;
+    }
+    
+    // Load from Supabase
+    if (!supabase) return [];
+    
+    try {
+        console.log(`Loading days for program ${programId}...`);
         const { data: daysData, error: daysError } = await supabase
             .from('program_days')
             .select('*')
-            .eq('program_id', program.id)
+            .eq('program_id', programId)
             .order('day_index');
         
         if (daysError) {
-            console.warn(`Failed to load days for program ${program.id}:`, daysError.message);
-            program.days = [];
-            continue;
+            throw new Error(`Failed to load days: ${daysError.message}`);
         }
         
-        // Load exercises for each day
-        for (let day of daysData) {
-            const { data: exercisesData, error: exercisesError } = await supabase
-                .from('exercises')
-                .select('*')
-                .eq('program_day_id', day.id)
-                .order('order_index');
-            
-            if (exercisesError) {
-                console.warn(`Failed to load exercises for day ${day.id}:`, exercisesError.message);
-                day.exercises = [];
-            } else {
-                day.exercises = exercisesData;
-            }
-        }
-        
-        program.days = daysData;
+        // Store in cache
+        setCacheData(cacheKey, daysData);
+        console.log(`Loaded ${daysData.length} days for program ${programId}`);
+        return daysData;
+    } catch (error) {
+        console.error(`Failed to load days for program ${programId}:`, error);
+        return [];
+    }
+}
+
+// Lazy load exercises for a specific day
+async function loadDayExercises(dayId) {
+    const cacheKey = `${CACHE_KEYS.EXERCISES}_${dayId}`;
+    
+    // Try cache first
+    const cachedExercises = getCacheData(cacheKey);
+    if (cachedExercises) {
+        console.log(`[Load] Using cached exercises for day ${dayId}`);
+        return cachedExercises;
     }
     
-    programs = programsData;
-    console.log('Programs loaded from Supabase:', programs.length);
+    // Load from Supabase
+    if (!supabase) return [];
+    
+    try {
+        console.log(`Loading exercises for day ${dayId}...`);
+        const { data: exercisesData, error: exercisesError } = await supabase
+            .from('exercises')
+            .select('*')
+            .eq('program_day_id', dayId)
+            .order('order_index');
+        
+        if (exercisesError) {
+            throw new Error(`Failed to load exercises: ${exercisesError.message}`);
+        }
+        
+        // Store in cache
+        setCacheData(cacheKey, exercisesData);
+        console.log(`Loaded ${exercisesData.length} exercises for day ${dayId}`);
+        return exercisesData;
+    } catch (error) {
+        console.error(`Failed to load exercises for day ${dayId}:`, error);
+        return [];
+    }
 }
 
 function loadDefaultPrograms() {
@@ -1548,24 +1682,12 @@ async function openDaySelection(programId) {
         let program;
         
         if (supabase) {
-            // Load from Supabase
-            const { data: programData, error: programError } = await supabase
-                .from('programs')
-                .select('*')
-                .eq('id', programId)
-                .single();
+            // Find program in cached data
+            program = programs.find(p => p.id === programId);
+            if (!program) throw new Error('Program not found');
             
-            if (programError) throw new Error(`Program not found: ${programError.message}`);
-            program = programData;
-            
-            // Load days
-            const { data: daysData, error: daysError } = await supabase
-                .from('program_days')
-                .select('*')
-                .eq('program_id', programId)
-                .order('day_index');
-            
-            if (daysError) throw new Error(`Days not found: ${daysError.message}`);
+            // Lazy load days
+            const daysData = await loadProgramDays(programId);
             program.days = daysData;
         } else {
             // Fallback to local data
@@ -1623,34 +1745,21 @@ async function openExerciseModule(programId, dayIndex = 1) {
         let program, day, exercises;
         
         if (supabase) {
-            // Load from Supabase
-            const { data: programData, error: programError } = await supabase
-                .from('programs')
-                .select('*')
-                .eq('id', programId)
-                .single();
+            // Find program in cached data
+            program = programs.find(p => p.id === programId);
+            if (!program) throw new Error('Program not found');
             
-            if (programError) throw new Error(`Program not found: ${programError.message}`);
-            program = programData;
+            // Lazy load days if not already loaded
+            if (!program.days) {
+                program.days = await loadProgramDays(programId);
+            }
             
-            const { data: dayData, error: dayError } = await supabase
-                .from('program_days')
-                .select('*')
-                .eq('program_id', programId)
-                .eq('day_index', dayIndex)
-                .single();
+            // Find the specific day
+            day = program.days.find(d => d.day_index === dayIndex);
+            if (!day) throw new Error(`Day ${dayIndex} not found`);
             
-            if (dayError) throw new Error(`Day not found: ${dayError.message}`);
-            day = dayData;
-            
-            const { data: exercisesData, error: exercisesError } = await supabase
-                .from('exercises')
-                .select('*')
-                .eq('program_day_id', day.id)
-                .order('order_index');
-            
-            if (exercisesError) throw new Error(`Exercises not found: ${exercisesError.message}`);
-            exercises = exercisesData;
+            // Lazy load exercises for this day
+            exercises = await loadDayExercises(day.id);
         } else {
             // Fallback to local data
             program = programs.find(p => p.id === programId);
@@ -1710,7 +1819,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
                             // Direct video file - use HTML5 video player
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0;">
-                                    <video class="exercise-video" controls preload="metadata" style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
+                                    <video class="exercise-video" controls preload="none" style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
                                         <source src="${exercise.video_url}" type="video/mp4">
                                         <source src="${exercise.video_url}" type="video/webm">
                                         <source src="${exercise.video_url}" type="video/ogg">
