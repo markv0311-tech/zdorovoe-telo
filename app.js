@@ -636,8 +636,7 @@ async function handleAddDay(programId) {
             .insert([{
                 program_id: programId,
                 day_index: nextDayIndex,
-                title: `День ${nextDayIndex}`,
-                description: ''
+                title: `День ${nextDayIndex}`
             }])
             .select()
             .single();
@@ -681,10 +680,6 @@ async function handleEditDay(dayId) {
                         <div class="form-group">
                             <label>Название дня</label>
                             <input type="text" id="edit-day-title" value="${day.title}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Описание</label>
-                            <textarea id="edit-day-description" rows="3">${day.description || ''}</textarea>
                         </div>
                         <div class="form-group">
                             <label>Номер дня</label>
@@ -757,7 +752,6 @@ async function handleDeleteDay(dayId) {
 async function saveDayEditViaAdmin(dayId) {
     try {
         const title = document.getElementById('edit-day-title').value;
-        const description = document.getElementById('edit-day-description').value;
         const dayIndex = parseInt(document.getElementById('edit-day-index').value);
         
         if (!title.trim()) {
@@ -771,7 +765,6 @@ async function saveDayEditViaAdmin(dayId) {
             .from('program_days')
             .update({
                 title: title.trim(),
-                description: description.trim(),
                 day_index: dayIndex
             })
             .eq('id', dayId)
