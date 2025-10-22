@@ -292,8 +292,18 @@ async function handleEditProgram(programId) {
                 </div>
             `;
             
+            // Ensure modal is attached to body and visible above all content
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
             modal.classList.remove('hidden');
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '9999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.background = 'rgba(0,0,0,0.5)';
             document.body.style.overflow = 'hidden';
         }
     } catch (error) {
@@ -412,8 +422,17 @@ async function handleAddProgram() {
             </div>
         `;
         
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
         modal.classList.remove('hidden');
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '9999';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.background = 'rgba(0,0,0,0.5)';
         document.body.style.overflow = 'hidden';
     }
 }
@@ -1039,8 +1058,17 @@ function openProgramModal(program) {
             </div>
         `;
         
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
         modal.classList.remove('hidden');
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '9999';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.background = 'rgba(0,0,0,0.5)';
         document.body.style.overflow = 'hidden';
     } else {
         console.error('Modal elements not found');
