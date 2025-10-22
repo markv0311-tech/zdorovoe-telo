@@ -1061,9 +1061,9 @@ async function loadDeveloperPrograms() {
                     <small style="color: #999;">ID: ${program.id} | Slug: ${program.slug}</small>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button onclick="editProgram(${program.id})" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
-                    <button onclick="toggleProgramPublished(${program.id})" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
-                    <button onclick="deleteProgram(${program.id})" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
+                    <button onclick="if(typeof editProgram === 'function') { editProgram(${program.id}); } else { alert('Функция editProgram не найдена'); }" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
+                    <button onclick="if(typeof toggleProgramPublished === 'function') { toggleProgramPublished(${program.id}); } else { alert('Функция toggleProgramPublished не найдена'); }" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
+                    <button onclick="if(typeof deleteProgram === 'function') { deleteProgram(${program.id}); } else { alert('Функция deleteProgram не найдена'); }" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
                 </div>
             `;
             programsList.appendChild(programDiv);
@@ -1324,6 +1324,14 @@ async function deleteProgram(programId) {
     }
     
     try {
+        // Check if user is authenticated
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        console.log('Current user:', user);
+        
+        if (authError) {
+            console.error('Auth error:', authError);
+        }
+        
         // First check if program exists
         const { data: program, error: fetchError } = await supabase
             .from('programs')
@@ -1339,15 +1347,18 @@ async function deleteProgram(programId) {
         console.log('Deleting program:', program);
         
         // Delete program (cascade will handle days and exercises)
-        const { error: deleteError } = await supabase
+        const { data: deleteData, error: deleteError } = await supabase
             .from('programs')
             .delete()
-            .eq('id', programId);
+            .eq('id', programId)
+            .select();
         
         if (deleteError) {
             console.error('Delete error:', deleteError);
             throw new Error(`Ошибка удаления: ${deleteError.message}`);
         }
+        
+        console.log('Delete result:', deleteData);
         
         console.log('Program deleted successfully');
         showToast(`Программа "${program.title}" удалена`, 'success');
@@ -1565,3 +1576,11 @@ window.saveHomeContent = saveHomeContent;
 window.saveSettings = saveSettings;
 window.exportContent = exportContent;
 window.importContent = importContent;
+
+// Debug: Check if functions are available
+console.log('Functions exported:', {
+    editProgram: typeof window.editProgram,
+    deleteProgram: typeof window.deleteProgram,
+    toggleProgramPublished: typeof window.toggleProgramPublished,
+    addNewProgram: typeof window.addNewProgram
+});
