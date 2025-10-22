@@ -1673,7 +1673,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
             `;
             
             exercises.forEach((exercise, index) => {
-                // Check if it's a YouTube URL and convert to embed format
+                // Check video URL and convert to appropriate format
                 let videoHTML = '';
                 if (exercise.video_url) {
                     if (exercise.video_url.includes('youtube.com/watch') || exercise.video_url.includes('youtu.be/')) {
@@ -1692,8 +1692,30 @@ async function openExerciseModule(programId, dayIndex = 1) {
                     } else if (exercise.video_url.includes('youtube.com/embed')) {
                         // Already embed format
                         videoHTML = `<iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>`;
+                    } else if (exercise.video_url.includes('getcourse.ru') || exercise.video_url.includes('fs.getcourse.ru')) {
+                        // GetCourse video - create embed iframe
+                        // GetCourse videos can be embedded using their file service URLs
+                        const embedUrl = exercise.video_url.replace('/download/', '/embed/');
+                        videoHTML = `
+                            <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; background: #000; border-radius: 10px; overflow: hidden;">
+                                <iframe class="exercise-video" 
+                                        src="${embedUrl}" 
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                                        frameborder="0" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        `;
+                    } else if (exercise.video_url.includes('vimeo.com')) {
+                        // Vimeo URL - convert to embed
+                        const videoId = exercise.video_url.split('vimeo.com/')[1]?.split('?')[0];
+                        if (videoId) {
+                            videoHTML = `<iframe class="exercise-video" src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                        } else {
+                            videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
+                        }
                     } else {
-                        // Other video platforms (GetCourse, Vimeo, etc.) - show as link
+                        // Other video platforms - show as link
                         videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
                     }
                 }
