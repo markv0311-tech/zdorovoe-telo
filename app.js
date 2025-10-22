@@ -592,7 +592,7 @@ function openProgramModal(program) {
                 <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
                 <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
                 <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Программа рассчитана на ${program.days.length} дней, по ${program.days[0]?.exercises.length || 0} упражнений в день</p>
-                <button class="cta-button" onclick="openExerciseModule('${program.id}')" style="width: 100%;">
+                <button class="cta-button" onclick="openDaySelection('${program.id}')" style="width: 100%;">
                     Выбрать программу
                 </button>
             </div>
@@ -613,6 +613,82 @@ function closeProgramModal() {
         modal.classList.add('hidden');
         modal.style.display = 'none';
         document.body.style.overflow = '';
+    }
+}
+
+// Day selection function
+async function openDaySelection(programId) {
+    console.log('Opening day selection for program:', programId);
+    
+    try {
+        let program;
+        
+        if (supabase) {
+            // Load from Supabase
+            const { data: programData, error: programError } = await supabase
+                .from('programs')
+                .select('*')
+                .eq('id', programId)
+                .single();
+            
+            if (programError) throw new Error(`Program not found: ${programError.message}`);
+            program = programData;
+            
+            // Load days
+            const { data: daysData, error: daysError } = await supabase
+                .from('program_days')
+                .select('*')
+                .eq('program_id', programId)
+                .order('day_index');
+            
+            if (daysError) throw new Error(`Days not found: ${daysError.message}`);
+            program.days = daysData;
+        } else {
+            // Fallback to local data
+            program = programs.find(p => p.id === programId);
+            if (!program) throw new Error('Program not found');
+        }
+        
+        closeProgramModal();
+        
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            let daysHTML = `
+                <div class="day-selection">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+                    <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">Выберите день тренировки</p>
+                    <div class="days-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            `;
+            
+            for (let i = 1; i <= program.days.length; i++) {
+                daysHTML += `
+                    <button class="day-button" onclick="openExerciseModule('${programId}', ${i})" 
+                            style="padding: 15px; border: 2px solid #007bff; background: white; color: #007bff; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        День ${i}
+                    </button>
+                `;
+            }
+            
+            daysHTML += `
+                    </div>
+                    <button class="btn btn-secondary" onclick="openProgramModal(${JSON.stringify(program).replace(/"/g, '&quot;')})" style="width: 100%;">
+                        ← Назад к программе
+                    </button>
+                </div>
+            `;
+            
+            modalBody.innerHTML = daysHTML;
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        } else {
+            console.error('Modal elements not found');
+        }
+    } catch (error) {
+        console.error('Failed to open day selection:', error);
+        showToast('Ошибка загрузки дней: ' + error.message, 'error');
     }
 }
 
@@ -673,10 +749,35 @@ async function openExerciseModule(programId, dayIndex = 1) {
             `;
             
             exercises.forEach((exercise, index) => {
+                // Check if it's a YouTube URL and convert to embed format
+                let videoHTML = '';
+                if (exercise.video_url) {
+                    if (exercise.video_url.includes('youtube.com/watch') || exercise.video_url.includes('youtu.be/')) {
+                        // YouTube URL - convert to embed
+                        let videoId = '';
+                        if (exercise.video_url.includes('youtube.com/watch')) {
+                            videoId = exercise.video_url.split('v=')[1]?.split('&')[0];
+                        } else if (exercise.video_url.includes('youtu.be/')) {
+                            videoId = exercise.video_url.split('youtu.be/')[1]?.split('?')[0];
+                        }
+                        if (videoId) {
+                            videoHTML = `<iframe class="exercise-video" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                        } else {
+                            videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
+                        }
+                    } else if (exercise.video_url.includes('youtube.com/embed')) {
+                        // Already embed format
+                        videoHTML = `<iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>`;
+                    } else {
+                        // Other video platforms (GetCourse, Vimeo, etc.) - show as link
+                        videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
+                    }
+                }
+                
                 exercisesHTML += `
                     <div class="exercise-item">
                         <div class="exercise-title">${exercise.order_index}. ${exercise.title}</div>
-                        <iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>
+                        ${videoHTML}
                         <div class="exercise-description">${exercise.description}</div>
                     </div>
                 `;
@@ -1112,11 +1213,189 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Developer CRUD functions
+async function editProgram(programId) {
+    console.log('Editing program:', programId);
+    
+    try {
+        // Get program data
+        const { data: program, error } = await supabase
+            .from('programs')
+            .select('*')
+            .eq('id', programId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Show edit form
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="program-edit-form">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
+                    <form id="edit-program-form">
+                        <div class="form-group">
+                            <label>Название программы</label>
+                            <input type="text" id="edit-title" value="${program.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <textarea id="edit-description" rows="3">${program.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL изображения</label>
+                            <input type="url" id="edit-image-url" value="${program.image_url || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Статус публикации</label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
+                                <span class="checkmark"></span>
+                                Опубликована
+                            </label>
+                        </div>
+                        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-primary" onclick="saveProgramEdit(${programId})">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    } catch (error) {
+        console.error('Failed to load program for editing:', error);
+        showToast('Ошибка загрузки программы: ' + error.message, 'error');
+    }
+}
+
+async function saveProgramEdit(programId) {
+    try {
+        const title = document.getElementById('edit-title').value;
+        const description = document.getElementById('edit-description').value;
+        const imageUrl = document.getElementById('edit-image-url').value;
+        const isPublished = document.getElementById('edit-published').checked;
+        
+        if (!title.trim()) {
+            showToast('Введите название программы', 'error');
+            return;
+        }
+        
+        const { error } = await supabase
+            .from('programs')
+            .update({
+                title: title.trim(),
+                description: description.trim(),
+                image_url: imageUrl.trim(),
+                is_published: isPublished
+            })
+            .eq('id', programId);
+        
+        if (error) throw error;
+        
+        showToast('Программа обновлена', 'success');
+        loadDeveloperPrograms();
+        loadPrograms(); // Refresh public view
+        
+        // Close modal
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    } catch (error) {
+        console.error('Failed to save program:', error);
+        showToast('Ошибка сохранения: ' + error.message, 'error');
+    }
+}
+
+async function deleteProgram(programId) {
+    if (!confirm('Удалить программу? Это действие нельзя отменить.')) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('programs')
+            .delete()
+            .eq('id', programId);
+        
+        if (error) throw error;
+        
+        showToast('Программа удалена', 'success');
+        loadDeveloperPrograms();
+        loadPrograms(); // Refresh public view
+    } catch (error) {
+        console.error('Failed to delete program:', error);
+        showToast('Ошибка удаления: ' + error.message, 'error');
+    }
+}
+
+async function toggleProgramPublished(programId) {
+    try {
+        // Get current program
+        const { data: program, error: fetchError } = await supabase
+            .from('programs')
+            .select('is_published')
+            .eq('id', programId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        // Toggle published status
+        const { error } = await supabase
+            .from('programs')
+            .update({ is_published: !program.is_published })
+            .eq('id', programId);
+        
+        if (error) throw error;
+        
+        showToast(`Программа ${!program.is_published ? 'опубликована' : 'скрыта'}`, 'success');
+        loadDeveloperPrograms();
+        loadPrograms(); // Refresh public view
+    } catch (error) {
+        console.error('Failed to toggle program published:', error);
+        showToast('Ошибка изменения статуса: ' + error.message, 'error');
+    }
+}
+
+function addNewProgram() {
+    console.log('Adding new program');
+    showToast('Функция добавления программы в разработке', 'info');
+}
+
+function saveHomeContent() {
+    console.log('Saving home content');
+    showToast('Функция сохранения главной страницы в разработке', 'info');
+}
+
+function saveSettings() {
+    console.log('Saving settings');
+    showToast('Настройки сохранены', 'success');
+}
+
+function exportContent() {
+    console.log('Exporting content');
+    showToast('Функция экспорта в разработке', 'info');
+}
+
+function importContent() {
+    console.log('Importing content');
+    showToast('Функция импорта в разработке', 'info');
+}
+
 // Export functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
 window.openProgramModal = openProgramModal;
 window.closeProgramModal = closeProgramModal;
+window.openDaySelection = openDaySelection;
 window.openExerciseModule = openExerciseModule;
 window.closeExerciseModal = closeExerciseModal;
 window.closeAllModals = closeAllModals;
@@ -1126,3 +1405,12 @@ window.renewSubscription = renewSubscription;
 window.openDeveloperAccess = openDeveloperAccess;
 window.closeDeveloperPanel = closeDeveloperPanel;
 window.publishToSupabase = publishToSupabase;
+window.editProgram = editProgram;
+window.saveProgramEdit = saveProgramEdit;
+window.deleteProgram = deleteProgram;
+window.toggleProgramPublished = toggleProgramPublished;
+window.addNewProgram = addNewProgram;
+window.saveHomeContent = saveHomeContent;
+window.saveSettings = saveSettings;
+window.exportContent = exportContent;
+window.importContent = importContent;
