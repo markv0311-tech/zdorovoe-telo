@@ -1693,15 +1693,49 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         // Already embed format
                         videoHTML = `<iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>`;
                     } else if (exercise.video_url.includes('getcourse.ru') || exercise.video_url.includes('fs.getcourse.ru')) {
-                        // GetCourse video - show as styled link (GetCourse doesn't support embedding)
-                        videoHTML = `
-                            <div class="getcourse-video-container" style="margin: 10px 0;">
-                                <a href="${exercise.video_url}" target="_blank" class="getcourse-video-link" style="display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; text-decoration: none; color: white; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
-                                    <span style="font-size: 24px; margin-right: 10px;">🎥</span>
-                                    <span>Смотреть видео GetCourse</span>
-                                </a>
-                            </div>
-                        `;
+                        // GetCourse video - try multiple embedding methods
+                        let embedUrl = '';
+                        
+                        // Method 1: Try to convert download URL to embed URL
+                        if (exercise.video_url.includes('/download/')) {
+                            embedUrl = exercise.video_url.replace('/download/', '/embed/');
+                        } else {
+                            embedUrl = exercise.video_url;
+                        }
+                        
+                        // Method 2: Try direct video file embedding
+                        const isVideoFile = exercise.video_url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
+                        
+                        if (isVideoFile) {
+                            // Direct video file - use HTML5 video player
+                            videoHTML = `
+                                <div class="getcourse-video-container" style="margin: 10px 0;">
+                                    <video class="exercise-video" controls style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
+                                        <source src="${exercise.video_url}" type="video/mp4">
+                                        <source src="${exercise.video_url}" type="video/webm">
+                                        <source src="${exercise.video_url}" type="video/ogg">
+                                        Ваш браузер не поддерживает видео.
+                                    </video>
+                                </div>
+                            `;
+                        } else {
+                            // Try iframe embedding
+                            videoHTML = `
+                                <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; background: #000; border-radius: 10px; overflow: hidden;">
+                                    <iframe class="exercise-video" 
+                                            src="${embedUrl}" 
+                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                                            frameborder="0" 
+                                            allowfullscreen
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    </iframe>
+                                    <div style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <p style="margin: 0 0 10px 0; color: #6c757d;">Видео недоступно для встраивания</p>
+                                        <a href="${exercise.video_url}" target="_blank" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Открыть видео</a>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     } else if (exercise.video_url.includes('vimeo.com')) {
                         // Vimeo URL - convert to embed
                         const videoId = exercise.video_url.split('vimeo.com/')[1]?.split('?')[0];

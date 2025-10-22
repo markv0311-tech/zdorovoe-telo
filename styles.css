@@ -38,6 +38,17 @@ button, [data-action], .nav-item, .program-card, .exercise-item {
     margin: 10px 0;
 }
 
+/* HTML5 video specific styles */
+video.exercise-video {
+    background: #000;
+    border: 2px solid #e9ecef;
+}
+
+video.exercise-video::-webkit-media-controls {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 0 0 10px 10px;
+}
+
 .getcourse-video-container {
     margin: 10px 0;
 }
