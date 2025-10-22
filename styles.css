@@ -40,13 +40,25 @@ button, [data-action], .nav-item, .program-card, .exercise-item {
 
 /* HTML5 video specific styles */
 video.exercise-video {
-    background: #000;
+    background: transparent;
     border: 2px solid #e9ecef;
+    object-fit: cover;
 }
 
 video.exercise-video::-webkit-media-controls {
     background: rgba(0, 0, 0, 0.8);
     border-radius: 0 0 10px 10px;
+}
+
+/* Remove black overlay from video container */
+.getcourse-video-container {
+    margin: 10px 0;
+    background: transparent;
+}
+
+.getcourse-video-container iframe,
+.getcourse-video-container video {
+    background: transparent;
 }
 
 .getcourse-video-container {

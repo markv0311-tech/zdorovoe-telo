@@ -1710,7 +1710,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
                             // Direct video file - use HTML5 video player
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0;">
-                                    <video class="exercise-video" controls style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
+                                    <video class="exercise-video" controls preload="metadata" style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;">
                                         <source src="${exercise.video_url}" type="video/mp4">
                                         <source src="${exercise.video_url}" type="video/webm">
                                         <source src="${exercise.video_url}" type="video/ogg">
@@ -1721,10 +1721,10 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         } else {
                             // Try iframe embedding
                             videoHTML = `
-                                <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; background: #000; border-radius: 10px; overflow: hidden;">
+                                <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; border-radius: 10px; overflow: hidden;">
                                     <iframe class="exercise-video" 
                                             src="${embedUrl}" 
-                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: transparent;" 
                                             frameborder="0" 
                                             allowfullscreen
                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
