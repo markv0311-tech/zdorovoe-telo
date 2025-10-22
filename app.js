@@ -208,6 +208,9 @@ function setupEditorEventDelegation() {
                     case 'program-add':
                         await handleAddProgram();
                         break;
+                    case 'program-days':
+                        await handleProgramDays(id);
+                        break;
                     case 'day-add':
                         await handleAddDay(id);
                         break;
@@ -219,6 +222,15 @@ function setupEditorEventDelegation() {
                         break;
                     case 'exercise-delete':
                         await handleDeleteExercise(id);
+                        break;
+                    case 'day-exercises':
+                        await handleDayExercises(id);
+                        break;
+                    case 'day-edit':
+                        await handleEditDay(id);
+                        break;
+                    case 'day-delete':
+                        await handleDeleteDay(id);
                         break;
                     default:
                         console.warn(`Unknown action: ${action}`);
@@ -451,6 +463,218 @@ async function handleAddProgram() {
         modal.style.justifyContent = 'center';
         modal.style.background = 'rgba(0,0,0,0.5)';
         document.body.style.overflow = 'hidden';
+    }
+}
+
+async function handleProgramDays(programId) {
+    console.log('handleProgramDays called with ID:', programId);
+    showToast('Загружаем дни программы...', 'info');
+    
+    try {
+        // Get program info
+        const { data: program, error: programError } = await supabase
+            .from('programs')
+            .select('*')
+            .eq('id', programId)
+            .single();
+        
+        if (programError) throw programError;
+        
+        // Get program days
+        const { data: days, error: daysError } = await supabase
+            .from('program_days')
+            .select('*')
+            .eq('program_id', programId)
+            .order('day_index');
+        
+        if (daysError) throw daysError;
+        
+        // Open days management modal
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="program-days-management">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Управление днями: ${program.title}</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button data-action="day-add" data-id="${programId}" class="btn btn-primary" style="margin-bottom: 15px;">
+                            ➕ Добавить день
+                        </button>
+                    </div>
+                    
+                    <div id="days-list" style="max-height: 400px; overflow-y: auto;">
+                        ${days.map(day => `
+                            <div class="day-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">День ${day.day_index}</h4>
+                                        <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${day.title || 'Без названия'}</p>
+                                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${day.id}</p>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button data-action="day-exercises" data-id="${day.id}" style="padding: 6px 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Упражнения</button>
+                                        <button data-action="day-edit" data-id="${day.id}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
+                                        <button data-action="day-delete" data-id="${day.id}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="loadDeveloperPrograms()">
+                            ← Назад к программам
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Ensure modal is attached to body and visible
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '9999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('Failed to load program days:', error);
+        showToast('Ошибка загрузки дней: ' + error.message, 'error');
+    }
+}
+
+async function handleAddDay(programId) {
+    console.log('handleAddDay called with program ID:', programId);
+    showToast('Добавляем новый день...', 'info');
+    
+    try {
+        // Get next day_index
+        const { data: maxDay } = await supabase
+            .from('program_days')
+            .select('day_index')
+            .eq('program_id', programId)
+            .order('day_index', { ascending: false })
+            .limit(1)
+            .single();
+        
+        const nextDayIndex = (maxDay?.day_index || 0) + 1;
+        
+        const { data, error } = await supabase
+            .from('program_days')
+            .insert([{
+                program_id: programId,
+                day_index: nextDayIndex,
+                title: `День ${nextDayIndex}`,
+                description: ''
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        showToast('День добавлен', 'success');
+        
+        // Refresh the days list
+        await handleProgramDays(programId);
+        
+    } catch (error) {
+        console.error('Failed to add day:', error);
+        showToast('Ошибка добавления дня: ' + error.message, 'error');
+    }
+}
+
+async function handleDayExercises(dayId) {
+    console.log('handleDayExercises called with day ID:', dayId);
+    showToast('Загружаем упражнения дня...', 'info');
+    
+    try {
+        // Get day info
+        const { data: day, error: dayError } = await supabase
+            .from('program_days')
+            .select('*, programs(title)')
+            .eq('id', dayId)
+            .single();
+        
+        if (dayError) throw dayError;
+        
+        // Get exercises for this day
+        const { data: exercises, error: exercisesError } = await supabase
+            .from('exercises')
+            .select('*')
+            .eq('program_day_id', dayId)
+            .order('order_index');
+        
+        if (exercisesError) throw exercisesError;
+        
+        // Open exercises management modal
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="exercises-management">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Упражнения: ${day.programs.title} - День ${day.day_index}</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button data-action="exercise-add" data-id="${dayId}" class="btn btn-primary" style="margin-bottom: 15px;">
+                            ➕ Добавить упражнение
+                        </button>
+                    </div>
+                    
+                    <div id="exercises-list" style="max-height: 400px; overflow-y: auto;">
+                        ${exercises.map(exercise => `
+                            <div class="exercise-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${exercise.order_index}. ${exercise.title}</h4>
+                                        <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${exercise.description || 'Без описания'}</p>
+                                        ${exercise.video_url ? `<p style="margin: 0; color: #007bff; font-size: 12px;">📹 ${exercise.video_url}</p>` : ''}
+                                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${exercise.id}</p>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button data-action="exercise-edit" data-id="${exercise.id}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
+                                        <button data-action="exercise-delete" data-id="${exercise.id}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="handleProgramDays('${day.program_id}')">
+                            ← Назад к дням
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Ensure modal is attached to body and visible
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '9999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('Failed to load day exercises:', error);
+        showToast('Ошибка загрузки упражнений: ' + error.message, 'error');
     }
 }
 
@@ -1555,6 +1779,7 @@ async function loadDeveloperPrograms() {
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button data-action="program-edit" data-id="${program.id}" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
+                    <button data-action="program-days" data-id="${program.id}" style="padding: 8px 12px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Дни</button>
                     <button data-action="program-toggle" data-id="${program.id}" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
                     <button data-action="program-delete" data-id="${program.id}" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
                 </div>
@@ -2044,6 +2269,204 @@ function importContent() {
     showToast('Функция импорта в разработке', 'info');
 }
 
+async function handleAddExercise(dayId) {
+    console.log('handleAddExercise called with day ID:', dayId);
+    showToast('Добавляем новое упражнение...', 'info');
+    
+    try {
+        // Get next order_index
+        const { data: maxExercise } = await supabase
+            .from('exercises')
+            .select('order_index')
+            .eq('program_day_id', dayId)
+            .order('order_index', { ascending: false })
+            .limit(1)
+            .single();
+        
+        const nextOrderIndex = (maxExercise?.order_index || 0) + 1;
+        
+        const { data, error } = await supabase
+            .from('exercises')
+            .insert([{
+                program_day_id: dayId,
+                order_index: nextOrderIndex,
+                title: `Упражнение ${nextOrderIndex}`,
+                description: '',
+                video_url: ''
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        showToast('Упражнение добавлено', 'success');
+        
+        // Refresh the exercises list
+        await handleDayExercises(dayId);
+        
+    } catch (error) {
+        console.error('Failed to add exercise:', error);
+        showToast('Ошибка добавления упражнения: ' + error.message, 'error');
+    }
+}
+
+async function handleEditExercise(exerciseId) {
+    console.log('handleEditExercise called with ID:', exerciseId);
+    showToast('Загружаем упражнение для редактирования...', 'info');
+    
+    try {
+        // Get exercise data
+        const { data: exercise, error } = await supabase
+            .from('exercises')
+            .select('*')
+            .eq('id', exerciseId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Open edit modal
+        const modal = document.getElementById('program-modal');
+        const modalBody = document.getElementById('program-modal-body');
+        
+        if (modal && modalBody) {
+            modalBody.innerHTML = `
+                <div class="exercise-edit-form">
+                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать упражнение</h2>
+                    <form id="edit-exercise-form">
+                        <div class="form-group">
+                            <label>Название упражнения</label>
+                            <input type="text" id="edit-exercise-title" value="${exercise.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <textarea id="edit-exercise-description" rows="3">${exercise.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL видео (YouTube, GetCourse и др.)</label>
+                            <input type="url" id="edit-exercise-video" value="${exercise.video_url || ''}" placeholder="https://youtube.com/watch?v=...">
+                        </div>
+                        <div class="form-group">
+                            <label>Порядок</label>
+                            <input type="number" id="edit-exercise-order" value="${exercise.order_index}" min="1">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-primary" onclick="saveExerciseEditViaAdmin('${exerciseId}')">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" onclick="handleDayExercises('${exercise.program_day_id}')">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            // Ensure modal is attached to body and visible
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '9999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('Failed to load exercise for editing:', error);
+        showToast('Ошибка загрузки упражнения: ' + error.message, 'error');
+    }
+}
+
+async function saveExerciseEditViaAdmin(exerciseId) {
+    try {
+        const title = document.getElementById('edit-exercise-title').value;
+        const description = document.getElementById('edit-exercise-description').value;
+        const videoUrl = document.getElementById('edit-exercise-video').value;
+        const orderIndex = parseInt(document.getElementById('edit-exercise-order').value);
+        
+        if (!title.trim()) {
+            showToast('Название упражнения обязательно', 'error');
+            return;
+        }
+        
+        showToast('Сохраняем упражнение...', 'info');
+        
+        const { data, error } = await supabase
+            .from('exercises')
+            .update({
+                title: title.trim(),
+                description: description.trim(),
+                video_url: videoUrl.trim(),
+                order_index: orderIndex
+            })
+            .eq('id', exerciseId)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        showToast('Упражнение обновлено', 'success');
+        
+        // Get the day_id to refresh the exercises list
+        const { data: exercise } = await supabase
+            .from('exercises')
+            .select('program_day_id')
+            .eq('id', exerciseId)
+            .single();
+        
+        // Close modal and refresh
+        const modal = document.getElementById('program-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        // Refresh the exercises list
+        await handleDayExercises(exercise.program_day_id);
+        
+    } catch (error) {
+        console.error('Failed to save exercise:', error);
+        showToast('Ошибка сохранения: ' + error.message, 'error');
+    }
+}
+
+async function handleDeleteExercise(exerciseId) {
+    console.log('handleDeleteExercise called with ID:', exerciseId);
+    
+    if (!confirm('Удалить упражнение? Это действие нельзя отменить.')) {
+        return;
+    }
+    
+    showToast('Удаляем упражнение...', 'info');
+    
+    try {
+        // Get day_id before deleting
+        const { data: exercise } = await supabase
+            .from('exercises')
+            .select('program_day_id')
+            .eq('id', exerciseId)
+            .single();
+        
+        const { error } = await supabase
+            .from('exercises')
+            .delete()
+            .eq('id', exerciseId);
+        
+        if (error) throw error;
+        
+        showToast('Упражнение удалено', 'success');
+        
+        // Refresh the exercises list
+        await handleDayExercises(exercise.program_day_id);
+        
+    } catch (error) {
+        console.error('Failed to delete exercise:', error);
+        showToast('Ошибка удаления: ' + error.message, 'error');
+    }
+}
+
 // Export all functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
@@ -2067,6 +2490,13 @@ window.addNewProgram = addNewProgram;
 window.saveNewProgram = saveNewProgram;
 window.saveProgramEditViaAdmin = saveProgramEditViaAdmin;
 window.saveNewProgramViaAdmin = saveNewProgramViaAdmin;
+window.handleProgramDays = handleProgramDays;
+window.handleAddDay = handleAddDay;
+window.handleDayExercises = handleDayExercises;
+window.handleAddExercise = handleAddExercise;
+window.handleEditExercise = handleEditExercise;
+window.saveExerciseEditViaAdmin = saveExerciseEditViaAdmin;
+window.handleDeleteExercise = handleDeleteExercise;
 window.saveHomeContent = saveHomeContent;
 window.saveSettings = saveSettings;
 window.exportContent = exportContent;
