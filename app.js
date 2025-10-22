@@ -204,6 +204,8 @@ async function checkEditorStatus() {
         
         const result = await response.json();
         console.log('[EditorCheck] response:', result);
+        // TEMP: visible debug to confirm status inside Telegram
+        showToast(`[EditorCheck] ok=${result?.ok ?? 'n/a'} is_editor=${result?.is_editor ?? 'n/a'}`, 'info');
         
         if (result && result.is_editor === true) {
             isEditor = true;
@@ -213,6 +215,7 @@ async function checkEditorStatus() {
         }
     } catch (error) {
         console.error('Failed to verify editor status:', error);
+        showToast('EditorCheck error: ' + (error?.message || String(error)), 'error');
         hideDeveloperButton();
     }
 }
