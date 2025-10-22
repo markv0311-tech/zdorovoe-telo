@@ -13,15 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    // Create a Supabase client with the Auth context of the function
+    // Create a Supabase client (no Authorization header needed for public access)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
     const { initDataRaw } = await req.json()
