@@ -192,7 +192,10 @@ async function checkEditorStatus() {
     
     try {
         console.log('Checking editor status...');
-        const response = await fetch(`${window.SUPABASE_URL}/functions/v1/verify-editor`, {
+        const functionUrl = `${window.SUPABASE_URL}/functions/v1/verify-editor`;
+        console.log('Function URL:', functionUrl);
+        
+        const response = await fetch(functionUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -202,10 +205,11 @@ async function checkEditorStatus() {
             })
         });
         
+        console.log('Response status:', response.status);
         const result = await response.json();
         console.log('[EditorCheck] response:', result);
         // TEMP: visible debug to confirm status inside Telegram
-        showToast(`[EditorCheck] ok=${result?.ok ?? 'n/a'} is_editor=${result?.is_editor ?? 'n/a'}`, 'info');
+        showToast(`[EditorCheck] status=${response.status} ok=${result?.ok ?? 'n/a'} is_editor=${result?.is_editor ?? 'n/a'}`, 'info');
         
         if (result && result.is_editor === true) {
             isEditor = true;
