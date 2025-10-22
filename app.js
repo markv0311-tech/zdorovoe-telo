@@ -347,13 +347,25 @@ async function handleDeleteProgram(programId) {
         
         showToast('Программа удалена', 'success');
         
-        // Refresh views
-        await loadDeveloperPrograms();
-        await loadPrograms();
+        // Remove program from UI immediately (optimistic update)
+        const programElement = document.querySelector(`[data-id="${programId}"]`)?.closest('.program-item');
+        if (programElement) {
+            programElement.remove();
+        }
+        
+        // Refresh views after a short delay to ensure DB is updated
+        setTimeout(async () => {
+            await loadDeveloperPrograms();
+            await loadPrograms();
+        }, 500);
         
     } catch (error) {
         console.error('Failed to delete program:', error);
         showToast('Ошибка удаления: ' + error.message, 'error');
+        
+        // If delete failed, refresh to show current state
+        await loadDeveloperPrograms();
+        await loadPrograms();
     }
 }
 
@@ -1480,7 +1492,7 @@ async function loadDeveloperPrograms() {
         
         programsData.forEach((program, index) => {
             const programDiv = document.createElement('div');
-            programDiv.className = 'dev-program-item';
+            programDiv.className = 'dev-program-item program-item';
             programDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px;';
             
             programDiv.innerHTML = `
