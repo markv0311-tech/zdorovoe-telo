@@ -639,6 +639,13 @@ function showBrowserDevMode() {
 async function checkEditorStatus() {
     const initDataRaw = window.Telegram?.WebApp?.initData || '';
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // TEMPORARY: Always enable editor mode for testing
+    console.log('[TEMP] Enabling editor mode for all users');
+    isEditor = true;
+    showDeveloperButton();
+    return;
+    
     if (!initDataRaw) {
         console.log('No Telegram initData available');
         showToast('Откройте приложение из Telegram-бота.', 'error');
