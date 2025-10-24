@@ -656,7 +656,6 @@ async function handleProgramDays(programId) {
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <div style="flex: 1;">
                                         <h4 style="margin: 0 0 5px 0; color: #2c3e50;">День ${day.day_index}</h4>
-                                        <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${day.title || 'Без названия'}</p>
                                         <p style="margin: 0; color: #999; font-size: 12px;">ID: ${day.id}</p>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
@@ -718,8 +717,7 @@ async function handleAddDay(programId) {
             .from('program_days')
             .insert([{
                 program_id: programId,
-                day_index: nextDayIndex,
-                title: `День ${nextDayIndex}`
+                day_index: nextDayIndex
             }])
             .select()
             .single();
@@ -760,10 +758,6 @@ async function handleEditDay(dayId) {
                 <div class="day-edit-form">
                     <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать день</h2>
                     <form id="edit-day-form">
-                        <div class="form-group">
-                            <label>Название дня</label>
-                            <input type="text" id="edit-day-title" value="${day.title}" required>
-                        </div>
                         <div class="form-group">
                             <label>Номер дня</label>
                             <input type="number" id="edit-day-index" value="${day.day_index}" min="1">
@@ -834,11 +828,10 @@ async function handleDeleteDay(dayId) {
 
 async function saveDayEditViaAdmin(dayId) {
     try {
-        const title = document.getElementById('edit-day-title').value;
         const dayIndex = parseInt(document.getElementById('edit-day-index').value);
         
-        if (!title.trim()) {
-            showToast('Название дня обязательно', 'error');
+        if (!dayIndex || dayIndex < 1) {
+            showToast('Номер дня должен быть больше 0', 'error');
             return;
         }
         
@@ -847,7 +840,6 @@ async function saveDayEditViaAdmin(dayId) {
         const { data, error } = await supabase
             .from('program_days')
             .update({
-                title: title.trim(),
                 day_index: dayIndex
             })
             .eq('id', dayId)
