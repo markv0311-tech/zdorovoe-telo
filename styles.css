@@ -6,27 +6,27 @@
 }
 
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 /* Override hidden for modals when they should be visible */
 .modal:not(.hidden) {
-    display: flex !important;
+    display: flex;
 }
   
   .modal.hidden, 
   .overlay.hidden {
-    display: none !important;
-}
+    display: none;
+  }
 
 /* Ensure interactive elements are clickable */
 button, [data-action], .nav-item, .program-card, .exercise-item {
-    pointer-events: auto !important;
+    pointer-events: auto;
 }
 
 /* Ensure modals don't block clicks when hidden */
 .modal.hidden, .overlay.hidden {
-    pointer-events: none !important;
+    pointer-events: none;
 }
 
 /* Video styles */
@@ -126,14 +126,14 @@ video.exercise-video {
 
 /* Theme Toggle - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
 #switch.theme-toggle-top {
-    position: fixed !important;
-    top: 20px !important;
-    left: 40% !important;
-    width: 70px !important;
-    height: 35px !important;
-    z-index: 9999 !important;
-    background: red !important;
-    border: 3px solid red !important;
+    position: fixed;
+    top: 20px;
+    left: 40%;
+    width: 70px;
+    height: 35px;
+    z-index: 9999;
+    background: red;
+    border: 3px solid red;
 }
 
 .theme-slider {
@@ -143,12 +143,12 @@ video.exercise-video {
 }
 
 .theme-slider-track {
-    width: 100% !important;
-    height: 100% !important;
-    background: red !important;
-    border-radius: 18px !important;
-    position: relative !important;
-    transition: all 0.3s ease !important;
+    width: 100%;
+    height: 100%;
+    background: red;
+    border-radius: 18px;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 .theme-slider-thumb {
@@ -174,7 +174,7 @@ video.exercise-video {
 
 /* Dark theme styles */
 .dark-theme .theme-slider-track {
-    background: red !important;
+    background: red;
 }
 
 .dark-theme .theme-slider-thumb {
@@ -906,8 +906,8 @@ body {
     /* УДАЛЕНЫ МОБИЛЬНЫЕ ПРАВИЛА ДЛЯ ПЕРЕКЛЮЧАТЕЛЯ */
     
     .avatar-image {
-        width: 40% !important; /* Уменьшаем до 40% на мобильных */
-        height: 40% !important; /* Уменьшаем до 40% на мобильных */
+        width: 40%; /* Уменьшаем до 40% на мобильных */
+        height: 40%; /* Уменьшаем до 40% на мобильных */
     }
     
     .level-text {
@@ -1509,7 +1509,7 @@ body {
 }
 
 .developer-panel.hidden {
-    display: none !important;
+    display: none;
 }
 
 /* Developer panel visibility controlled by JavaScript */
@@ -1906,5 +1906,5 @@ body {
 }
 /* Ensure modals are hidden by default */
 .modal.hidden, .overlay.hidden {
-    display: none !important;
+    display: none;
 }
