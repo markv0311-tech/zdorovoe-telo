@@ -599,18 +599,11 @@ video.exercise-video {
 .level-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     text-align: center;
 }
 
-.level-number {
-    font-size: 40px;
-    font-weight: 700;
-    color: #667eea;
-    margin: 0;
-}
-
-.level-name {
+.level-text {
     font-size: 24px;
     font-weight: 600;
     color: #2c3e50;
@@ -884,11 +877,7 @@ body {
         font-size: 60px;
     }
     
-    .level-number {
-        font-size: 32px;
-    }
-    
-    .level-name {
+    .level-text {
         font-size: 20px;
     }
     

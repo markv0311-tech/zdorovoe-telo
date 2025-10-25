@@ -2973,7 +2973,7 @@ function updateWelcomeMessage() {
     const daysSinceRegistration = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24)) + 1;
     
     document.getElementById('welcome-title').textContent = `Привет, ${userName}!`;
-    document.getElementById('welcome-subtitle').textContent = `Сегодня твой ${daysSinceRegistration}-й день на пути к Здоровому телу`;
+    document.getElementById('welcome-subtitle').innerHTML = `Сегодня твой ${daysSinceRegistration}-ый день<br>на пути к Здоровому телу!`;
 }
 
 // Update progress display
@@ -2998,11 +2998,9 @@ function updateProgressDisplay() {
     if (progressText) progressText.textContent = `${levelProgress.current} из ${levelProgress.total} дней`;
     
     // Update bottom level display
-    const levelNumber = document.getElementById('level-number');
-    const levelName = document.getElementById('level-name');
+    const levelText = document.getElementById('level-text');
     
-    if (levelNumber) levelNumber.textContent = currentLevel.level;
-    if (levelName) levelName.textContent = currentLevel.name;
+    if (levelText) levelText.textContent = `Уровень ${currentLevel.level}. ${currentLevel.name}`;
 }
 
 // Get current level based on completed days
