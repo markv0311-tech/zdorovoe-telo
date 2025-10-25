@@ -1319,7 +1319,9 @@ function navigateToSection(sectionName) {
     window.scrollTo(0, 0);
     
     // Load section-specific content
-    if (sectionName === 'reports') {
+    if (sectionName === 'home') {
+        initializeHomepage();
+    } else if (sectionName === 'reports') {
         updateCalendar();
         updateProgressStats();
     }
@@ -2921,6 +2923,156 @@ function startDiagnostic(module) {
 }
 
 window.startDiagnostic = startDiagnostic;
+
+// Progress System
+const PROGRESS_LEVELS = [
+    { level: 1, name: "Новичок", minDays: 0, maxDays: 6, emoji: "🏃‍♂️" },
+    { level: 2, name: "Начинающий", minDays: 7, maxDays: 20, emoji: "💪" },
+    { level: 3, name: "Продвинутый", minDays: 21, maxDays: 44, emoji: "🏋️‍♂️" },
+    { level: 4, name: "Опытный", minDays: 45, maxDays: 89, emoji: "🥇" },
+    { level: 5, name: "Эксперт", minDays: 90, maxDays: 999, emoji: "🏆" }
+];
+
+// Initialize homepage
+function initializeHomepage() {
+    updateWelcomeMessage();
+    updateProgressDisplay();
+    generateCalendar();
+    loadThemePreference();
+}
+
+// Update welcome message with user name
+function updateWelcomeMessage() {
+    const userName = user?.first_name || 'Пользователь';
+    const registrationDate = userProfile.registrationDate || new Date();
+    const daysSinceRegistration = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24)) + 1;
+    
+    document.getElementById('welcome-title').textContent = `Привет, ${userName}!`;
+    document.getElementById('welcome-subtitle').textContent = `Сегодня твой ${daysSinceRegistration}-й день на пути к Здоровому телу`;
+}
+
+// Update progress display
+function updateProgressDisplay() {
+    const completedDays = userProgress.completedDays || 0;
+    const currentLevel = getCurrentLevel(completedDays);
+    const levelProgress = getLevelProgress(completedDays, currentLevel);
+    
+    // Update avatar
+    const avatarBody = document.querySelector('.avatar-body');
+    const avatarLevel = document.querySelector('.avatar-level');
+    avatarBody.textContent = currentLevel.emoji;
+    avatarLevel.textContent = currentLevel.level;
+    
+    // Update progress info
+    document.getElementById('progress-title').textContent = `Уровень ${currentLevel.level}: ${currentLevel.name}`;
+    document.getElementById('progress-fill').style.width = `${levelProgress.percentage}%`;
+    document.getElementById('progress-text').textContent = `${levelProgress.current} из ${levelProgress.total} дней`;
+}
+
+// Get current level based on completed days
+function getCurrentLevel(completedDays) {
+    for (let level of PROGRESS_LEVELS) {
+        if (completedDays >= level.minDays && completedDays <= level.maxDays) {
+            return level;
+        }
+    }
+    return PROGRESS_LEVELS[0];
+}
+
+// Get level progress
+function getLevelProgress(completedDays, level) {
+    const current = completedDays - level.minDays;
+    const total = level.maxDays - level.minDays + 1;
+    const percentage = Math.min((current / total) * 100, 100);
+    
+    return { current, total, percentage };
+}
+
+// Generate calendar
+function generateCalendar() {
+    const calendarGrid = document.getElementById('calendar-grid');
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDay = firstDay.getDay();
+    
+    // Clear calendar
+    calendarGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    dayHeaders.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        dayHeader.style.fontWeight = '600';
+        dayHeader.style.color = 'rgba(0, 0, 0, 0.6)';
+        calendarGrid.appendChild(dayHeader);
+    });
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day other-month';
+        calendarGrid.appendChild(emptyDay);
+    }
+    
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = day;
+        
+        // Check if this day is completed
+        const dayDate = new Date(currentYear, currentMonth, day);
+        if (isDayCompleted(dayDate)) {
+            dayElement.classList.add('completed');
+        }
+        
+        // Check if this is today
+        if (day === today.getDate() && currentMonth === today.getMonth()) {
+            dayElement.classList.add('today');
+        }
+        
+        calendarGrid.appendChild(dayElement);
+    }
+}
+
+// Check if a day is completed
+function isDayCompleted(date) {
+    const dateStr = date.toISOString().split('T')[0];
+    return userProgress.completedDates && userProgress.completedDates.includes(dateStr);
+}
+
+// Theme toggle
+function toggleTheme() {
+    const themeSwitch = document.getElementById('theme-switch');
+    const isDark = themeSwitch.checked;
+    
+    document.body.classList.toggle('dark-theme', isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    
+    showToast(`Переключено на ${isDark ? 'темную' : 'светлую'} тему`, 'info');
+}
+
+// Load theme preference
+function loadThemePreference() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const themeSwitch = document.getElementById('theme-switch');
+    
+    if (savedTheme === 'dark') {
+        themeSwitch.checked = true;
+        document.body.classList.add('dark-theme');
+    }
+}
+
+window.initializeHomepage = initializeHomepage;
+window.toggleTheme = toggleTheme;
 
 // Debug: Check if functions are available
 console.log('Functions exported:', {
