@@ -2988,11 +2988,11 @@ function updateProgressDisplay() {
         // You can change the image source based on the level
         // For now, we'll keep the same image but you can add different images for different levels
             const imageUrls = {
-                1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/334/h/01ec8cda94a2d8b752f5a0d9f570ce1e.png', // Новичок
-                2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/334/h/01ec8cda94a2d8b752f5a0d9f570ce1e.png', // Начинающий
-                3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/334/h/01ec8cda94a2d8b752f5a0d9f570ce1e.png', // Продвинутый
-                4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/334/h/01ec8cda94a2d8b752f5a0d9f570ce1e.png', // Опытный
-                5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/334/h/01ec8cda94a2d8b752f5a0d9f570ce1e.png'  // Эксперт
+                1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Новичок
+                2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Начинающий
+                3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Продвинутый
+                4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Опытный
+                5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png'  // Эксперт
             };
         
         const imageUrl = imageUrls[currentLevel.level] || imageUrls[1];
