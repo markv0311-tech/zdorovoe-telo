@@ -139,7 +139,7 @@ video.exercise-video {
 .theme-toggle-top {
     position: absolute;
     top: 20px;
-    left: 20px; /* Выравниваем с блоком изображения */
+    left: 7.5%; /* Выравниваем с левым краем нижнего меню */
     z-index: 1000;
 }
 
@@ -313,7 +313,7 @@ video.exercise-video {
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
-    margin-left: 0 !important; /* Выравнивание по левому краю с блоком изображения */
+    margin-left: 7.5% !important; /* Выравнивание с левым краем нижнего меню */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
     flex-direction: column;
@@ -346,7 +346,7 @@ video.exercise-video {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px 20px !important; /* Единый отступ 20px слева и справа */
+    padding: 12px 7.5% !important; /* Выравнивание с левым краем нижнего меню */
     margin: 12px 0;
     position: relative;
     flex: 1;
@@ -605,7 +605,7 @@ video.exercise-video {
 .level-display-bottom {
     display: flex;
     justify-content: flex-start; /* Выравниваем по левому краю */
-    padding: 12px 20px !important; /* Единый отступ 20px слева и справа */
+    padding: 12px 7.5% !important; /* Выравнивание с левым краем нижнего меню */
     margin-top: auto;
 }
 
@@ -904,7 +904,7 @@ body::before {
     .welcome-section {
         margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: 0; /* Единый отступ слева */
+        margin-left: 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
@@ -913,13 +913,17 @@ body::before {
     }
     
     .human-avatar-center {
-        padding: 10px 15px; /* Единый отступ на мобильных */
+        padding: 10px 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
         margin: 10px 0;
         min-height: 150px;
     }
     
     .level-display-bottom {
-        padding: 10px 15px; /* Единый отступ на мобильных */
+        padding: 10px 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
+    }
+    
+    .theme-toggle-top {
+        left: 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
     }
     
     .avatar-image {
