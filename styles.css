@@ -851,7 +851,7 @@ video.exercise-video {
     position: relative;
 }
 
-/* Красная направляющая для разработки */
+/* Красная направляющая для разработки - ВЕРСИЯ 2.1 */
 .page::before {
     content: '';
     position: fixed;
