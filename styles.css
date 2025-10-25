@@ -124,12 +124,10 @@ video.exercise-video {
 
 /* New Homepage Styles */
 .home-container {
-    padding: 10px 0; /* Убираем боковые отступы - они в .page */
-    max-width: none; /* Убираем ограничение ширины */
-    margin: 0; /* Убираем центрирование */
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    display: block;
     position: relative;
     z-index: 1;
     min-height: 100vh;
@@ -137,10 +135,9 @@ video.exercise-video {
 
 /* Theme Toggle - Top Left */
 .theme-toggle-top {
-    position: absolute;
-    top: 20px;
-    left: 0; /* Выравниваем по левому краю .page (20px от экрана) */
-    margin-left: 0;
+    position: relative;
+    margin-left: var(--switch-ml, var(--ml));
+    margin-top: var(--switch-mt, var(--mt));
     z-index: 1000;
 }
 
@@ -305,22 +302,21 @@ video.exercise-video {
 
 /* Welcome Section */
 .welcome-section {
+    position: relative;
+    margin-left: var(--greeting-ml, var(--ml));
+    margin-top: var(--greeting-mt, var(--mt));
+    width: var(--greeting-w, auto);
     text-align: left;
-    padding: 30px 20px 30px 28px; /* Внутренние отступы для контента + 8px вправо */
-    background: transparent; /* Убираем фон */
-    backdrop-filter: none; /* Убираем размытие */
-    border-radius: 0; /* Убираем скругления */
-    border: none; /* Убираем рамку */
-    margin-top: 51px !important; /* Поднимаем на 3px (было 54px) */
-    margin-bottom: 16px; /* Отступ до контейнера PNG */
-    margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px */
-    margin-right: 100px; /* Отступ справа для табов */
-    height: 120px; /* Фиксированная высота для выравнивания с табами */
+    padding: 30px 20px;
+    background: transparent;
+    backdrop-filter: none;
+    border-radius: 0;
+    border: none;
+    height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    position: relative;
-    z-index: 10; /* Выше переключателя темы */
+    z-index: 10;
 }
 
 .welcome-title {
@@ -344,17 +340,18 @@ video.exercise-video {
 
 /* Human Avatar Center */
 .human-avatar-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0; /* Выравниваем по левому краю на расстоянии 20px */
-    margin-bottom: 16px; /* Отступ до заголовка уровня */
     position: relative;
-    flex: 1;
-    width: 100%; /* Ширина = ширине нижнего меню */
-    aspect-ratio: 4/3;
-    min-height: 260px;
-    max-height: 70dvh;
+    margin-left: var(--hero-ml, var(--ml));
+    margin-top: var(--hero-mt, var(--mt));
+    width: var(--hero-w, calc(100% - var(--hero-ml, var(--ml)) - 16px));
+    min-height: var(--hero-minh, 260px);
+    height: var(--hero-h, auto);
+    border: none;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     /* Визуализация контейнера для разработки */
     outline: 2px dashed rgba(0, 123, 255, 0.5);
     background: rgba(0, 123, 255, 0.05);
@@ -379,10 +376,10 @@ video.exercise-video {
 /* Убираем анимацию вращения для нового изображения */
 
 .avatar-image {
-    width: 40% !important; /* Уменьшаем до 40% */
-    height: 40% !important; /* Уменьшаем до 40% */
-    object-fit: cover; /* Заполняем весь контейнер, обрезаем при необходимости */
-    object-position: center; /* Центрируем изображение */
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
     border-radius: 0;
     filter: none;
     z-index: 1;
@@ -612,11 +609,12 @@ video.exercise-video {
 
 /* Level Display - Bottom Center */
 .level-display-bottom {
+    position: relative;
+    margin-left: var(--level-ml, var(--ml));
+    margin-top: var(--level-mt, var(--mt));
     display: flex;
-    justify-content: flex-start; /* Выравниваем по левому краю */
-    padding: 12px 0; /* Внутренние отступы */
-    margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px */
-    margin-top: auto;
+    justify-content: flex-start;
+    padding: 12px 0;
 }
 
 .level-info {
@@ -835,18 +833,45 @@ video.exercise-video {
 }
 
 :root {
-        --left-offset: 20px; /* Фиксированное расстояние 20px от левого края */
-    --right-offset: calc(env(safe-area-inset-right, 0px) + 16px);
+    /* Базовые переменные */
+    --ml: 20px;         /* базовый левый отступ */
+    --mt: 12px;         /* базовый верхний отступ */
+    
+    /* Переключатель темы */
+    --switch-ml: 20px;
+    --switch-mt: 20px;
+    
+    /* Карточка приветствия */
+    --greeting-ml: 20px;
+    --greeting-mt: 51px;
+    --greeting-w: 86%;
+    
+    /* Контейнер изображения */
+    --hero-ml: 20px;
+    --hero-mt: 16px;
+    --hero-w: 86%;
+    --hero-minh: 260px;
+    --hero-h: auto;
+    
+    /* Заголовок уровня */
+    --level-ml: 20px;
+    --level-mt: 16px;
+    
+    /* Нижнее меню */
+    --menu-ml: 20px;
+    --menu-mt: 16px;
+    --menu-w: 86%;
 }
 
 * {
     box-sizing: border-box;
 }
 
-/* Общий контейнер страницы */
+/* Общий контейнер страницы - ОТКЛЮЧЕН */
 .page {
-    padding-left: var(--left-offset);
-    padding-right: var(--right-offset);
+    padding: 0;
+    margin: 0;
+    display: block;
     min-height: 100vh;
     position: relative;
 }
@@ -907,11 +932,9 @@ body::before {
 .navbar {
     position: fixed;
     bottom: 20px;
-    left: 0; /* Убираем left - используем margin-left: 0 */
-    right: 0; /* Убираем right - используем margin-right: 0 */
-    width: 100%; /* Ширина = 100% от .page */
-    margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px */
-    margin-right: 0; /* Единый правый край */
+    left: var(--menu-ml, var(--ml));
+    width: var(--menu-w, calc(100% - var(--menu-ml, var(--ml)) - 16px));
+    margin: 0;
     max-width: none;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);

@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Здоровое тело</title>
-    <link rel="stylesheet" href="styles.css?v=2.1">
+    <link rel="stylesheet" href="styles.css?v=3.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div id="app">
         <!-- Navigation -->
-        <nav class="navbar">
+        <nav id="menu" class="navbar">
             <div class="nav-item active" data-section="home">
                 <span class="nav-icon">🏠</span>
                 <span class="nav-text">Главная</span>
@@ -107,7 +107,7 @@
             
             <div class="page">
                 <!-- Theme Toggle - Top Left -->
-                <div class="theme-toggle-top">
+                <div id="switch" class="theme-toggle-top">
                     <div class="theme-slider" onclick="toggleTheme()">
                         <div class="theme-slider-track">
                             <div class="theme-slider-thumb" id="theme-slider-thumb">
@@ -119,13 +119,13 @@
                 
                 <div class="home-container">
                 <!-- Welcome Section -->
-                <div class="welcome-section">
+                <div id="greeting" class="welcome-section">
                     <h1 class="welcome-title" id="welcome-title">Привет!</h1>
                     <p class="welcome-subtitle" id="welcome-subtitle">Добро пожаловать в ваше путешествие к здоровому образу жизни!</p>
                 </div>
                 
                 <!-- Human Avatar Center -->
-                <div class="human-avatar-center">
+                <div id="hero" class="human-avatar-center">
                     <div class="avatar-large" id="human-avatar-large">
                         <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png" alt="Human Avatar" class="avatar-image" id="avatar-image">
                     </div>
@@ -133,7 +133,7 @@
                 
                 
                 <!-- Level Display - Bottom Center -->
-                <div class="level-display-bottom">
+                <div id="level" class="level-display-bottom">
                     <div class="level-info">
                         <span class="level-text" id="level-text">Уровень 1. Новичок</span>
                     </div>
@@ -380,7 +380,7 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="./config.js?v=2.1"></script>
-    <script src="./app.js?v=2.1"></script>
+    <script src="./config.js?v=3.0"></script>
+    <script src="./app.js?v=3.0"></script>
 </body>
 </html>
