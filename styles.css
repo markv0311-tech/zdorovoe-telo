@@ -310,7 +310,7 @@ video.exercise-video {
     backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 38px; /* Поднимаем на 10px */
+    margin-top: 38px !important; /* Поднимаем на 10px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 0; /* Выравнивание по левому краю */
@@ -901,7 +901,7 @@ body::before {
     }
     
     .welcome-section {
-        margin-top: 60px; /* Меньший отступ сверху на мобильных */
+        margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
         height: 90px; /* Меньшая высота на мобильных */
     }
