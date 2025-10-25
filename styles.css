@@ -141,9 +141,9 @@ video.exercise-video {
     margin: 0 !important;
     padding: 0 !important;
     z-index: 9999 !important;
-    /* Временный визуальный индикатор для отладки */
+    /* ПОЛНОСТЬЮ КРАСНЫЙ */
     border: 3px solid red !important;
-    background: rgba(255, 0, 0, 0.3) !important;
+    background: red !important;
     width: 70px !important;
     height: 35px !important;
 }

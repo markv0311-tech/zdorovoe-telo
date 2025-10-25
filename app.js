@@ -1066,45 +1066,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPrograms();
     setupEventListeners();
     
-    // Принудительно применяем стили после загрузки
-    setTimeout(() => {
-        const avatarImage = document.getElementById('avatar-image');
-        if (avatarImage) {
-            avatarImage.style.width = '40%';
-            avatarImage.style.height = '40%';
-        }
-        
-        const welcomeSection = document.querySelector('.welcome-section');
-        if (welcomeSection) {
-            welcomeSection.style.marginLeft = '0';
-            welcomeSection.style.paddingLeft = '28px';
-        }
-        
-        const themeToggle = document.querySelector('.theme-toggle-top');
-        if (themeToggle) {
-            themeToggle.style.position = 'absolute';
-            themeToggle.style.top = '20px';
-            themeToggle.style.left = '10px';
-            themeToggle.style.margin = '0';
-            themeToggle.style.padding = '0';
-            themeToggle.style.zIndex = '9999';
-            themeToggle.style.border = '3px solid red';
-            themeToggle.style.background = 'rgba(255, 0, 0, 0.3)';
-            themeToggle.style.width = '70px';
-            themeToggle.style.height = '35px';
-            console.log('Theme toggle FORCED to position: absolute, top: 20px, left: 10px');
-        }
-        
-        const levelDisplay = document.querySelector('.level-display-bottom');
-        if (levelDisplay) {
-            levelDisplay.style.marginLeft = '0';
-        }
-        
-        const navbar = document.querySelector('.navbar');
-        if (navbar) {
-            navbar.style.marginLeft = '0';
-        }
-    }, 100);
+    // Удалены все принудительные стили - это задача CSS, а не JavaScript
     loadUserData();
     
     console.log('App initialization complete');
@@ -3022,28 +2984,12 @@ function updateProgressDisplay() {
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
     
-    // Принудительно применяем стили к переключателю темы
-    const themeToggle = document.querySelector('.theme-toggle-top');
-    if (themeToggle) {
-        themeToggle.style.position = 'absolute';
-        themeToggle.style.top = '20px';
-        themeToggle.style.left = '10px';
-        themeToggle.style.margin = '0';
-        themeToggle.style.padding = '0';
-        themeToggle.style.zIndex = '9999';
-        themeToggle.style.border = '3px solid red';
-        themeToggle.style.background = 'rgba(255, 0, 0, 0.3)';
-        themeToggle.style.width = '70px';
-        themeToggle.style.height = '35px';
-        console.log('Theme toggle FORCED in updateProgressDisplay');
-    }
+    // Удалены принудительные стили - это задача CSS
     
     // Update large avatar image based on level
     const avatarImage = document.getElementById('avatar-image');
     if (avatarImage) {
-        // Принудительно применяем стили
-        avatarImage.style.width = '40%';
-        avatarImage.style.height = '40%';
+        // Удалены принудительные стили - это задача CSS
         // You can change the image source based on the level
         // For now, we'll keep the same image but you can add different images for different levels
             const imageUrls = {
@@ -3064,9 +3010,6 @@ function updateProgressDisplay() {
             newImage.onload = () => {
                 avatarImage.src = imageUrl;
                 avatarImage.classList.remove('loading');
-                // Принудительно применяем стили
-                avatarImage.style.width = '40%';
-                avatarImage.style.height = '40%';
             };
             newImage.onerror = () => {
                 avatarImage.classList.remove('loading');
