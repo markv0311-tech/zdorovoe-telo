@@ -346,7 +346,7 @@ video.exercise-video {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px;
+    padding: 12px 20px; /* Единый отступ 20px слева и справа */
     margin: 12px 0;
     position: relative;
     flex: 1;
@@ -604,16 +604,16 @@ video.exercise-video {
 /* Level Display - Bottom Center */
 .level-display-bottom {
     display: flex;
-    justify-content: center;
-    padding: 12px; /* Минимальный отступ */
+    justify-content: flex-start; /* Выравниваем по левому краю */
+    padding: 12px 20px; /* Единый отступ 20px слева и справа */
     margin-top: auto;
 }
 
 .level-info {
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start; /* Выравниваем по левому краю */
+    text-align: left; /* Выравниваем текст по левому краю */
 }
 
 .level-text {
@@ -912,9 +912,13 @@ body::before {
     }
     
     .human-avatar-center {
-        padding: 10px;
+        padding: 10px 15px; /* Единый отступ на мобильных */
         margin: 10px 0;
         min-height: 150px;
+    }
+    
+    .level-display-bottom {
+        padding: 10px 15px; /* Единый отступ на мобильных */
     }
     
     .avatar-image {
