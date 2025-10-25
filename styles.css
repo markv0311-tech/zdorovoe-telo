@@ -131,6 +131,7 @@ video.exercise-video {
     flex-direction: column;
     gap: 24px;
     position: relative;
+    z-index: 1;
 }
 
 /* Theme Toggle - Top Left */
@@ -308,12 +309,13 @@ video.exercise-video {
     border: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
+    margin-left: 0; /* Выравнивание по левому краю */
 }
 
 .welcome-title {
-    font-size: 28px;
+    font-size: 36px;
     font-weight: 700;
-    margin: 0 0 12px 0;
+    margin: 0 0 16px 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -321,7 +323,7 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: 18px;
+    font-size: 22px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
     font-weight: 500;
@@ -604,7 +606,7 @@ video.exercise-video {
 }
 
 .level-text {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 600;
     color: #2c3e50;
     margin: 0;
@@ -813,10 +815,34 @@ video.exercise-video {
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f8f9fa;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     color: #333;
     line-height: 1.6;
     overflow-x: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.03) 2px,
+            rgba(255, 255, 255, 0.03) 4px
+        );
+    pointer-events: none;
+    z-index: 0;
 }
 
 #app {
@@ -857,11 +883,11 @@ body {
     }
     
     .welcome-title {
-        font-size: 24px;
+        font-size: 28px;
     }
     
     .welcome-subtitle {
-        font-size: 16px;
+        font-size: 18px;
     }
     
     .welcome-section {
@@ -878,7 +904,7 @@ body {
     }
     
     .level-text {
-        font-size: 20px;
+        font-size: 22px;
     }
     
     .theme-slider {
