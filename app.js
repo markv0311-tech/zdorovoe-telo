@@ -2957,16 +2957,27 @@ function updateProgressDisplay() {
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
     
-    // Update avatar
-    const avatarBody = document.querySelector('.avatar-body');
-    const avatarLevel = document.querySelector('.avatar-level');
-    avatarBody.textContent = currentLevel.emoji;
-    avatarLevel.textContent = currentLevel.level;
+    // Update large avatar
+    const avatarBodyLarge = document.querySelector('.avatar-body-large');
+    if (avatarBodyLarge) {
+        avatarBodyLarge.textContent = currentLevel.emoji;
+    }
     
     // Update progress info
-    document.getElementById('progress-title').textContent = `Уровень ${currentLevel.level}: ${currentLevel.name}`;
-    document.getElementById('progress-fill').style.width = `${levelProgress.percentage}%`;
-    document.getElementById('progress-text').textContent = `${levelProgress.current} из ${levelProgress.total} дней`;
+    const progressTitle = document.getElementById('progress-title');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    
+    if (progressTitle) progressTitle.textContent = `Уровень ${currentLevel.level}: ${currentLevel.name}`;
+    if (progressFill) progressFill.style.width = `${levelProgress.percentage}%`;
+    if (progressText) progressText.textContent = `${levelProgress.current} из ${levelProgress.total} дней`;
+    
+    // Update bottom level display
+    const levelNumber = document.getElementById('level-number');
+    const levelName = document.getElementById('level-name');
+    
+    if (levelNumber) levelNumber.textContent = currentLevel.level;
+    if (levelName) levelName.textContent = currentLevel.name;
 }
 
 // Get current level based on completed days
@@ -3063,16 +3074,72 @@ function toggleTheme() {
 // Load theme preference
 function loadThemePreference() {
     const savedTheme = localStorage.getItem('theme') || 'light';
-    const themeSwitch = document.getElementById('theme-switch');
+    const themeSwitch = document.getElementById('theme-switch-top');
     
     if (savedTheme === 'dark') {
-        themeSwitch.checked = true;
+        if (themeSwitch) themeSwitch.checked = true;
         document.body.classList.add('dark-theme');
     }
 }
 
+// Tab switching
+function toggleTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update tab panels
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(`${tabName}-panel`).classList.add('active');
+    
+    // Load content if needed
+    if (tabName === 'leaderboard') {
+        loadLeaderboard();
+    }
+}
+
+// Load leaderboard data
+function loadLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    if (!leaderboardList) return;
+    
+    // Mock data for now - will be replaced with real data from Supabase
+    const mockLeaderboard = [
+        { rank: 1, name: 'Алексей', days: 45, avatar: '🏆' },
+        { rank: 2, name: 'Мария', days: 38, avatar: '🥈' },
+        { rank: 3, name: 'Дмитрий', days: 32, avatar: '🥉' },
+        { rank: 4, name: 'Анна', days: 28, avatar: '💪' },
+        { rank: 5, name: 'Сергей', days: 25, avatar: '🏃‍♂️' }
+    ];
+    
+    leaderboardList.innerHTML = '';
+    
+    mockLeaderboard.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'leaderboard-item';
+        
+        const rankClass = user.rank <= 3 ? `top-${user.rank}` : '';
+        
+        item.innerHTML = `
+            <div class="leaderboard-rank ${rankClass}">${user.rank}</div>
+            <div class="leaderboard-avatar">${user.avatar}</div>
+            <div class="leaderboard-info">
+                <p class="leaderboard-name">${user.name}</p>
+                <p class="leaderboard-days">${user.days} дней</p>
+            </div>
+        `;
+        
+        leaderboardList.appendChild(item);
+    });
+}
+
 window.initializeHomepage = initializeHomepage;
 window.toggleTheme = toggleTheme;
+window.toggleTab = toggleTab;
 
 // Debug: Check if functions are available
 console.log('Functions exported:', {

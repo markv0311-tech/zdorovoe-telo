@@ -130,6 +130,94 @@ video.exercise-video {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    position: relative;
+}
+
+/* Theme Toggle - Top Left */
+.theme-toggle-top {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+#theme-switch-top {
+    display: none;
+}
+
+.theme-switch-top-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.theme-switch-top-label:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.theme-icon-top {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+#theme-switch-top:checked + .theme-switch-top-label .theme-icon-top {
+    transform: rotate(180deg);
+}
+
+/* Top Right Tabs */
+.top-tabs {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.tab-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 60px;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.tab-button.active {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.4);
+    color: #667eea;
+}
+
+.tab-icon {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.tab-text {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Welcome Section */
@@ -159,16 +247,80 @@ video.exercise-video {
     font-weight: 500;
 }
 
-/* Progress Section */
-.progress-section {
+/* Human Avatar Center */
+.human-avatar-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 200px;
+}
+
+.avatar-large {
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 24px;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    transition: all 0.5s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-large::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: rotate 3s linear infinite;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.avatar-body-large {
+    font-size: 48px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    z-index: 1;
+    position: relative;
+}
+
+/* Tab Content */
+.tab-content {
+    position: relative;
+    min-height: 200px;
+}
+
+.tab-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress Section */
+.progress-section {
+    padding: 20px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 20px;
 }
 
 .human-avatar {
@@ -354,48 +506,120 @@ video.exercise-video {
     color: rgba(0, 0, 0, 0.3);
 }
 
-/* Theme Toggle */
-.theme-toggle-section {
+/* Level Display - Bottom Center */
+.level-display-bottom {
     display: flex;
     justify-content: center;
-    padding: 16px;
+    padding: 20px;
+    margin-top: auto;
 }
 
-.theme-toggle {
-    position: relative;
-}
-
-#theme-switch {
-    display: none;
-}
-
-.theme-switch-label {
+.level-info {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px;
+    padding: 16px 24px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.level-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.level-name {
+    font-size: 18px;
+    font-weight: 600;
     color: #2c3e50;
 }
 
-.theme-switch-label:hover {
-    background: rgba(255, 255, 255, 0.2);
+/* Leaderboard Section */
+.leaderboard-section {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.leaderboard-section h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.leaderboard-item:hover {
+    background: rgba(255, 255, 255, 0.7);
     transform: translateY(-2px);
 }
 
-.theme-icon {
-    font-size: 20px;
-    transition: transform 0.3s ease;
+.leaderboard-rank {
+    font-size: 18px;
+    font-weight: 700;
+    width: 30px;
+    text-align: center;
 }
 
-#theme-switch:checked + .theme-switch-label .theme-icon {
-    transform: rotate(180deg);
+.leaderboard-rank.top-1 { color: #ffd700; }
+.leaderboard-rank.top-2 { color: #c0c0c0; }
+.leaderboard-rank.top-3 { color: #cd7f32; }
+
+.leaderboard-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.leaderboard-info {
+    flex: 1;
+}
+
+.leaderboard-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.leaderboard-days {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    margin: 0;
 }
 
 /* Self-Diagnosis Styles */
