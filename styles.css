@@ -306,7 +306,7 @@ video.exercise-video {
 /* Welcome Section */
 .welcome-section {
     text-align: left;
-    padding: 30px 20px 30px 24px; /* Внутренние отступы для контента + 4px вправо */
+    padding: 30px 20px 30px 28px; /* Внутренние отступы для контента + 8px вправо */
     background: transparent; /* Убираем фон */
     backdrop-filter: none; /* Убираем размытие */
     border-radius: 0; /* Убираем скругления */
