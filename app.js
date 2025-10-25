@@ -2982,10 +2982,36 @@ function updateProgressDisplay() {
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
     
-    // Update large avatar
-    const avatarBodyLarge = document.querySelector('.avatar-body-large');
-    if (avatarBodyLarge) {
-        avatarBodyLarge.textContent = currentLevel.emoji;
+    // Update large avatar image based on level
+    const avatarImage = document.getElementById('avatar-image');
+    if (avatarImage) {
+        // You can change the image source based on the level
+        // For now, we'll keep the same image but you can add different images for different levels
+        const imageUrls = {
+            1: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', // Новичок
+            2: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', // Начинающий
+            3: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', // Продвинутый
+            4: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', // Опытный
+            5: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'  // Эксперт
+        };
+        
+        const imageUrl = imageUrls[currentLevel.level] || imageUrls[1];
+        if (avatarImage.src !== imageUrl) {
+            // Add loading class for smooth transition
+            avatarImage.classList.add('loading');
+            
+            // Create new image to preload
+            const newImage = new Image();
+            newImage.onload = () => {
+                avatarImage.src = imageUrl;
+                avatarImage.classList.remove('loading');
+            };
+            newImage.onerror = () => {
+                avatarImage.classList.remove('loading');
+                console.warn('Failed to load avatar image:', imageUrl);
+            };
+            newImage.src = imageUrl;
+        }
     }
     
     // Update progress info
