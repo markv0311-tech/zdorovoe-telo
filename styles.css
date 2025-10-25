@@ -139,7 +139,7 @@ video.exercise-video {
 .theme-toggle-top {
     position: absolute;
     top: 20px;
-    left: 20px;
+    left: 20px; /* Выравниваем с блоком изображения */
     z-index: 1000;
 }
 
@@ -313,7 +313,7 @@ video.exercise-video {
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
-    margin-left: 0; /* Выравнивание по левому краю */
+    margin-left: 0; /* Выравнивание по левому краю с блоком изображения */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
     flex-direction: column;
@@ -336,7 +336,7 @@ video.exercise-video {
     font-size: 18px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
-    margin-top: -3px; /* Поднимаем на 3px внутри блока */
+    margin-top: -8px; /* Поднимаем еще на 5px выше */
     font-weight: 500;
     line-height: 1.4;
 }
