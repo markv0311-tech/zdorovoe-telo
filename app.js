@@ -2988,11 +2988,11 @@ function updateProgressDisplay() {
         // You can change the image source based on the level
         // For now, we'll keep the same image but you can add different images for different levels
         const imageUrls = {
-            1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80&fm=png&bg=transparent', // Новичок
-            2: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80&fm=png&bg=transparent', // Начинающий
-            3: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80&fm=png&bg=transparent', // Продвинутый
-            4: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80&fm=png&bg=transparent', // Опытный
-            5: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80&fm=png&bg=transparent'  // Эксперт
+            1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/15e9f4b08743425125ef1cee901ef4e8.png', // Новичок
+            2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/15e9f4b08743425125ef1cee901ef4e8.png', // Начинающий
+            3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/15e9f4b08743425125ef1cee901ef4e8.png', // Продвинутый
+            4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/15e9f4b08743425125ef1cee901ef4e8.png', // Опытный
+            5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/15e9f4b08743425125ef1cee901ef4e8.png'  // Эксперт
         };
         
         const imageUrl = imageUrls[currentLevel.level] || imageUrls[1];
