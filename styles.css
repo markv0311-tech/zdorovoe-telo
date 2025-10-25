@@ -310,6 +310,10 @@ video.exercise-video {
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 0; /* Выравнивание по левому краю */
+    height: 120px; /* Фиксированная высота для выравнивания с табами */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .welcome-title {
@@ -903,6 +907,7 @@ body::before {
     
     .welcome-section {
         margin-right: 80px; /* Меньший отступ на мобильных */
+        height: 100px; /* Меньшая высота на мобильных */
     }
     
     .avatar-large {
