@@ -125,15 +125,15 @@ video.exercise-video {
 /* УДАЛЕН - больше не нужен общий контейнер */
 
 /* Theme Toggle - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
-.theme-toggle-top {
-    position: fixed;
-    top: 20px;
-    left: 40%;
-    width: 70px;
-    height: 35px;
-    z-index: 9999;
-    background: red;
-    border: 3px solid red;
+#switch.theme-toggle-top {
+    position: fixed !important;
+    top: 20px !important;
+    left: 40% !important;
+    width: 70px !important;
+    height: 35px !important;
+    z-index: 9999 !important;
+    background: red !important;
+    border: 3px solid red !important;
 }
 
 .theme-slider {
@@ -143,12 +143,12 @@ video.exercise-video {
 }
 
 .theme-slider-track {
-    width: 100%;
-    height: 100%;
-    background: red;
-    border-radius: 18px;
-    position: relative;
-    transition: all 0.3s ease;
+    width: 100% !important;
+    height: 100% !important;
+    background: red !important;
+    border-radius: 18px !important;
+    position: relative !important;
+    transition: all 0.3s ease !important;
 }
 
 .theme-slider-thumb {
@@ -174,7 +174,7 @@ video.exercise-video {
 
 /* Dark theme styles */
 .dark-theme .theme-slider-track {
-    background: red;
+    background: red !important;
 }
 
 .dark-theme .theme-slider-thumb {
