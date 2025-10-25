@@ -1065,6 +1065,36 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEditorEventDelegation();
     loadPrograms();
     setupEventListeners();
+    
+    // Принудительно применяем стили после загрузки
+    setTimeout(() => {
+        const avatarImage = document.getElementById('avatar-image');
+        if (avatarImage) {
+            avatarImage.style.width = '40%';
+            avatarImage.style.height = '40%';
+        }
+        
+        const welcomeSection = document.querySelector('.welcome-section');
+        if (welcomeSection) {
+            welcomeSection.style.marginLeft = '0';
+            welcomeSection.style.paddingLeft = '28px';
+        }
+        
+        const themeToggle = document.querySelector('.theme-toggle-top');
+        if (themeToggle) {
+            themeToggle.style.left = '0';
+        }
+        
+        const levelDisplay = document.querySelector('.level-display-bottom');
+        if (levelDisplay) {
+            levelDisplay.style.marginLeft = '0';
+        }
+        
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.style.marginLeft = '0';
+        }
+    }, 100);
     loadUserData();
     
     console.log('App initialization complete');
@@ -2985,6 +3015,9 @@ function updateProgressDisplay() {
     // Update large avatar image based on level
     const avatarImage = document.getElementById('avatar-image');
     if (avatarImage) {
+        // Принудительно применяем стили
+        avatarImage.style.width = '40%';
+        avatarImage.style.height = '40%';
         // You can change the image source based on the level
         // For now, we'll keep the same image but you can add different images for different levels
             const imageUrls = {
@@ -3005,6 +3038,9 @@ function updateProgressDisplay() {
             newImage.onload = () => {
                 avatarImage.src = imageUrl;
                 avatarImage.classList.remove('loading');
+                // Принудительно применяем стили
+                avatarImage.style.width = '40%';
+                avatarImage.style.height = '40%';
             };
             newImage.onerror = () => {
                 avatarImage.classList.remove('loading');

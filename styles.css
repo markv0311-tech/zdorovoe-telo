@@ -125,8 +125,8 @@ video.exercise-video {
 /* New Homepage Styles */
 .home-container {
     padding: 10px 0; /* Убираем боковые отступы - они в .page */
-    max-width: 600px;
-    margin: 0 auto;
+    max-width: none; /* Убираем ограничение ширины */
+    margin: 0; /* Убираем центрирование */
     display: flex;
     flex-direction: column;
     gap: 0;
