@@ -192,6 +192,11 @@ video.exercise-video {
     color: #6c757d;
 }
 
+.dark-theme .avatar-large {
+    background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
+    box-shadow: 0 16px 50px rgba(0, 86, 179, 0.4);
+}
+
 /* Top Right Tabs - Vertical */
 .top-tabs-vertical {
     position: absolute;
@@ -307,6 +312,7 @@ video.exercise-video {
     backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 80px; /* Отступ сверху для опускания */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 0; /* Выравнивание по левому краю */
@@ -348,17 +354,18 @@ video.exercise-video {
 
 .avatar-large {
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
     height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-radius: 20px;
+    box-shadow: 0 16px 50px rgba(0, 123, 255, 0.4);
     transition: all 0.5s ease;
     position: relative;
-    overflow: visible;
+    overflow: hidden;
+    padding: 20px;
 }
 
 /* Убираем анимацию вращения для нового изображения */
@@ -367,8 +374,8 @@ video.exercise-video {
     width: 100%;
     height: auto;
     object-fit: contain;
-    border-radius: 0;
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2));
+    border-radius: 15px;
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.3));
     z-index: 1;
     position: relative;
     background: transparent;
@@ -895,12 +902,14 @@ body::before {
     }
     
     .welcome-section {
+        margin-top: 60px; /* Меньший отступ сверху на мобильных */
         margin-right: 80px; /* Меньший отступ на мобильных */
         height: 100px; /* Меньшая высота на мобильных */
     }
     
     .avatar-large {
-        max-width: 250px;
+        max-width: 320px;
+        padding: 15px;
     }
     
     .avatar-image {
