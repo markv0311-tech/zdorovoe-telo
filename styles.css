@@ -198,7 +198,7 @@ video.exercise-video {
 /* Top Right Tabs - Vertical */
 .top-tabs-vertical {
     position: absolute;
-    top: 20px;
+    top: 48px; /* Выравниваем с блоком приветствия */
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -218,6 +218,8 @@ video.exercise-video {
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 70px;
+    height: 55px; /* Фиксированная высота для выравнивания */
+    box-sizing: border-box;
 }
 
 .tab-button-vertical:hover {
@@ -942,6 +944,7 @@ body::before {
     .tab-button-vertical {
         padding: 10px 12px;
         min-width: 60px;
+        height: 50px; /* Меньшая высота на мобильных */
     }
     
     .tab-icon-vertical {
@@ -950,6 +953,10 @@ body::before {
     
     .tab-text-vertical {
         font-size: 10px;
+    }
+    
+    .top-tabs-vertical {
+        top: 40px; /* Меньший отступ на мобильных */
     }
 }
 
