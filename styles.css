@@ -129,9 +129,10 @@ video.exercise-video {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 0;
     position: relative;
     z-index: 1;
+    min-height: 100vh;
 }
 
 /* Theme Toggle - Top Left */
@@ -192,10 +193,7 @@ video.exercise-video {
     color: #6c757d;
 }
 
-.dark-theme .avatar-large {
-    background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
-    box-shadow: 0 16px 50px rgba(0, 86, 179, 0.4);
-}
+/* Убираем темную тему для аватара - теперь прозрачный фон */
 
 /* Top Right Tabs - Vertical */
 .top-tabs-vertical {
@@ -325,9 +323,9 @@ video.exercise-video {
 }
 
 .welcome-title {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 700;
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -335,7 +333,7 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: 22px;
+    font-size: 18px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
     font-weight: 500;
@@ -347,35 +345,36 @@ video.exercise-video {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
-    margin: 20px 0;
+    padding: 12px;
+    margin: 12px 0;
     position: relative;
+    flex: 1;
+    min-height: 200px;
 }
 
 .avatar-large {
     width: 100%;
-    max-width: 400px;
-    height: auto;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-    border-radius: 20px;
-    box-shadow: 0 16px 50px rgba(0, 123, 255, 0.4);
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     transition: all 0.5s ease;
     position: relative;
-    overflow: hidden;
-    padding: 20px;
+    overflow: visible;
+    padding: 0;
 }
 
 /* Убираем анимацию вращения для нового изображения */
 
 .avatar-image {
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: contain;
-    border-radius: 15px;
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.3));
+    border-radius: 0;
+    filter: none;
     z-index: 1;
     position: relative;
     background: transparent;
@@ -605,7 +604,7 @@ video.exercise-video {
 .level-display-bottom {
     display: flex;
     justify-content: center;
-    padding: 20px;
+    padding: 12px; /* Минимальный отступ */
     margin-top: auto;
 }
 
@@ -894,22 +893,27 @@ body::before {
     }
     
     .welcome-title {
-        font-size: 28px;
+        font-size: 26px;
     }
     
     .welcome-subtitle {
-        font-size: 18px;
+        font-size: 16px;
     }
     
     .welcome-section {
         margin-top: 60px; /* Меньший отступ сверху на мобильных */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        height: 100px; /* Меньшая высота на мобильных */
+        height: 90px; /* Меньшая высота на мобильных */
     }
     
     .avatar-large {
-        max-width: 320px;
-        padding: 15px;
+        padding: 0;
+    }
+    
+    .human-avatar-center {
+        padding: 10px;
+        margin: 10px 0;
+        min-height: 150px;
     }
     
     .avatar-image {
