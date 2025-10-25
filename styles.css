@@ -314,6 +314,7 @@ video.exercise-video {
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 7.5% !important; /* Выравнивание с левым краем нижнего меню */
+    background: red !important; /* ВРЕМЕННО для теста */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
     flex-direction: column;
