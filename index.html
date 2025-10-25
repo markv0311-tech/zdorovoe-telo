@@ -15,9 +15,9 @@
                 <span class="nav-icon">🏠</span>
                 <span class="nav-text">Главная</span>
             </div>
-            <div class="nav-item" data-section="reports">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">Отчеты</span>
+            <div class="nav-item" data-section="diagnosis">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-text">Самодиагностика</span>
             </div>
             <div class="nav-item" data-section="exercises">
                 <span class="nav-icon">💪</span>
@@ -45,26 +45,79 @@
             </div>
         </section>
 
-        <!-- Reports Section -->
-        <section id="reports" class="section">
-            <div class="reports-container">
-                <h2 class="section-title">Ваш прогресс</h2>
-                <div class="calendar-container">
-                    <div class="calendar-header">
-                        <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
-                        <h3 id="current-month"></h3>
-                        <button class="calendar-nav" onclick="changeMonth(1)">›</button>
-                    </div>
-                    <div class="calendar-grid" id="calendar-grid"></div>
+        <!-- Self-Diagnosis Section -->
+        <section id="diagnosis" class="section">
+            <div class="diagnosis-container">
+                <div class="section-header">
+                    <h2>🔍 Самодиагностика</h2>
+                    <p class="section-subtitle">Проверьте состояние вашего тела</p>
                 </div>
-                <div class="progress-stats">
-                    <div class="stat-item">
-                        <span class="stat-number" id="completed-days">0</span>
-                        <span class="stat-label">Дней выполнено</span>
+                
+                <div class="diagnostic-modules">
+                    <div class="diagnostic-card" data-module="neck">
+                        <div class="diagnostic-icon">🦴</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Шея</h3>
+                            <p class="diagnostic-description">Проверьте подвижность и гибкость шеи</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('neck')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="current-streak">0</span>
-                        <span class="stat-label">Текущая серия</span>
+                    
+                    <div class="diagnostic-card" data-module="shoulder">
+                        <div class="diagnostic-icon">💪</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Плечо</h3>
+                            <p class="diagnostic-description">Диагностика плечевого сустава</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('shoulder')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="diagnostic-card" data-module="lower-back">
+                        <div class="diagnostic-icon">🏃</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Поясница</h3>
+                            <p class="diagnostic-description">Тест гибкости и подвижности поясницы</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('lower-back')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="diagnostic-card" data-module="hip">
+                        <div class="diagnostic-icon">🍑</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Таз</h3>
+                            <p class="diagnostic-description">Проверка тазобедренного сустава</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('hip')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="diagnostic-card" data-module="knee">
+                        <div class="diagnostic-icon">🦵</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Колено</h3>
+                            <p class="diagnostic-description">Диагностика коленного сустава</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('knee')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="diagnostic-card" data-module="foot">
+                        <div class="diagnostic-icon">👣</div>
+                        <div class="diagnostic-content">
+                            <h3 class="diagnostic-title">Стопа</h3>
+                            <p class="diagnostic-description">Тест подвижности и гибкости стопы</p>
+                            <button class="diagnostic-button" onclick="startDiagnostic('foot')">
+                                ▶️ Начать тест
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

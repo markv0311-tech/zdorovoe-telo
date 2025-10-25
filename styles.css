@@ -122,6 +122,126 @@ video.exercise-video {
     100% { transform: rotate(360deg); }
 }
 
+/* Self-Diagnosis Styles */
+.diagnosis-container {
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.section-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-subtitle {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.diagnostic-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.diagnostic-card {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.diagnostic-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.diagnostic-card:hover::before {
+    left: 100%;
+}
+
+.diagnostic-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.diagnostic-icon {
+    font-size: 40px;
+    margin-right: 20px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    transition: all 0.3s ease;
+}
+
+.diagnostic-card:hover .diagnostic-icon {
+    transform: scale(1.1);
+}
+
+.diagnostic-content {
+    flex: 1;
+}
+
+.diagnostic-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: #fff;
+}
+
+.diagnostic-description {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.diagnostic-button {
+    padding: 10px 20px;
+    background: rgba(0, 123, 255, 0.2);
+    border: 1px solid rgba(0, 123, 255, 0.3);
+    border-radius: 12px;
+    color: #4dabf7;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.diagnostic-button:hover {
+    background: rgba(0, 123, 255, 0.3);
+    border-color: rgba(0, 123, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 123, 255, 0.2);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #f8f9fa;

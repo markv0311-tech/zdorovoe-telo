@@ -2898,6 +2898,30 @@ window.saveSettings = saveSettings;
 window.exportContent = exportContent;
 window.importContent = importContent;
 
+// Self-Diagnosis Functions
+function startDiagnostic(module) {
+    console.log('Starting diagnostic for:', module);
+    
+    const moduleNames = {
+        'neck': 'Шея',
+        'shoulder': 'Плечо', 
+        'lower-back': 'Поясница',
+        'hip': 'Таз',
+        'knee': 'Колено',
+        'foot': 'Стопа'
+    };
+    
+    showToast(`Запуск диагностики: ${moduleNames[module]}`, 'info');
+    
+    // TODO: Implement actual diagnostic logic
+    // For now, just show a placeholder
+    setTimeout(() => {
+        showToast(`Диагностика ${moduleNames[module]} завершена!`, 'success');
+    }, 2000);
+}
+
+window.startDiagnostic = startDiagnostic;
+
 // Debug: Check if functions are available
 console.log('Functions exported:', {
     editProgram: typeof window.editProgram,
