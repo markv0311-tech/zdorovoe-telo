@@ -310,7 +310,7 @@ video.exercise-video {
     backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 80px; /* Отступ сверху для опускания */
+    margin-top: 78px; /* Отступ сверху для опускания */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 0; /* Выравнивание по левому краю */
