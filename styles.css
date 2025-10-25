@@ -307,13 +307,13 @@ video.exercise-video {
 .welcome-section {
     text-align: left;
     padding: 30px 20px; /* Внутренние отступы для контента */
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent; /* Убираем фон */
+    backdrop-filter: none; /* Убираем размытие */
+    border-radius: 0; /* Убираем скругления */
+    border: none; /* Убираем рамку */
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 16px; /* Отступ до контейнера PNG */
-    margin-left: -85px; /* Сдвигаем влево еще на 40px */
+    margin-left: -87px; /* Сдвигаем влево еще на 2px */
     margin-right: 100px; /* Отступ справа для табов */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
@@ -324,7 +324,7 @@ video.exercise-video {
 }
 
 .welcome-title {
-    font-size: 32px;
+    font-size: 36px; /* Увеличиваем на 4px */
     font-weight: 700;
     margin: 0 0 12px 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -334,7 +334,7 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: 18px;
+    font-size: 20px; /* Увеличиваем на 2px */
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
     margin-top: -8px; /* Поднимаем еще на 5px выше */
@@ -936,17 +936,17 @@ body::before {
     }
     
     .welcome-title {
-        font-size: 26px;
+        font-size: 30px; /* Увеличиваем на 4px */
     }
     
     .welcome-subtitle {
-        font-size: 16px;
+        font-size: 18px; /* Увеличиваем на 2px */
     }
     
     .welcome-section {
         margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: -85px; /* Сдвигаем влево еще на 40px на мобильных */
+        margin-left: -87px; /* Сдвигаем влево еще на 2px на мобильных */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
