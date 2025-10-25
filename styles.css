@@ -307,6 +307,7 @@ video.exercise-video {
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: 20px;
+    margin-right: 100px; /* Отступ справа для табов */
 }
 
 .welcome-title {
@@ -320,7 +321,7 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: 16px;
+    font-size: 18px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
     font-weight: 500;
@@ -603,14 +604,14 @@ video.exercise-video {
 }
 
 .level-number {
-    font-size: 32px;
+    font-size: 40px;
     font-weight: 700;
     color: #667eea;
     margin: 0;
 }
 
 .level-name {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     color: #2c3e50;
     margin: 0;
@@ -867,7 +868,11 @@ body {
     }
     
     .welcome-subtitle {
-        font-size: 14px;
+        font-size: 16px;
+    }
+    
+    .welcome-section {
+        margin-right: 80px; /* Меньший отступ на мобильных */
     }
     
     .avatar-large {
@@ -880,11 +885,11 @@ body {
     }
     
     .level-number {
-        font-size: 28px;
+        font-size: 32px;
     }
     
     .level-name {
-        font-size: 18px;
+        font-size: 20px;
     }
     
     .theme-slider {
