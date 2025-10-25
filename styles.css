@@ -359,6 +359,7 @@ video.exercise-video {
     outline: 2px dashed rgba(0, 123, 255, 0.5);
     background: rgba(0, 123, 255, 0.05);
     border-radius: 12px;
+    overflow: hidden; /* Обрезаем изображение по границам контейнера */
 }
 
 .avatar-large {
