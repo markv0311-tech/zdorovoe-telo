@@ -1082,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const themeToggle = document.querySelector('.theme-toggle-top');
         if (themeToggle) {
-            themeToggle.style.left = '0';
+            themeToggle.style.marginLeft = '10px';
         }
         
         const levelDisplay = document.querySelector('.level-display-bottom');

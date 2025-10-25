@@ -989,8 +989,7 @@ body::before {
     }
     
     .theme-toggle-top {
-        left: 0; /* Выравниваем по левому краю .page на мобильных */
-        margin-left: 0;
+        margin-left: var(--switch-ml, 10px); /* Используем переменную на мобильных */
     }
     
     .avatar-image {
