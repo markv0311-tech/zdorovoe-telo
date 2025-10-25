@@ -139,7 +139,7 @@ video.exercise-video {
 .theme-toggle-top {
     position: absolute;
     top: 20px;
-    left: 0; /* Убираем left - используем margin-left: 0 */
+    left: -20px; /* Сдвигаем влево на 20px */
     margin-left: 0; /* Единый левый край */
     z-index: 1000;
 }
@@ -966,7 +966,7 @@ body::before {
     }
     
     .theme-toggle-top {
-        left: 0; /* Единый левый край на мобильных */
+        left: -20px; /* Сдвигаем влево на 20px на мобильных */
         margin-left: 0;
     }
     
