@@ -1087,19 +1087,19 @@ function initializeSupabase() {
 // Initialize Telegram WebApp
 function initializeTelegram() {
     if (tg) {
-        tg.ready();
-        tg.expand();
-        
+    tg.ready();
+    tg.expand();
+    
         // Diagnostics and initData
         const initDataRaw = window.Telegram?.WebApp?.initData || '';
         console.log('[TG] initData present:', !!initDataRaw);
         console.log('[TG] initDataUnsafe.user:', window.Telegram?.WebApp?.initDataUnsafe?.user || null);
-        // Get user data from Telegram
-        user = tg.initDataUnsafe?.user;
-        
-        // Set up theme
-        if (tg.colorScheme === 'dark') {
-            document.body.classList.add('dark-theme');
+    // Get user data from Telegram
+    user = tg.initDataUnsafe?.user;
+    
+    // Set up theme
+    if (tg.colorScheme === 'dark') {
+        document.body.classList.add('dark-theme');
         }
         
         // Hide dev button by default until verified
@@ -1244,6 +1244,17 @@ function initializeApp() {
         }
     }
     
+    // Load initial content for the active section
+    const activeSection = document.querySelector('.section.active');
+    if (activeSection) {
+        const sectionName = activeSection.id;
+        if (sectionName === 'exercises') {
+            loadPrograms();
+        } else if (sectionName === 'home') {
+            initializeHomepage();
+        }
+    }
+    
     // Load saved profile data
     if (userProfile.name) {
         document.getElementById('user-name').value = userProfile.name;
@@ -1321,6 +1332,8 @@ function navigateToSection(sectionName) {
     // Load section-specific content
     if (sectionName === 'home') {
         initializeHomepage();
+    } else if (sectionName === 'exercises') {
+        loadPrograms();
     } else if (sectionName === 'reports') {
         updateCalendar();
         updateProgressStats();
@@ -1439,27 +1452,32 @@ function updateProgressStats() {
 
 // Programs data
 async function loadPrograms() {
+    console.log('[Load] Loading programs...');
+    
     // Try cache first
     const cachedPrograms = getCacheData(CACHE_KEYS.PROGRAMS);
     if (cachedPrograms) {
-        console.log('[Load] Using cached programs');
+        console.log('[Load] Using cached programs:', cachedPrograms.length);
         programs = cachedPrograms;
         renderPrograms();
         return;
     }
     
     // Load from Supabase if no cache
+    console.log('[Load] Loading from Supabase...');
     if (supabase) {
         try {
             await loadProgramsFromSupabase();
         } catch (error) {
             console.error('Failed to load programs from Supabase:', error);
             showToast('Ошибка загрузки программ. Используются локальные данные.', 'error');
-            loadDefaultPrograms();
+    loadDefaultPrograms();
         }
     } else {
+        console.log('[Load] Supabase not available, loading default programs');
         loadDefaultPrograms();
     }
+    console.log('[Load] Programs loaded:', programs.length);
     renderPrograms();
 }
 
@@ -1600,11 +1618,18 @@ function generateExerciseProgram(programType) {
 }
 
 function renderPrograms() {
+    console.log('[Render] Rendering programs...');
     const programsGrid = document.getElementById('programs-grid');
+    if (!programsGrid) {
+        console.error('[Render] programs-grid element not found!');
+        return;
+    }
+    
     programsGrid.innerHTML = '';
     
     // Only show published programs in public view
     const publishedPrograms = programs.filter(program => program.is_published);
+    console.log('[Render] Published programs:', publishedPrograms.length);
     
     publishedPrograms.forEach(program => {
         const programCard = document.createElement('div');
@@ -1683,7 +1708,7 @@ async function openDaySelection(programId) {
             
             // Find program in cached data
             program = programs.find(p => p.id === programIdNum);
-            if (!program) {
+    if (!program) {
                 // Try to reload programs if not found in cache
                 console.log('Program not found in cache, reloading...');
                 await loadProgramsFromSupabase();
@@ -1789,17 +1814,17 @@ async function openExerciseModule(programId, dayIndex = 1) {
             day = program.days.find(d => d.day_index === dayIndex);
             if (!day) throw new Error('Day not found');
             exercises = day.exercises;
-        }
-        
-        closeProgramModal();
-        
-        const modal = document.getElementById('exercise-modal');
-        const modalBody = document.getElementById('exercise-modal-body');
-        
-        if (modal && modalBody) {
-            let exercisesHTML = `
-                <div class="exercise-module">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+    }
+    
+    closeProgramModal();
+    
+    const modal = document.getElementById('exercise-modal');
+    const modalBody = document.getElementById('exercise-modal-body');
+    
+    if (modal && modalBody) {
+        let exercisesHTML = `
+            <div class="exercise-module">
+                <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
                     <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">День ${dayIndex} - ${exercises.length} упражнений</p>
             `;
             
@@ -1893,16 +1918,16 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         <div class="exercise-description">${exercise.description}</div>
                     </div>
                 `;
-            });
-            
-            exercisesHTML += `</div>`;
-            
-            modalBody.innerHTML = exercisesHTML;
+        });
+        
+        exercisesHTML += `</div>`;
+        
+        modalBody.innerHTML = exercisesHTML;
             modal.classList.remove('hidden');
-            modal.style.display = 'block';
+        modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
-        } else {
-            console.error('Exercise modal elements not found');
+    } else {
+        console.error('Exercise modal elements not found');
         }
     } catch (error) {
         console.error('Failed to open exercise module:', error);
@@ -2162,25 +2187,25 @@ async function loadDeveloperPrograms() {
         programsList.innerHTML = '';
         
         programsData.forEach((program, index) => {
-            const programDiv = document.createElement('div');
+        const programDiv = document.createElement('div');
             programDiv.className = 'dev-program-item program-item';
             programDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px;';
             
-            programDiv.innerHTML = `
+        programDiv.innerHTML = `
                 <div style="flex: 1;">
                     <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${program.title} ${program.is_published ? '✅' : '❌'}</h4>
                     <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${program.description || 'Без описания'}</p>
                     <small style="color: #999;">ID: ${program.id} | Slug: ${program.slug}</small>
-                </div>
+            </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button data-action="program-edit" data-id="${program.id}" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Редактировать</button>
                     <button data-action="program-days" data-id="${program.id}" style="padding: 8px 12px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Дни</button>
                     <button data-action="program-toggle" data-id="${program.id}" style="padding: 8px 12px; background: ${program.is_published ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">${program.is_published ? 'Скрыть' : 'Опубликовать'}</button>
                     <button data-action="program-delete" data-id="${program.id}" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
-                </div>
-            `;
-            programsList.appendChild(programDiv);
-        });
+            </div>
+        `;
+        programsList.appendChild(programDiv);
+    });
         
         console.log('Developer programs loaded:', programsData.length);
     } catch (error) {
@@ -2351,34 +2376,34 @@ async function editProgram(programId) {
                 <div class="program-edit-form">
                     <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
                     <form id="edit-program-form">
-                        <div class="form-group">
+        <div class="form-group">
                             <label>Название программы</label>
                             <input type="text" id="edit-title" value="${program.title}" required>
-                        </div>
-                        <div class="form-group">
+        </div>
+        <div class="form-group">
                             <label>Описание</label>
                             <textarea id="edit-description" rows="3">${program.description || ''}</textarea>
-                        </div>
-                        <div class="form-group">
+        </div>
+        <div class="form-group">
                             <label>URL изображения</label>
                             <input type="url" id="edit-image-url" value="${program.image_url || ''}">
-                        </div>
-                        <div class="form-group">
+        </div>
+        <div class="form-group">
                             <label>Статус публикации</label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
-                                <span class="checkmark"></span>
+            <label class="checkbox-label">
+                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
+                <span class="checkmark"></span>
                                 Опубликована
-                            </label>
-                        </div>
+            </label>
+        </div>
                         <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="button" class="btn btn-primary" onclick="saveProgramEdit(${programId})">Сохранить</button>
                             <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
-                        </div>
+        </div>
                     </form>
-                </div>
-            `;
-            
+        </div>
+    `;
+    
             modal.classList.remove('hidden');
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
@@ -2538,23 +2563,23 @@ function addNewProgram() {
             <div class="program-edit-form">
                 <h2 style="color: #2c3e50; margin-bottom: 20px;">Добавить новую программу</h2>
                 <form id="add-program-form">
-                    <div class="form-group">
+            <div class="form-group">
                         <label>Название программы *</label>
                         <input type="text" id="add-title" placeholder="Введите название" required>
-                    </div>
-                    <div class="form-group">
+            </div>
+            <div class="form-group">
                         <label>Описание</label>
                         <textarea id="add-description" rows="3" placeholder="Описание программы"></textarea>
-                    </div>
-                    <div class="form-group">
+            </div>
+            <div class="form-group">
                         <label>URL изображения</label>
                         <input type="url" id="add-image-url" placeholder="https://example.com/image.jpg">
-                    </div>
-                    <div class="form-group">
+            </div>
+            <div class="form-group">
                         <label>Slug (уникальный идентификатор) *</label>
                         <input type="text" id="add-slug" placeholder="program-slug" required>
                         <small style="color: #6c757d;">Только латинские буквы, цифры и дефисы</small>
-                    </div>
+            </div>
                     <div class="form-group">
                         <label>Статус публикации</label>
                         <label class="checkbox-label">
@@ -2562,7 +2587,7 @@ function addNewProgram() {
                             <span class="checkmark"></span>
                             Опубликована
                         </label>
-                    </div>
+        </div>
                     <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
                         <button type="button" class="btn btn-primary" onclick="saveNewProgram()">Создать программу</button>
                         <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>

@@ -300,7 +300,7 @@ video.exercise-video {
 
 /* Welcome Section */
 .welcome-section {
-    text-align: center;
+    text-align: left;
     padding: 30px 20px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
@@ -591,21 +591,14 @@ video.exercise-video {
 .level-display-bottom {
     display: flex;
     justify-content: center;
-    padding: 30px 20px;
+    padding: 20px;
     margin-top: auto;
 }
 
 .level-info {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 20px 30px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 25px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
@@ -613,14 +606,7 @@ video.exercise-video {
     font-size: 32px;
     font-weight: 700;
     color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 4px;
+    margin: 0;
 }
 
 .level-name {
@@ -895,8 +881,6 @@ body {
     
     .level-number {
         font-size: 28px;
-        width: 45px;
-        height: 45px;
     }
     
     .level-name {
