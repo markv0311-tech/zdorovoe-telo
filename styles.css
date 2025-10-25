@@ -139,7 +139,7 @@ video.exercise-video {
 .theme-toggle-top {
     position: absolute;
     top: 20px;
-    left: 7.5%; /* Выравниваем с левым краем нижнего меню */
+    left: var(--left-offset); /* Единый левый отступ */
     z-index: 1000;
 }
 
@@ -313,8 +313,8 @@ video.exercise-video {
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
-    margin-left: 7.5% !important; /* Выравнивание с левым краем нижнего меню */
-    background: red !important; /* ВРЕМЕННО для теста */
+    margin-left: var(--left-offset) !important; /* Единый левый отступ */
+    margin-right: var(--right-offset); /* Единый правый отступ */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
     flex-direction: column;
@@ -347,11 +347,14 @@ video.exercise-video {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px 7.5% !important; /* Выравнивание с левым краем нижнего меню */
-    margin: 12px 0;
+    margin: 12px var(--left-offset) 12px var(--left-offset); /* Единые отступы = ширина меню */
     position: relative;
     flex: 1;
-    min-height: 200px;
+    min-height: 300px;
+    /* Визуализация контейнера для разработки */
+    border: 2px dashed rgba(0, 123, 255, 0.3);
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 12px;
 }
 
 .avatar-large {
@@ -606,7 +609,7 @@ video.exercise-video {
 .level-display-bottom {
     display: flex;
     justify-content: flex-start; /* Выравниваем по левому краю */
-    padding: 12px 7.5% !important; /* Выравнивание с левым краем нижнего меню */
+    padding: 12px var(--left-offset) 12px var(--left-offset); /* Единые отступы */
     margin-top: auto;
 }
 
@@ -825,6 +828,15 @@ video.exercise-video {
     box-shadow: 0 4px 16px rgba(0, 123, 255, 0.2);
 }
 
+:root {
+    --left-offset: calc(env(safe-area-inset-left, 0px) + 16px);
+    --right-offset: calc(env(safe-area-inset-right, 0px) + 16px);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: 
@@ -868,10 +880,10 @@ body::before {
 .navbar {
     position: fixed;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 85%;
-    max-width: 400px;
+    left: var(--left-offset); /* Единый левый отступ */
+    right: var(--right-offset); /* Единый правый отступ */
+    width: auto; /* Автоматическая ширина между отступами */
+    max-width: none;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -905,7 +917,7 @@ body::before {
     .welcome-section {
         margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
+        margin-left: var(--left-offset) !important; /* Единый левый отступ */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
@@ -914,17 +926,16 @@ body::before {
     }
     
     .human-avatar-center {
-        padding: 10px 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
-        margin: 10px 0;
-        min-height: 150px;
+        margin: 10px var(--left-offset) 10px var(--left-offset); /* Единые отступы на мобильных */
+        min-height: 200px;
     }
     
     .level-display-bottom {
-        padding: 10px 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
+        padding: 10px var(--left-offset) 10px var(--left-offset); /* Единые отступы на мобильных */
     }
     
     .theme-toggle-top {
-        left: 5% !important; /* Выравнивание с левым краем нижнего меню на мобильных */
+        left: var(--left-offset) !important; /* Единый левый отступ на мобильных */
     }
     
     .avatar-image {
@@ -1904,7 +1915,9 @@ body::before {
     }
     
     .navbar {
-        width: 90%;
+        left: var(--left-offset); /* Единый левый отступ на мобильных */
+        right: var(--right-offset); /* Единый правый отступ на мобильных */
+        width: auto; /* Автоматическая ширина */
         bottom: 15px;
         padding: 12px 8px;
     }
