@@ -313,7 +313,7 @@ video.exercise-video {
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
-    margin-left: 0; /* Выравнивание по левому краю с блоком изображения */
+    margin-left: 0 !important; /* Выравнивание по левому краю с блоком изображения */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
     flex-direction: column;
@@ -346,7 +346,7 @@ video.exercise-video {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px 20px; /* Единый отступ 20px слева и справа */
+    padding: 12px 20px !important; /* Единый отступ 20px слева и справа */
     margin: 12px 0;
     position: relative;
     flex: 1;
@@ -605,7 +605,7 @@ video.exercise-video {
 .level-display-bottom {
     display: flex;
     justify-content: flex-start; /* Выравниваем по левому краю */
-    padding: 12px 20px; /* Единый отступ 20px слева и справа */
+    padding: 12px 20px !important; /* Единый отступ 20px слева и справа */
     margin-top: auto;
 }
 
@@ -904,6 +904,7 @@ body::before {
     .welcome-section {
         margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
+        margin-left: 0; /* Единый отступ слева */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
