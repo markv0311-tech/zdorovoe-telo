@@ -1082,7 +1082,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const themeToggle = document.querySelector('.theme-toggle-top');
         if (themeToggle) {
-            themeToggle.style.marginLeft = '10px';
+            themeToggle.style.marginLeft = '10px !important';
+            themeToggle.style.setProperty('margin-left', '10px', 'important');
+            console.log('Theme toggle margin-left set to 10px');
         }
         
         const levelDisplay = document.querySelector('.level-display-bottom');
@@ -3011,6 +3013,13 @@ function updateProgressDisplay() {
     const completedDays = userProgress.completedDays || 0;
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
+    
+    // Принудительно применяем стили к переключателю темы
+    const themeToggle = document.querySelector('.theme-toggle-top');
+    if (themeToggle) {
+        themeToggle.style.setProperty('margin-left', '10px', 'important');
+        console.log('Theme toggle margin-left forced to 10px');
+    }
     
     // Update large avatar image based on level
     const avatarImage = document.getElementById('avatar-image');

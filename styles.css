@@ -135,10 +135,13 @@ video.exercise-video {
 
 /* Theme Toggle - Top Left */
 .theme-toggle-top {
-    position: relative;
-    margin-left: var(--switch-ml, var(--ml));
-    margin-top: var(--switch-mt, var(--mt));
+    position: relative !important;
+    margin-left: 10px !important; /* Принудительно 10px */
+    margin-top: var(--switch-mt, var(--mt)) !important;
     z-index: 1000;
+    /* Временный визуальный индикатор для отладки */
+    border: 2px solid red !important;
+    background: rgba(255, 0, 0, 0.1) !important;
 }
 
 .theme-slider {
@@ -989,7 +992,7 @@ body::before {
     }
     
     .theme-toggle-top {
-        margin-left: var(--switch-ml, 10px); /* Используем переменную на мобильных */
+        margin-left: 10px !important; /* Принудительно 10px на мобильных */
     }
     
     .avatar-image {
