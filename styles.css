@@ -310,7 +310,7 @@ video.exercise-video {
     backdrop-filter: blur(20px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 53px !important; /* Поднимаем на 2px */
+    margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 20px;
     margin-right: 100px; /* Отступ справа для табов */
     margin-left: 0; /* Выравнивание по левому краю */
@@ -336,6 +336,7 @@ video.exercise-video {
     font-size: 18px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
+    margin-top: -3px; /* Поднимаем на 3px внутри блока */
     font-weight: 500;
     line-height: 1.4;
 }
