@@ -1082,9 +1082,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const themeToggle = document.querySelector('.theme-toggle-top');
         if (themeToggle) {
-            themeToggle.style.marginLeft = '10px !important';
-            themeToggle.style.setProperty('margin-left', '10px', 'important');
-            console.log('Theme toggle margin-left set to 10px');
+            themeToggle.style.position = 'absolute';
+            themeToggle.style.top = '20px';
+            themeToggle.style.left = '10px';
+            themeToggle.style.margin = '0';
+            themeToggle.style.padding = '0';
+            themeToggle.style.zIndex = '9999';
+            themeToggle.style.border = '3px solid red';
+            themeToggle.style.background = 'rgba(255, 0, 0, 0.3)';
+            themeToggle.style.width = '70px';
+            themeToggle.style.height = '35px';
+            console.log('Theme toggle FORCED to position: absolute, top: 20px, left: 10px');
         }
         
         const levelDisplay = document.querySelector('.level-display-bottom');
@@ -3017,8 +3025,17 @@ function updateProgressDisplay() {
     // Принудительно применяем стили к переключателю темы
     const themeToggle = document.querySelector('.theme-toggle-top');
     if (themeToggle) {
-        themeToggle.style.setProperty('margin-left', '10px', 'important');
-        console.log('Theme toggle margin-left forced to 10px');
+        themeToggle.style.position = 'absolute';
+        themeToggle.style.top = '20px';
+        themeToggle.style.left = '10px';
+        themeToggle.style.margin = '0';
+        themeToggle.style.padding = '0';
+        themeToggle.style.zIndex = '9999';
+        themeToggle.style.border = '3px solid red';
+        themeToggle.style.background = 'rgba(255, 0, 0, 0.3)';
+        themeToggle.style.width = '70px';
+        themeToggle.style.height = '35px';
+        console.log('Theme toggle FORCED in updateProgressDisplay');
     }
     
     // Update large avatar image based on level
