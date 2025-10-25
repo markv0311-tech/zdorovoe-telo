@@ -139,8 +139,8 @@ video.exercise-video {
 .theme-toggle-top {
     position: absolute;
     top: 20px;
-    left: 20px; /* Фиксированное расстояние 20px от левого края */
-    margin-left: 0; /* Единый левый край */
+    left: 0; /* Выравниваем по левому краю .page (20px от экрана) */
+    margin-left: 0;
     z-index: 1000;
 }
 
@@ -379,8 +379,8 @@ video.exercise-video {
 /* Убираем анимацию вращения для нового изображения */
 
 .avatar-image {
-    width: 60%; /* Уменьшаем еще больше */
-    height: 60%; /* Уменьшаем еще больше */
+    width: 40% !important; /* Уменьшаем до 40% */
+    height: 40% !important; /* Уменьшаем до 40% */
     object-fit: cover; /* Заполняем весь контейнер, обрезаем при необходимости */
     object-position: center; /* Центрируем изображение */
     border-radius: 0;
@@ -966,13 +966,13 @@ body::before {
     }
     
     .theme-toggle-top {
-        left: 20px; /* Фиксированное расстояние 20px от левого края на мобильных */
+        left: 0; /* Выравниваем по левому краю .page на мобильных */
         margin-left: 0;
     }
     
     .avatar-image {
-        width: 60%; /* Уменьшаем на мобильных тоже */
-        height: 60%; /* Уменьшаем на мобильных тоже */
+        width: 40% !important; /* Уменьшаем до 40% на мобильных */
+        height: 40% !important; /* Уменьшаем до 40% на мобильных */
     }
     
     .level-text {
