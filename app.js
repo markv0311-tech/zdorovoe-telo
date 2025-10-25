@@ -3062,49 +3062,60 @@ function isDayCompleted(date) {
 
 // Theme toggle
 function toggleTheme() {
-    const themeSwitch = document.getElementById('theme-switch');
-    const isDark = themeSwitch.checked;
+    const isDark = document.body.classList.contains('dark-theme');
+    const newTheme = isDark ? 'light' : 'dark';
     
-    document.body.classList.toggle('dark-theme', isDark);
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.body.classList.toggle('dark-theme', !isDark);
+    localStorage.setItem('theme', newTheme);
     
-    showToast(`Переключено на ${isDark ? 'темную' : 'светлую'} тему`, 'info');
+    // Update slider icon
+    const themeIcon = document.getElementById('theme-icon-slider');
+    if (themeIcon) {
+        themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+    }
+    
+    showToast(`Переключено на ${newTheme === 'dark' ? 'темную' : 'светлую'} тему`, 'info');
 }
 
 // Load theme preference
 function loadThemePreference() {
     const savedTheme = localStorage.getItem('theme') || 'light';
-    const themeSwitch = document.getElementById('theme-switch-top');
+    const themeIcon = document.getElementById('theme-icon-slider');
     
     if (savedTheme === 'dark') {
-        if (themeSwitch) themeSwitch.checked = true;
         document.body.classList.add('dark-theme');
+        if (themeIcon) themeIcon.textContent = '🌙';
+    } else {
+        if (themeIcon) themeIcon.textContent = '☀️';
     }
 }
 
-// Tab switching
-function toggleTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Update tab panels
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-    document.getElementById(`${tabName}-panel`).classList.add('active');
-    
-    // Load content if needed
-    if (tabName === 'leaderboard') {
-        loadLeaderboard();
+// Tab modal functions
+function openTabModal(tabName) {
+    const modal = document.getElementById(`${tabName}-modal`);
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Load content if needed
+        if (tabName === 'leaderboard') {
+            loadLeaderboardModal();
+        } else if (tabName === 'progress') {
+            updateProgressModal();
+        }
     }
 }
 
-// Load leaderboard data
-function loadLeaderboard() {
-    const leaderboardList = document.getElementById('leaderboard-list');
+function closeTabModal() {
+    document.querySelectorAll('.tab-modal').forEach(modal => {
+        modal.classList.add('hidden');
+    });
+    document.body.style.overflow = '';
+}
+
+// Load leaderboard data for modal
+function loadLeaderboardModal() {
+    const leaderboardList = document.getElementById('leaderboard-list-modal');
     if (!leaderboardList) return;
     
     // Mock data for now - will be replaced with real data from Supabase
@@ -3137,9 +3148,93 @@ function loadLeaderboard() {
     });
 }
 
+// Update progress modal
+function updateProgressModal() {
+    const completedDays = userProgress.completedDays || 0;
+    const currentLevel = getCurrentLevel(completedDays);
+    const levelProgress = getLevelProgress(completedDays, currentLevel);
+    
+    // Update modal progress info
+    const progressTitle = document.getElementById('progress-title-modal');
+    const progressFill = document.getElementById('progress-fill-modal');
+    const progressText = document.getElementById('progress-text-modal');
+    
+    if (progressTitle) progressTitle.textContent = `Уровень ${currentLevel.level}: ${currentLevel.name}`;
+    if (progressFill) progressFill.style.width = `${levelProgress.percentage}%`;
+    if (progressText) progressText.textContent = `${levelProgress.current} из ${levelProgress.total} дней`;
+    
+    // Update modal stats
+    const completedDaysEl = document.getElementById('completed-days-modal');
+    const currentStreakEl = document.getElementById('current-streak-modal');
+    
+    if (completedDaysEl) completedDaysEl.textContent = completedDays;
+    if (currentStreakEl) currentStreakEl.textContent = userProgress.currentStreak || 0;
+    
+    // Generate calendar for modal
+    generateCalendarModal();
+}
+
+// Generate calendar for modal
+function generateCalendarModal() {
+    const calendarGrid = document.getElementById('calendar-grid-modal');
+    if (!calendarGrid) return;
+    
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDay = firstDay.getDay();
+    
+    // Clear calendar
+    calendarGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    dayHeaders.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        dayHeader.style.fontWeight = '600';
+        dayHeader.style.color = 'rgba(0, 0, 0, 0.6)';
+        calendarGrid.appendChild(dayHeader);
+    });
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day other-month';
+        calendarGrid.appendChild(emptyDay);
+    }
+    
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = day;
+        
+        // Check if this day is completed
+        const dayDate = new Date(currentYear, currentMonth, day);
+        if (isDayCompleted(dayDate)) {
+            dayElement.classList.add('completed');
+        }
+        
+        // Check if this is today
+        if (day === today.getDate() && currentMonth === today.getMonth()) {
+            dayElement.classList.add('today');
+        }
+        
+        calendarGrid.appendChild(dayElement);
+    }
+}
+
 window.initializeHomepage = initializeHomepage;
 window.toggleTheme = toggleTheme;
-window.toggleTab = toggleTab;
+window.openTabModal = openTabModal;
+window.closeTabModal = closeTabModal;
 
 // Debug: Check if functions are available
 console.log('Functions exported:', {
