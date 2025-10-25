@@ -313,7 +313,7 @@ video.exercise-video {
     border: 1px solid rgba(255, 255, 255, 0.2);
     margin-top: 54px !important; /* Опускаем на 1px */
     margin-bottom: 16px; /* Отступ до контейнера PNG */
-    margin-left: -45px; /* Сдвигаем влево еще на 20px */
+    margin-left: -85px; /* Сдвигаем влево еще на 40px */
     margin-right: 100px; /* Отступ справа для табов */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
@@ -946,7 +946,7 @@ body::before {
     .welcome-section {
         margin-top: 50px; /* Поднимаем на мобильных тоже */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: -45px; /* Сдвигаем влево еще на 20px на мобильных */
+        margin-left: -85px; /* Сдвигаем влево еще на 40px на мобильных */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
