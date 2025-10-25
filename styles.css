@@ -311,9 +311,9 @@ video.exercise-video {
     backdrop-filter: none; /* Убираем размытие */
     border-radius: 0; /* Убираем скругления */
     border: none; /* Убираем рамку */
-    margin-top: 54px !important; /* Опускаем на 1px */
+    margin-top: 51px !important; /* Поднимаем на 3px (было 54px) */
     margin-bottom: 16px; /* Отступ до контейнера PNG */
-    margin-left: -87px; /* Сдвигаем влево еще на 2px */
+    margin-left: -77px; /* Сдвигаем вправо на 10px (было -87px) */
     margin-right: 100px; /* Отступ справа для табов */
     height: 120px; /* Фиксированная высота для выравнивания с табами */
     display: flex;
@@ -339,7 +339,7 @@ video.exercise-video {
     margin: 0;
     margin-top: -8px; /* Поднимаем еще на 5px выше */
     font-weight: 500;
-    line-height: 1.4;
+    line-height: 1.1; /* Уменьшаем межстрочный интервал на 3px (было 1.4) */
 }
 
 /* Human Avatar Center */
@@ -944,9 +944,9 @@ body::before {
     }
     
     .welcome-section {
-        margin-top: 50px; /* Поднимаем на мобильных тоже */
+        margin-top: 47px; /* Поднимаем на 3px на мобильных (было 50px) */
         margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: -87px; /* Сдвигаем влево еще на 2px на мобильных */
+        margin-left: -77px; /* Сдвигаем вправо на 10px на мобильных (было -87px) */
         height: 90px; /* Меньшая высота на мобильных */
     }
     
