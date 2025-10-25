@@ -174,7 +174,7 @@ video.exercise-video {
 
 /* Dark theme styles */
 .dark-theme .theme-slider-track {
-    background: #6c757d;
+    background: red;
 }
 
 .dark-theme .theme-slider-thumb {
