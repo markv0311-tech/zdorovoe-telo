@@ -1,3 +1,62 @@
+// Adaptive scaling function
+function updateAdaptiveScale() {
+    const root = document.documentElement;
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    
+    // Update CSS variables
+    root.style.setProperty('--current-width', `${currentWidth}px`);
+    root.style.setProperty('--current-height', `${currentHeight}px`);
+    
+    // Recalculate scale factors
+    const widthScale = currentWidth / 430; // Base width (iPhone 14 Pro Max)
+    const heightScale = currentHeight / 932; // Base height (iPhone 14 Pro Max)
+    const scaleFactor = Math.min(widthScale, heightScale);
+    
+    // For very small screens (like iPhone SE), disable scaling
+    let adaptiveScale;
+    if (currentWidth <= 375) { // iPhone SE and similar small screens
+        // Disable scaling on very small screens
+        adaptiveScale = 1.0;
+    } else {
+        // For larger screens, use the original logic
+        adaptiveScale = Math.max(0.7, Math.min(1.4, scaleFactor));
+    }
+    
+    // Calculate vertical scale factor for height adjustments
+    const verticalScale = Math.max(0.8, Math.min(1.3, currentHeight / 932));
+    const combinedScale = Math.min(adaptiveScale, verticalScale);
+    
+    root.style.setProperty('--adaptive-scale', adaptiveScale);
+    root.style.setProperty('--vertical-scale', verticalScale);
+    root.style.setProperty('--combined-scale', combinedScale);
+    
+    // Ensure the container always covers full width
+    const container = document.querySelector('.top-header-container');
+    if (container) {
+        // Reset any potential clipping
+        container.style.width = '100vw';
+        container.style.minWidth = '100vw';
+        container.style.overflow = 'visible';
+        
+        // On small screens, disable transform
+        if (currentWidth <= 375) {
+            container.style.transform = 'none';
+        }
+    }
+    
+    console.log(`[Adaptive Scale] Screen: ${currentWidth}x${currentHeight}, Scale: ${adaptiveScale.toFixed(3)}`);
+}
+
+// Initialize adaptive scaling
+updateAdaptiveScale();
+
+// Update scale on window resize
+window.addEventListener('resize', updateAdaptiveScale);
+window.addEventListener('orientationchange', () => {
+    setTimeout(updateAdaptiveScale, 100); // Small delay for orientation change
+});
+
 // Telegram WebApp initialization
 let tg = window.Telegram?.WebApp;
 let user = null;

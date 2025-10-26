@@ -1,8 +1,50 @@
+/* CSS Variables for Adaptive Scaling */
+:root {
+    /* Base screen size (iPhone 14 Pro Max reference: 430px width) */
+    --base-screen-width: 430px;
+    --base-screen-height: 932px;
+    
+    /* Current screen dimensions */
+    --current-width: 100vw;
+    --current-height: 100vh;
+    
+    /* Scale factors */
+    --width-scale: calc(var(--current-width) / var(--base-screen-width));
+    --height-scale: calc(var(--current-height) / var(--base-screen-height));
+    --scale-factor: min(var(--width-scale), var(--height-scale));
+    
+    /* Clamp scale to reasonable bounds */
+    --min-scale: 0.6;
+    --max-scale: 1.4;
+    --adaptive-scale: clamp(var(--min-scale), var(--scale-factor), var(--max-scale));
+    
+    /* Base sizes for scaling (iPhone 14 Pro Max reference) */
+    --base-tab-size: 80px;
+    --base-toggle-size: 60px;
+    --base-font-title: 40px;
+    --base-font-subtitle: 22px;
+    --base-container-height: 13vh;
+    --base-padding: 10px;
+    --base-border-radius: 12px;
+    
+    /* Vertical scaling variables */
+    --base-avatar-top: 15vh;
+    --base-avatar-bottom: 140px;
+    --base-progress-width: auto;
+    --base-progress-font: 32px;
+}
+
 /* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+html {
+    overflow-x: visible; /* Allow horizontal overflow for scaled elements */
+    width: 100%;
+    height: 100%;
 }
 
 .hidden {
@@ -124,57 +166,59 @@ video.exercise-video {
 
 /* УДАЛЕН - больше не нужен общий контейнер */
 
-/* Theme Toggle - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
+/* Theme Toggle - Top Left in container */
 #switch.theme-toggle-top {
-    position: fixed;
-    top: 20px;
-    left: 40%;
-    width: 70px;
-    height: 35px;
-    z-index: 9999;
-    background: red;
-    border: 3px solid red;
+    position: absolute;
+    top: calc(var(--base-padding) * var(--adaptive-scale));
+    left: calc(var(--base-padding) * var(--adaptive-scale));
+    width: calc(var(--base-toggle-size) * var(--adaptive-scale));
+    height: calc(35px * var(--adaptive-scale));
+    z-index: 1001;
+    background: #007bff;
+    border: calc(3px * var(--adaptive-scale)) solid #007bff;
+    border-radius: calc(18px * var(--adaptive-scale));
+    pointer-events: auto; /* Enable clicks on toggle */
 }
 
 .theme-slider {
-    width: 70px;
-    height: 35px;
+    width: calc(var(--base-toggle-size) * var(--adaptive-scale));
+    height: calc(35px * var(--adaptive-scale));
     cursor: pointer;
 }
 
 .theme-slider-track {
     width: 100%;
     height: 100%;
-    background: red;
-    border-radius: 18px;
+    background: #007bff;
+    border-radius: calc(18px * var(--adaptive-scale));
     position: relative;
     transition: all 0.3s ease;
 }
 
 .theme-slider-thumb {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 29px;
-    height: 29px;
+    top: calc(3px * var(--adaptive-scale));
+    left: calc(3px * var(--adaptive-scale));
+    width: calc(29px * var(--adaptive-scale));
+    height: calc(29px * var(--adaptive-scale));
     background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 calc(3px * var(--adaptive-scale)) calc(10px * var(--adaptive-scale)) rgba(0, 0, 0, 0.2);
 }
 
 .theme-icon-slider {
-    font-size: 14px;
+    font-size: calc(14px * var(--adaptive-scale));
     color: white;
     transition: all 0.3s ease;
 }
 
 /* Dark theme styles */
 .dark-theme .theme-slider-track {
-    background: red;
+    background: #dc3545;
 }
 
 .dark-theme .theme-slider-thumb {
@@ -187,6 +231,26 @@ video.exercise-video {
 }
 
 /* Убираем темную тему для аватара - теперь прозрачный фон */
+
+/* Top Header Container */
+.top-header-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: calc(var(--base-container-height) * var(--combined-scale));
+    z-index: 1000;
+    pointer-events: none; /* Allow clicks to pass through container */
+    transform: scale(var(--adaptive-scale));
+    transform-origin: top left;
+    /* Ensure container doesn't get clipped */
+    overflow: visible;
+    min-width: 100vw;
+    /* Prevent container from being clipped by parent elements */
+    max-width: none;
+    /* Ensure full coverage even when scaled - but not on very small screens */
+    width: 100vw;
+}
 
 /* Top Right Tabs - Vertical */
 .top-tabs-vertical {
@@ -203,14 +267,31 @@ video.exercise-video {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 16px;
+    justify-content: center;
+    padding: calc(12px * var(--adaptive-scale)) calc(16px * var(--adaptive-scale));
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
+    border-radius: calc(15px * var(--adaptive-scale));
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 70px;
+    width: calc(var(--base-tab-size) * var(--adaptive-scale));
+    height: calc(var(--base-tab-size) * var(--adaptive-scale));
+    pointer-events: auto; /* Enable clicks on tabs */
+}
+
+/* Progress Tab - Top Right */
+.progress-tab {
+    position: absolute;
+    top: calc(var(--base-padding) * var(--adaptive-scale));
+    right: calc(var(--base-padding) * var(--adaptive-scale));
+}
+
+/* Leaderboard Tab - Bottom Right */
+.leaderboard-tab {
+    position: absolute;
+    bottom: calc(var(--base-padding) * var(--adaptive-scale));
+    right: calc(var(--base-padding) * var(--adaptive-scale));
 }
 
 .tab-button-vertical:hover {
@@ -220,15 +301,15 @@ video.exercise-video {
 }
 
 .tab-icon-vertical {
-    font-size: 20px;
-    margin-bottom: 6px;
+    font-size: calc(20px * var(--adaptive-scale));
+    margin-bottom: calc(6px * var(--adaptive-scale));
 }
 
 .tab-text-vertical {
-    font-size: 11px;
+    font-size: calc(11px * var(--adaptive-scale));
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: calc(0.5px * var(--adaptive-scale));
     color: rgba(0, 0, 0, 0.8);
 }
 
@@ -296,22 +377,23 @@ video.exercise-video {
 }
 
 /* Welcome Section */
-/* Welcome Section - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
+/* Welcome Section - Bottom Left in container */
 .welcome-section {
-    position: fixed;
-    top: 80px;
-    left: 20px;
-    width: 80%;
-    padding: 20px;
+    position: absolute;
+    bottom: calc(var(--base-padding) * var(--adaptive-scale));
+    left: calc(var(--base-padding) * var(--adaptive-scale));
+    width: calc(100% - calc(var(--base-padding) * 2 * var(--adaptive-scale)));
+    padding: calc(20px * var(--adaptive-scale));
     background: transparent;
     text-align: left;
     z-index: 10;
+    pointer-events: auto; /* Enable clicks on welcome section */
 }
 
 .welcome-title {
-    font-size: 36px; /* Увеличиваем на 4px */
+    font-size: calc(var(--base-font-title) * var(--adaptive-scale));
     font-weight: 700;
-    margin: 0 0 12px 0;
+    margin: 0 0 calc(12px * var(--adaptive-scale)) 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -319,28 +401,29 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: 20px; /* Увеличиваем на 2px */
+    font-size: calc(var(--base-font-subtitle) * var(--adaptive-scale));
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
-    margin-top: -8px; /* Поднимаем еще на 5px выше */
+    margin-top: calc(-8px * var(--adaptive-scale));
     font-weight: 500;
-    line-height: 1.1; /* Уменьшаем межстрочный интервал на 3px (было 1.4) */
+    line-height: 1.1;
 }
 
 /* Human Avatar Center */
-/* Human Avatar Center - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
+/* Human Avatar Center - From container bottom to level progress top */
 .human-avatar-center {
     position: fixed;
-    top: 200px;
-    left: 20px;
-    width: 80%;
-    height: 300px;
+    top: calc(var(--base-avatar-top) * var(--combined-scale));
+    left: calc(var(--base-padding) * var(--adaptive-scale));
+    width: calc(100% - calc(var(--base-padding) * 2 * var(--adaptive-scale)));
+    bottom: calc(var(--base-avatar-bottom) * var(--combined-scale));
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 123, 255, 0.05);
-    border-radius: 12px;
-    border: 2px dashed rgba(0, 123, 255, 0.5);
+    background: transparent;
+    border-radius: calc(var(--base-border-radius) * var(--adaptive-scale));
+    padding: 10px;
+    box-sizing: border-box;
 }
 
 .avatar-large {
@@ -354,7 +437,7 @@ video.exercise-video {
     box-shadow: none;
     transition: all 0.5s ease;
     position: relative;
-    overflow: visible;
+    overflow: hidden;
     padding: 0;
 }
 
@@ -363,6 +446,8 @@ video.exercise-video {
 .avatar-image {
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     object-position: center;
     border-radius: 0;
@@ -372,6 +457,7 @@ video.exercise-video {
     background: transparent;
     transition: all 0.5s ease;
     opacity: 1;
+    transform: scale(0.952);
 }
 
 .avatar-image.loading {
@@ -402,11 +488,13 @@ video.exercise-video {
 /* Progress Section */
 .progress-section {
     padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .human-avatar {
@@ -505,11 +593,13 @@ video.exercise-video {
 
 /* Calendar Section */
 .calendar-section {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .calendar-header {
@@ -596,35 +686,40 @@ video.exercise-video {
 /* Level Display Bottom - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
 .level-display-bottom {
     position: fixed;
-    bottom: 120px;
-    left: 20px;
-    width: 80%;
+    bottom: calc(120px * var(--combined-scale));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(var(--base-progress-width) * var(--adaptive-scale));
+    min-width: calc(200px * var(--adaptive-scale)); /* Минимальная ширина для предотвращения переносов */
     display: flex;
-    justify-content: flex-start;
-    padding: 12px 0;
+    justify-content: center;
+    padding: calc(12px * var(--adaptive-scale)) calc(20px * var(--adaptive-scale));
 }
 
 .level-info {
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* Выравниваем по левому краю */
-    text-align: left; /* Выравниваем текст по левому краю */
+    justify-content: center; /* Выравниваем по центру */
+    text-align: center; /* Выравниваем текст по центру */
 }
 
 .level-text {
-    font-size: 28px;
+    font-size: calc(var(--base-progress-font) * var(--adaptive-scale));
     font-weight: 600;
     color: #2c3e50;
     margin: 0;
+    white-space: nowrap; /* Предотвращаем переносы текста */
 }
 
 /* Leaderboard Section */
 .leaderboard-section {
     padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .leaderboard-section h3 {
@@ -831,12 +926,14 @@ video.exercise-video {
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: white;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     margin: 0;
     padding: 0;
     color: #333;
     line-height: 1.6;
-    overflow-x: hidden;
+    overflow-x: visible; /* Allow horizontal overflow for scaled elements */
+    min-height: 100vh;
+    position: relative;
 }
 
 /* УДАЛЕН - больше не нужен фоновый псевдоэлемент */
@@ -866,26 +963,237 @@ body {
 }
 
 /* Dark theme support for glassmorphism */
+
+/* Large Desktop Responsive */
+@media (min-width: 1440px) {
+    .top-header-container {
+        height: 12vh; /* Меньше высота на больших экранах */
+    }
+    
+    .human-avatar-center {
+        top: 12vh;
+        bottom: 140px;
+    }
+    
+    .welcome-title {
+        font-size: 40px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 22px;
+    }
+    
+    .tab-button-vertical {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .level-text {
+        font-size: 36px;
+    }
+    
+    .theme-slider {
+        width: 80px;
+        height: 40px;
+    }
+    
+    .theme-slider-thumb {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+/* Desktop Responsive */
+@media (min-width: 1200px) and (max-width: 1439px) {
+    .top-header-container {
+        height: 14vh;
+    }
+    
+    .human-avatar-center {
+        top: 14vh;
+        bottom: 140px;
+    }
+    
+    .welcome-title {
+        font-size: 38px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 20px;
+    }
+    
+    .tab-button-vertical {
+        width: 85px;
+        height: 85px;
+    }
+    
+    .level-text {
+        font-size: 34px;
+    }
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .top-header-container {
+        height: 18vh; /* Средняя высота для планшетов */
+    }
+    
+    .human-avatar-center {
+        top: 18vh;
+        bottom: 140px;
+    }
+    
+    .welcome-title {
+        font-size: 30px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 16px;
+    }
+    
+    .tab-button-vertical {
+        width: 75px;
+        height: 75px;
+    }
+    
+    .level-text {
+        font-size: 28px;
+    }
+}
+
+/* Small Tablet Responsive */
+@media (max-width: 768px) and (min-width: 481px) {
+    .top-header-container {
+        height: 18vh;
+    }
+    
+    .human-avatar-center {
+        top: 18vh;
+        bottom: 140px;
+    }
+    
+    .welcome-title {
+        font-size: 28px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 15px;
+    }
+    
+    .tab-button-vertical {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .level-text {
+        font-size: 26px;
+    }
+}
+
+/* Small Mobile Responsive */
+/* Small Mobile Responsive - iPhone SE and similar */
+@media (max-width: 375px) {
+    .top-header-container {
+        height: 15vh !important; /* Фиксированная высота для маленьких экранов */
+        transform: none !important; /* Отключаем масштабирование */
+        width: 100vw !important;
+    }
+    
+    .human-avatar-center {
+        top: 15vh !important;
+        bottom: 140px !important;
+        left: 10px !important;
+        width: calc(100% - 20px) !important;
+    }
+    
+    .welcome-title {
+        font-size: 24px !important; /* Фиксированный размер */
+    }
+    
+    .welcome-subtitle {
+        font-size: 14px !important; /* Фиксированный размер */
+    }
+    
+    .welcome-section {
+        padding: 8px;
+    }
+    
+    .tab-button-vertical {
+        width: 65px !important; /* Фиксированный размер */
+        height: 65px !important;
+        padding: 8px 10px;
+    }
+    
+    .tab-icon-vertical {
+        font-size: 18px !important; /* Фиксированный размер */
+    }
+    
+    .tab-text-vertical {
+        font-size: 10px !important; /* Фиксированный размер */
+    }
+    
+    .level-text {
+        font-size: 22px !important;
+    }
+    
+    .level-display-bottom {
+        bottom: 120px !important;
+        min-width: 180px !important; /* Фиксированная минимальная ширина */
+        padding: 10px 15px !important;
+    }
+    
+    .theme-slider {
+        width: 65px !important; /* Фиксированный размер */
+        height: 32px !important;
+    }
+    
+    .theme-slider-thumb {
+        width: 26px !important; /* Фиксированный размер */
+        height: 26px !important;
+    }
+    
+    .dark-theme .theme-slider-thumb {
+        transform: translateX(33px);
+    }
+    
+    /* Отключаем масштабирование для всех элементов */
+    .tab-button-vertical,
+    .theme-slider,
+    .theme-slider-track,
+    .theme-slider-thumb,
+    .theme-icon-slider,
+    .welcome-title,
+    .welcome-subtitle {
+        transform: none !important;
+    }
+    
+    .avatar-image {
+        transform: scale(0.8); /* Еще меньше на очень маленьких экранах */
+    }
+}
+
 /* Mobile Responsive */
-@media (max-width: 480px) {
+@media (max-width: 480px) and (min-width: 361px) {
     .home-container {
         padding: 15px;
         gap: 20px;
     }
     
     .welcome-title {
-        font-size: 30px; /* Увеличиваем на 4px */
+        font-size: 26px; /* Уменьшаем на 2px для мобильных */
     }
     
     .welcome-subtitle {
-        font-size: 18px; /* Увеличиваем на 2px */
+        font-size: 14px; /* Уменьшаем на 2px для мобильных */
+    }
+    
+    .top-header-container {
+        height: 18vh; /* Увеличиваем высоту контейнера на мобильных */
     }
     
     .welcome-section {
-        margin-top: 47px; /* Поднимаем на 3px на мобильных (было 50px) */
-        margin-right: 80px; /* Меньший отступ на мобильных */
-        margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px на мобильных */
-        height: 90px; /* Меньшая высота на мобильных */
+        padding: 10px; /* Уменьшаем отступы на мобильных */
+        width: calc(100% - 20px); /* Ширина на мобильных */
     }
     
     .avatar-large {
@@ -893,21 +1201,21 @@ body {
     }
     
     .human-avatar-center {
-        margin: 0; /* Выравниваем по левому краю на расстоянии 20px на мобильных */
-        margin-bottom: 16px;
-        min-height: 200px;
+        top: 18vh; /* Начинается после увеличенного контейнера на мобильных */
+        left: 10px; /* Отступ 10px от левого края */
+        width: calc(100% - 20px); /* Ширина на мобильных */
+        bottom: 140px; /* До верхнего края уровня прогресса */
     }
     
     .level-display-bottom {
         padding: 10px 0; /* Внутренние отступы на мобильных */
-        margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px на мобильных */
+        left: 50%; /* Центрируем на мобильных */
+        transform: translateX(-50%); /* Центрируем на мобильных */
+        width: auto; /* Автоматическая ширина на мобильных */
     }
     
-    /* УДАЛЕНЫ МОБИЛЬНЫЕ ПРАВИЛА ДЛЯ ПЕРЕКЛЮЧАТЕЛЯ */
-    
     .avatar-image {
-        width: 40%; /* Уменьшаем до 40% на мобильных */
-        height: 40%; /* Уменьшаем до 40% на мобильных */
+        transform: scale(0.952); /* Уменьшаем изображение на мобильных */
     }
     
     .level-text {
@@ -929,8 +1237,9 @@ body {
     }
     
     .tab-button-vertical {
-        padding: 10px 12px;
-        min-width: 60px;
+        padding: 8px 10px;
+        width: 70px;
+        height: 70px;
     }
     
     .tab-icon-vertical {
@@ -939,6 +1248,16 @@ body {
     
     .tab-text-vertical {
         font-size: 10px;
+    }
+    
+    .progress-tab {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .leaderboard-tab {
+        bottom: 10px;
+        right: 10px;
     }
 }
 
@@ -1866,19 +2185,11 @@ body {
         width: 95%;
         margin: 10% auto;
     }
-}
-
-@media (max-width: 480px) {
-    .nav-text {
-        font-size: 10px;
-    }
     
     .navbar {
-        left: 0; /* Единый левый край на мобильных */
-        right: 0; /* Единый правый край на мобильных */
-        width: 100%; /* Ширина = 100% от .page */
-        margin-left: 0; /* Выравниваем по левому краю на расстоянии 20px */
-        margin-right: 0; /* Единый правый край */
+        left: 10px;
+        right: 10px;
+        width: calc(100% - 20px);
         bottom: 15px;
         padding: 12px 8px;
     }
@@ -1895,7 +2206,9 @@ body {
     .nav-text {
         font-size: 10px;
     }
-    
+}
+
+@media (max-width: 480px) {
     .hero-image {
         max-width: 250px;
     }
