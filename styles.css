@@ -435,7 +435,7 @@ video.exercise-video {
     top: 0;
     left: 0;
     width: 100%;
-    height: calc(23.4vh + 20px); /* 18vh + 30% + 20px */
+    height: calc(15.444vh + 13.2px); /* Увеличено на 10% от calc(14.04vh + 12px) */
     z-index: 1000;
     pointer-events: none;
     /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ВВЕРХУ */
@@ -590,7 +590,7 @@ video.exercise-video {
 /* Human Avatar Center - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ОТ УРОВНЯ ПРОГРЕССА ДО ВЕРХНЕГО КОНТЕЙНЕРА */
 .human-avatar-center {
     position: fixed;
-    top: calc(23.4vh + 20px); /* От верхнего контейнера (23.4vh + 20px) */
+    top: calc(15.444vh + 13.2px); /* От верхнего контейнера (15.444vh + 13.2px) */
     left: 10px;
     width: calc(100% - 20px);
     bottom: 180px; /* До уровня прогресса (160px + 20px отступ) */
@@ -633,12 +633,12 @@ video.exercise-video {
     background: transparent;
     transition: all 0.5s ease;
     opacity: 1;
-    transform: scale(0.4); /* Уменьшаем изображение на 60% (0.5 * 0.8 = 0.4) */
+    transform: scale(1.024); /* Увеличено еще на 60% от scale(0.64) */
 }
 
 .avatar-image.loading {
     opacity: 0.7;
-    transform: scale(0.4); /* Используем тот же масштаб, что и для обычного состояния */
+    transform: scale(1.024); /* Используем тот же масштаб, что и для обычного состояния */
 }
 
 /* Tab Content */
@@ -1542,7 +1542,7 @@ body {
     }
     
     .top-header-container {
-        height: calc(26vh + 20px); /* 20vh + 30% + 20px */
+        height: calc(17.16vh + 13.2px); /* Увеличено на 10% от calc(15.6vh + 12px) */
     }
     
     .welcome-section {
@@ -1555,7 +1555,7 @@ body {
     }
     
     .human-avatar-center {
-        top: calc(26vh + 20px); /* Начинается после увеличенного контейнера на мобильных */
+        top: calc(17.16vh + 13.2px); /* Начинается после увеличенного контейнера на мобильных */
         left: 10px; /* Отступ 10px от левого края */
         width: calc(100% - 20px); /* Ширина на мобильных */
         bottom: 140px; /* До верхнего края уровня прогресса */
@@ -1570,7 +1570,7 @@ body {
     }
     
     .avatar-image {
-        transform: scale(calc(0.32 * var(--adaptive-scale))); /* Уменьшаем изображение на мобильных (0.4 * 0.8 = 0.32) */
+        transform: scale(calc(0.8192 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.512 */
     }
     
     .level-text {
@@ -2530,12 +2530,12 @@ body {
 /* Large Desktop - iPad Pro and similar */
 @media (min-width: 1024px) {
     .human-avatar-center {
-        top: calc((23.4vh + 20px) * var(--adaptive-scale));
+        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
         bottom: calc(200px * var(--adaptive-scale)); /* Еще больше места для iPad Pro */
     }
     
     .avatar-image {
-        transform: scale(calc(0.24 * var(--adaptive-scale))); /* Еще чуть меньше для iPad Pro (0.3 * 0.8 = 0.24) */
+        transform: scale(calc(0.6144 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.384 */
     }
     
     .level-display-bottom {
@@ -2552,12 +2552,12 @@ body {
 /* Desktop */
 @media (min-width: 769px) and (max-width: 1023px) {
     .human-avatar-center {
-        top: calc((23.4vh + 20px) * var(--adaptive-scale));
+        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
         bottom: calc(190px * var(--adaptive-scale)); /* Больше места для iPad Air */
     }
     
     .avatar-image {
-        transform: scale(calc(0.28 * var(--adaptive-scale))); /* Еще чуть меньше для iPad Air (0.35 * 0.8 = 0.28) */
+        transform: scale(calc(0.7168 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.448 */
     }
     
     .level-display-bottom {
@@ -2574,12 +2574,12 @@ body {
 /* iPad Mini and similar tablets */
 @media (min-width: 481px) and (max-width: 768px) {
     .human-avatar-center {
-        top: calc((23.4vh + 20px) * var(--adaptive-scale));
+        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
         bottom: calc(180px * var(--adaptive-scale)); /* Больше места для iPad Mini */
     }
     
     .avatar-image {
-        transform: scale(calc(0.32 * var(--adaptive-scale))); /* Уменьшаем чтобы не обрезалось (0.4 * 0.8 = 0.32) */
+        transform: scale(calc(0.8192 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.512 */
     }
     
     .level-display-bottom {

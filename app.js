@@ -135,7 +135,7 @@ function updateAdaptiveScale() {
             top: '0',
             left: '0',
             width: '100%',
-            height: `${15 * scaleFactor}vh`,
+            height: `calc(15.444vh + 13.2px)`, // Используем наше значение из CSS
             zIndex: '1000',
             pointerEvents: 'none',
             padding: `${10 * scaleFactor}px ${15 * scaleFactor}px`,
@@ -229,7 +229,7 @@ function updateAdaptiveScale() {
         },
         // Удалено - изображение будет управляться только через CSS контейнера
         '.human-avatar-center': {
-            top: '15vh',
+            top: 'calc(15.444vh + 13.2px)', // Используем наше значение из CSS
             left: '10px',
             width: 'calc(100% - 20px)',
             bottom: '180px',
@@ -290,6 +290,9 @@ function updateAdaptiveScale() {
             letterSpacing: `${0.3 * scaleFactor}px`,
             textTransform: 'uppercase',
             transition: 'all 0.3s ease'
+        },
+        '.avatar-image': {
+            transform: 'scale(1.024)' // Используем наше значение из CSS
         }
     };
     
