@@ -1,67 +1,11 @@
-// Adaptive scaling function
-function updateAdaptiveScale() {
-    const root = document.documentElement;
-    const currentWidth = window.innerWidth;
-    const currentHeight = window.innerHeight;
-    
-    // Update CSS variables
-    root.style.setProperty('--current-width', `${currentWidth}px`);
-    root.style.setProperty('--current-height', `${currentHeight}px`);
-    
-    // Recalculate scale factors
-    const widthScale = currentWidth / 430; // Base width (iPhone 14 Pro Max)
-    const heightScale = currentHeight / 932; // Base height (iPhone 14 Pro Max)
-    const scaleFactor = Math.min(widthScale, heightScale);
-    
-    // For very small screens, use more aggressive scaling
-    let adaptiveScale;
-    if (currentWidth <= 280) { // Galaxy Z Fold folded (280px)
-        // Extremely aggressive scaling for foldable phones
-        adaptiveScale = Math.max(0.5, Math.min(0.7, scaleFactor));
-    } else if (currentWidth <= 320) { // iPhone SE (320px)
-        // Very aggressive scaling for tiny screens
-        adaptiveScale = Math.max(0.6, Math.min(0.8, scaleFactor));
-    } else if (currentWidth <= 375) { // Small phones
-        // Moderate scaling for small screens
-        adaptiveScale = Math.max(0.7, Math.min(0.9, scaleFactor));
-    } else {
-        // For larger screens, use the original logic
-        adaptiveScale = Math.max(0.7, Math.min(1.4, scaleFactor));
-    }
-    
-    root.style.setProperty('--adaptive-scale', adaptiveScale);
-    
-    // Ensure the container always covers full width
-    const container = document.querySelector('.top-header-container');
-    if (container) {
-        // Reset any potential clipping
-        container.style.width = '100vw';
-        container.style.minWidth = '100vw';
-        container.style.overflow = 'visible';
-    }
-    
-    console.log(`[Adaptive Scale] Screen: ${currentWidth}x${currentHeight}, Scale: ${adaptiveScale.toFixed(3)}`);
-}
-
-// Removed complex adaptive scaling - using simple responsive design instead
-// updateAdaptiveScale();
-// window.addEventListener('resize', updateAdaptiveScale);
-window.addEventListener('orientationchange', () => {
-    setTimeout(updateAdaptiveScale, 100); // Small delay for orientation change
-});
-
-// Telegram WebApp initialization
-let tg = window.Telegram?.WebApp;
-let user = null;
-let currentMonth = new Date();
-let programs = [];
-let userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
-let userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-let isDeveloperMode = false;
-let isEditor = false;
-
-// Supabase client
-let supabase = null;
+// Logger system - умное логирование (отключается на продакшене)
+const DEBUG = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.search.includes('debug=true');
+const Logger = {
+    log: DEBUG ? (...args) => console.log('%c[DEBUG]', 'color: #007bff; font-weight: bold;', ...args) : () => {},
+    warn: (...args) => console.warn('%c[WARN]', 'color: #ffc107; font-weight: bold;', ...args),
+    error: (...args) => console.error('%c[ERROR]', 'color: #dc3545; font-weight: bold;', ...args),
+    info: (...args) => console.info('%c[INFO]', 'color: #17a2b8; font-weight: bold;', ...args)
+};
 
 // Cache system
 const CACHE_KEYS = {
@@ -73,39 +17,414 @@ const CACHE_KEYS = {
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Safe localStorage wrapper
+const SafeStorage = {
+    getItem: function(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            Logger.error(`[Storage] Error reading ${key}:`, error);
+            return null;
+        }
+    },
+    setItem: function(key, value) {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (error) {
+            Logger.error(`[Storage] Error storing ${key}:`, error);
+            if (error.name === 'QuotaExceededError') {
+                Logger.warn('[Storage] Quota exceeded, attempting cleanup');
+                this.clearOldData();
+                // Retry once
+                try {
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (retryError) {
+                    Logger.error(`[Storage] Failed after cleanup:`, retryError);
+                    return false;
+                }
+            }
+            return false;
+        }
+    },
+    removeItem: function(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (error) {
+            Logger.error(`[Storage] Error removing ${key}:`, error);
+        }
+    },
+    clearOldData: function() {
+        try {
+            // Удаляем только устаревший кеш
+            const now = Date.now();
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('zdorovoe_telo_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data.timestamp && (now - data.timestamp) > CACHE_DURATION * 2) {
+                            localStorage.removeItem(key);
+                        }
+                    } catch (e) {
+                        // Ignore parse errors
+                    }
+                }
+            }
+        } catch (error) {
+            Logger.error('[Storage] Error clearing old data:', error);
+        }
+    },
+    isAvailable: function() {
+        try {
+            const test = '__storage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
+// Динамическое масштабирование для главного экрана
+function updateAdaptiveScale() {
+    const root = document.documentElement;
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    
+    // Диапазон масштабирования: iPhone SE (320px) до iPad Pro Max (1366px)
+    const minWidth = 320; // iPhone SE
+    const maxWidth = 1366; // iPad Pro Max
+    const baseWidth = 430; // Базовая ширина для расчетов
+    
+    // Ограничиваем текущую ширину в пределах диапазона
+    const clampedWidth = Math.max(minWidth, Math.min(maxWidth, currentWidth));
+    
+    // Вычисляем масштаб на основе ширины экрана
+    let scaleFactor;
+    if (clampedWidth <= 320) {
+        // iPhone SE и меньше - минимальный масштаб
+        scaleFactor = 0.6;
+    } else if (clampedWidth <= 375) {
+        // Маленькие телефоны - небольшой масштаб
+        scaleFactor = 0.7;
+    } else if (clampedWidth <= 414) {
+        // Обычные телефоны - базовый масштаб
+        scaleFactor = 0.8;
+    } else if (clampedWidth <= 768) {
+        // Планшеты - средний масштаб
+        scaleFactor = 1.0;
+    } else if (clampedWidth <= 1024) {
+        // Большие планшеты - увеличенный масштаб
+        scaleFactor = 1.2;
+    } else {
+        // iPad Pro и больше - максимальный масштаб
+        scaleFactor = 1.4;
+    }
+    
+    // Обновляем CSS переменные
+    root.style.setProperty('--current-screen-width', `${currentWidth}px`);
+    root.style.setProperty('--scale-factor', scaleFactor);
+    
+    // Применяем масштабирование к основным элементам главного экрана
+    const elements = {
+        '.top-header-container': {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: `${15 * scaleFactor}vh`,
+            zIndex: '1000',
+            pointerEvents: 'none',
+            padding: `${10 * scaleFactor}px ${15 * scaleFactor}px`,
+            boxSizing: 'border-box'
+        },
+        '.welcome-title': {
+            fontSize: `${28 * scaleFactor}px`,
+            lineHeight: 1.2
+        },
+        '.welcome-subtitle': {
+            fontSize: `${16 * scaleFactor}px`,
+            lineHeight: 1.3
+        },
+        '.tab-button-vertical': {
+            width: `${60 * scaleFactor}px`,
+            height: `${60 * scaleFactor}px`,
+            padding: `${8 * scaleFactor}px ${10 * scaleFactor}px`,
+            borderRadius: `${15 * scaleFactor}px`
+        },
+        '.progress-tab.tab-button-vertical': {
+            width: `${60 * scaleFactor}px`,
+            height: `${60 * scaleFactor}px`,
+            padding: `${8 * scaleFactor}px ${10 * scaleFactor}px`,
+            borderRadius: `${15 * scaleFactor}px`
+        },
+        '.leaderboard-tab.tab-button-vertical': {
+            width: `${60 * scaleFactor}px`,
+            height: `${60 * scaleFactor}px`,
+            padding: `${8 * scaleFactor}px ${10 * scaleFactor}px`,
+            borderRadius: `${15 * scaleFactor}px`
+        },
+        '.tab-icon-vertical': {
+            fontSize: `${16 * scaleFactor}px`,
+            marginBottom: `${4 * scaleFactor}px`
+        },
+        '.tab-text-vertical': {
+            fontSize: `${8 * scaleFactor}px`,
+            letterSpacing: `${0.3 * scaleFactor}px`
+        },
+        '.progress-tab .tab-icon-vertical': {
+            fontSize: `${16 * scaleFactor}px`,
+            marginBottom: `${4 * scaleFactor}px`
+        },
+        '.progress-tab .tab-text-vertical': {
+            fontSize: `${8 * scaleFactor}px`,
+            letterSpacing: `${0.3 * scaleFactor}px`
+        },
+        '.leaderboard-tab .tab-icon-vertical': {
+            fontSize: `${16 * scaleFactor}px`,
+            marginBottom: `${4 * scaleFactor}px`
+        },
+        '.leaderboard-tab .tab-text-vertical': {
+            fontSize: `${8 * scaleFactor}px`,
+            letterSpacing: `${0.3 * scaleFactor}px`
+        },
+        '.progress-tab': {
+            position: 'absolute',
+            top: `${10 * scaleFactor}px`,
+            right: `${10 * scaleFactor}px`
+        },
+        '.leaderboard-tab': {
+            position: 'absolute',
+            bottom: `${10 * scaleFactor}px`,
+            right: `${10 * scaleFactor}px`
+        },
+        '.theme-slider': {
+            width: `${50 * scaleFactor}px`,
+            height: `${25 * scaleFactor}px`
+        },
+        '.theme-slider-thumb': {
+            width: `${21 * scaleFactor}px`,
+            height: `${21 * scaleFactor}px`
+        },
+        '.theme-icon-slider': {
+            fontSize: `${12 * scaleFactor}px`
+        },
+        '.level-text': {
+            fontSize: `${24 * scaleFactor}px`
+        },
+        '.level-display-bottom': {
+            position: 'fixed',
+            bottom: `${120 * scaleFactor}px`, // Между изображением и меню
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'auto',
+            minWidth: `${200 * scaleFactor}px`,
+            display: 'flex',
+            justifyContent: 'center',
+            padding: `${12 * scaleFactor}px ${20 * scaleFactor}px`,
+            zIndex: '1000'
+        },
+        // Удалено - изображение будет управляться только через CSS контейнера
+        '.human-avatar-center': {
+            top: '15vh',
+            left: '10px',
+            width: 'calc(100% - 20px)',
+            bottom: '180px',
+            padding: '10px',
+            borderRadius: '12px'
+        },
+        '.navbar': {
+            position: 'fixed',
+            bottom: `${20 * scaleFactor}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: `${80 * scaleFactor}%`,
+            background: 'rgba(135, 206, 250, 0.15)', // Голубой цвет для жидкого стекла
+            backdropFilter: 'blur(20px)',
+            borderRadius: `${20 * scaleFactor}px`,
+            border: '1px solid rgba(135, 206, 250, 0.3)',
+            display: 'flex',
+            justifyContent: 'space-around',
+            padding: `${6 * scaleFactor}px ${8 * scaleFactor}px`,
+            zIndex: '1000',
+            boxShadow: '0 8px 32px rgba(135, 206, 250, 0.2)'
+        },
+        '.nav-item': {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: `${8 * scaleFactor}px ${12 * scaleFactor}px`,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            borderRadius: `${12 * scaleFactor}px`,
+            minWidth: `${50 * scaleFactor}px`,
+            color: 'rgba(135, 206, 250, 0.8) !important', // Голубой цвет текста
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'transparent !important'
+        },
+        '.nav-item.active': {
+            background: 'rgba(0, 123, 255, 0.2) !important', // Синий фон для выбранного
+            color: 'rgba(0, 123, 255, 1) !important', // Синий цвет для выбранного
+            boxShadow: '0 4px 16px rgba(0, 123, 255, 0.3) !important',
+            fontSize: `${10 * scaleFactor}px !important`, // Размер шрифта
+            fontWeight: '600 !important' // Жирность шрифта
+        },
+        '.nav-item:hover': {
+            background: 'rgba(135, 206, 250, 0.1)', // Светло-голубой при наведении
+            color: 'rgba(135, 206, 250, 1)',
+            transform: 'translateY(-2px)'
+        },
+        '.nav-icon': {
+            fontSize: `${16 * scaleFactor}px`, // Уменьшили размер иконок
+            marginBottom: `${4 * scaleFactor}px`,
+            transition: 'all 0.3s ease',
+            filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
+        },
+        '.nav-text': {
+            fontSize: `${10 * scaleFactor}px`, // Увеличили размер текста
+            fontWeight: '600',
+            letterSpacing: `${0.3 * scaleFactor}px`,
+            textTransform: 'uppercase',
+            transition: 'all 0.3s ease'
+        }
+    };
+    
+    // Применяем стили к элементам
+    Object.entries(elements).forEach(([selector, styles]) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            Object.entries(styles).forEach(([property, value]) => {
+                element.style[property] = value;
+            });
+        }
+    });
+    
+    Logger.log(`[Dynamic Scale] Screen: ${currentWidth}x${currentHeight}, Scale: ${scaleFactor.toFixed(2)}`);
+}
+
+// Функция для тестирования масштабирования (только для разработки)
+function testScaling() {
+    const testSizes = [
+        { name: 'iPhone SE', width: 320 },
+        { name: 'iPhone 12', width: 375 },
+        { name: 'iPhone 14 Pro', width: 414 },
+        { name: 'iPad Mini', width: 768 },
+        { name: 'iPad Air', width: 1024 },
+        { name: 'iPad Pro Max', width: 1366 }
+    ];
+    
+    console.log('=== ТЕСТ МАСШТАБИРОВАНИЯ ===');
+    testSizes.forEach(size => {
+        const scaleFactor = getScaleFactorForWidth(size.width);
+        console.log(`${size.name} (${size.width}px): Scale = ${scaleFactor.toFixed(2)}`);
+    });
+    console.log('=============================');
+}
+
+function getScaleFactorForWidth(width) {
+    if (width <= 320) return 0.6;
+    else if (width <= 375) return 0.7;
+    else if (width <= 414) return 0.8;
+    else if (width <= 768) return 1.0;
+    else if (width <= 1024) return 1.2;
+    else return 1.4;
+}
+
+// Активируем динамическое масштабирование для главного экрана
+updateAdaptiveScale();
+window.addEventListener('resize', updateAdaptiveScale);
+window.addEventListener('orientationchange', () => {
+    setTimeout(updateAdaptiveScale, 100); // Small delay for orientation change
+});
+
+// Telegram WebApp initialization
+let tg = window.Telegram?.WebApp;
+let user = null;
+let currentMonth = new Date();
+let programs = [];
+
+// Safe initialization of localStorage data
+function safeGetStorage(key, defaultValue) {
+    try {
+        const value = localStorage.getItem(key);
+        return value ? JSON.parse(value) : defaultValue;
+    } catch (error) {
+        Logger.error(`[Storage] Error reading ${key}:`, error);
+        return defaultValue;
+    }
+}
+
+// Safe element access - returns element or null with logging
+function safeGetElement(id, context = '') {
+    const element = document.getElementById(id);
+    if (!element) {
+        Logger.warn(`[Element] Element not found: ${id}${context ? ` in ${context}` : ''}`);
+    }
+    return element;
+}
+
+let userProgress = safeGetStorage('userProgress', {});
+let userProfile = safeGetStorage('userProfile', {});
+let isDeveloperMode = false;
+let isEditor = false;
+
+// Supabase client
+let supabase = null;
+
+// Переопределяем console.log для автоматического добавления DEBUG флага
+const originalLog = console.log;
+console.log = function(...args) {
+    if (DEBUG) {
+        Logger.log(...args);
+    }
+};
+
+const originalError = console.error;
+console.error = function(...args) {
+    Logger.error(...args);
+};
+
+const originalWarn = console.warn;
+console.warn = function(...args) {
+    Logger.warn(...args);
+};
+
 // Cache functions
 function getCacheData(key) {
     try {
-        const cached = localStorage.getItem(key);
+        const cached = SafeStorage.getItem(key);
         if (!cached) return null;
         
         const data = JSON.parse(cached);
         const now = Date.now();
         
         if (data.timestamp && (now - data.timestamp) < CACHE_DURATION) {
-            console.log(`[Cache] Hit for ${key}`);
+            Logger.log(`[Cache] Hit for ${key}`);
             return data.value;
         } else {
-            console.log(`[Cache] Expired for ${key}`);
-            localStorage.removeItem(key);
+            Logger.log(`[Cache] Expired for ${key}`);
+            SafeStorage.removeItem(key);
             return null;
         }
     } catch (error) {
-        console.error(`[Cache] Error reading ${key}:`, error);
+        Logger.error(`[Cache] Error reading ${key}:`, error);
         return null;
     }
 }
 
 function setCacheData(key, value) {
-    try {
-        const data = {
-            value: value,
-            timestamp: Date.now()
-        };
-        localStorage.setItem(key, JSON.stringify(data));
-        console.log(`[Cache] Stored ${key}`);
-    } catch (error) {
-        console.error(`[Cache] Error storing ${key}:`, error);
+    const data = {
+        value: value,
+        timestamp: Date.now()
+    };
+    
+    const success = SafeStorage.setItem(key, JSON.stringify(data));
+    if (success) {
+        Logger.log(`[Cache] Stored ${key}`);
     }
 }
 
@@ -1299,11 +1618,23 @@ function initializeApp() {
     // Load theme preference
     loadThemePreference();
     
+    // Initialize with home section active
+    navigateToSection('home');
+    
+    // Initialize dynamic scaling for main screen
+    updateAdaptiveScale();
+    
+    // Test scaling (only in development)
+    testScaling();
+    
     // Load user profile if available
     if (user) {
-        document.getElementById('user-name').value = user.first_name || '';
-        if (user.last_name) {
-            document.getElementById('user-name').value += ' ' + user.last_name;
+        const userNameEl = safeGetElement('user-name', 'load user profile');
+        if (userNameEl) {
+            userNameEl.value = user.first_name || '';
+            if (user.last_name) {
+                userNameEl.value += ' ' + user.last_name;
+            }
         }
     }
     
@@ -1320,13 +1651,16 @@ function initializeApp() {
     
     // Load saved profile data
     if (userProfile.name) {
-        document.getElementById('user-name').value = userProfile.name;
+        const userNameEl = safeGetElement('user-name', 'load saved profile');
+        if (userNameEl) userNameEl.value = userProfile.name;
     }
     if (userProfile.birthdate) {
-        document.getElementById('user-birthdate').value = userProfile.birthdate;
+        const userBirthdateEl = safeGetElement('user-birthdate', 'load saved profile');
+        if (userBirthdateEl) userBirthdateEl.value = userProfile.birthdate;
     }
     if (userProfile.problem) {
-        document.getElementById('user-problem').value = userProfile.problem;
+        const userProblemEl = safeGetElement('user-problem', 'load saved profile');
+        if (userProblemEl) userProblemEl.value = userProfile.problem;
     }
     
     // Initialize calendar
@@ -1367,6 +1701,10 @@ function setupEventListeners() {
 function navigateToSection(sectionName) {
     console.log('Navigating to section:', sectionName);
     
+    // Log current active sections before change
+    const currentActiveSections = document.querySelectorAll('.section.active');
+    console.log('Current active sections before change:', Array.from(currentActiveSections).map(s => s.id));
+    
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
@@ -1376,6 +1714,7 @@ function navigateToSection(sectionName) {
     const targetSection = document.getElementById(sectionName);
     if (targetSection) {
         targetSection.classList.add('active');
+        console.log('Section activated:', sectionName);
     } else {
         console.error('Section not found:', sectionName);
     }
@@ -1387,6 +1726,18 @@ function navigateToSection(sectionName) {
     const navItem = document.querySelector(`[data-section="${sectionName}"]`);
     if (navItem) {
         navItem.classList.add('active');
+        console.log('Nav item activated:', sectionName);
+    } else {
+        console.error('Nav item not found for section:', sectionName);
+    }
+    
+    // Log final state
+    const finalActiveSections = document.querySelectorAll('.section.active');
+    console.log('Final active sections:', Array.from(finalActiveSections).map(s => s.id));
+    
+    // Apply dynamic scaling when navigating to home section
+    if (sectionName === 'home') {
+        updateAdaptiveScale();
     }
     
     // Scroll to top
@@ -1413,7 +1764,10 @@ function updateCalendar() {
         'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
-    document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
+    const currentMonthElement = document.getElementById('current-month');
+    if (currentMonthElement) {
+        currentMonthElement.textContent = `${monthNames[month]} ${year}`;
+    }
     
     // Generate calendar grid
     const firstDay = new Date(year, month, 1);
@@ -1422,6 +1776,7 @@ function updateCalendar() {
     const startingDay = firstDay.getDay();
     
     const calendarGrid = document.getElementById('calendar-grid');
+    if (!calendarGrid) return;
     calendarGrid.innerHTML = '';
     
     // Add day headers
@@ -1486,14 +1841,17 @@ function toggleDayCompletion(dayElement) {
     }
     
     // Save progress locally only
-    localStorage.setItem('userProgress', JSON.stringify(userProgress));
-    console.log('Progress saved to localStorage:', userProgress);
+    SafeStorage.setItem('userProgress', JSON.stringify(userProgress));
+    Logger.log('Progress saved to localStorage:', userProgress);
     updateProgressStats();
 }
 
 function updateProgressStats() {
     const completedDays = Object.keys(userProgress).length;
-    document.getElementById('completed-days').textContent = completedDays;
+    const completedDaysEl = document.getElementById('completed-days');
+    if (completedDaysEl) {
+        completedDaysEl.textContent = completedDays;
+    }
     
     // Calculate current streak
     const today = new Date();
@@ -1510,7 +1868,10 @@ function updateProgressStats() {
         }
     }
     
-    document.getElementById('current-streak').textContent = streak;
+    const currentStreakEl = document.getElementById('current-streak');
+    if (currentStreakEl) {
+        currentStreakEl.textContent = streak;
+    }
 }
 
 // Programs data
@@ -2051,19 +2412,21 @@ function saveProfile() {
     };
     
     // Save locally only
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    console.log('Profile saved to localStorage:', userProfile);
+    SafeStorage.setItem('userProfile', JSON.stringify(userProfile));
+    Logger.log('Profile saved to localStorage:', userProfile);
     
     // Show success message
     const button = document.querySelector('.save-button');
-    const originalText = button.textContent;
-    button.textContent = 'Сохранено!';
-    button.style.background = '#28a745';
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.style.background = '';
-    }, 2000);
+    if (button) {
+        const originalText = button.textContent;
+        button.textContent = 'Сохранено!';
+        button.style.background = '#28a745';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '';
+        }, 2000);
+    }
 }
 
 // Load user data
@@ -2102,8 +2465,10 @@ function checkSubscription() {
     const subscriptionDate = new Date();
     subscriptionDate.setDate(subscriptionDate.getDate() + 30);
     
-    document.getElementById('subscription-date').textContent = 
-        subscriptionDate.toLocaleDateString('ru-RU');
+    const subscriptionDateEl = document.getElementById('subscription-date');
+    if (subscriptionDateEl) {
+        subscriptionDateEl.textContent = subscriptionDate.toLocaleDateString('ru-RU');
+    }
 }
 
 function showSubscriptionOverlay() {
@@ -3035,8 +3400,15 @@ function updateWelcomeMessage() {
     const registrationDate = userProfile.registrationDate || new Date();
     const daysSinceRegistration = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24)) + 1;
     
-    document.getElementById('welcome-title').textContent = `Привет, ${userName}!`;
-    document.getElementById('welcome-subtitle').innerHTML = `Сегодня твой ${daysSinceRegistration}-ый день<br>на пути к Здоровому телу!`;
+    const welcomeTitleEl = document.getElementById('welcome-title');
+    if (welcomeTitleEl) {
+        welcomeTitleEl.textContent = `Привет, ${userName}!`;
+    }
+    
+    const welcomeSubtitleEl = document.getElementById('welcome-subtitle');
+    if (welcomeSubtitleEl) {
+        welcomeSubtitleEl.innerHTML = `Сегодня твой ${daysSinceRegistration}-ый день<br>на пути к Здоровому телу!`;
+    }
 }
 
 // Update progress display
@@ -3117,6 +3489,8 @@ function getLevelProgress(completedDays, level) {
 // Generate calendar
 function generateCalendar() {
     const calendarGrid = document.getElementById('calendar-grid');
+    if (!calendarGrid) return;
+    
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
@@ -3180,8 +3554,10 @@ function toggleTheme() {
     const isDark = document.body.classList.contains('dark-theme');
     const newTheme = isDark ? 'light' : 'dark';
     
+    console.log('Toggling theme:', { isDark, newTheme });
+    
     document.body.classList.toggle('dark-theme', !isDark);
-    localStorage.setItem('theme', newTheme);
+    SafeStorage.setItem('theme', newTheme);
     
     // Update slider icon
     const themeIcon = document.getElementById('theme-icon-slider');
@@ -3189,12 +3565,13 @@ function toggleTheme() {
         themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
     }
     
+    console.log('Theme toggled successfully. Body classes:', document.body.className);
     showToast(`Переключено на ${newTheme === 'dark' ? 'темную' : 'светлую'} тему`, 'info');
 }
 
 // Load theme preference
 function loadThemePreference() {
-    const savedTheme = localStorage.getItem('theme') || 'light'; // По умолчанию светлая тема
+    const savedTheme = SafeStorage.getItem('theme') || 'light'; // По умолчанию светлая тема
     const themeIcon = document.getElementById('theme-icon-slider');
     
     if (savedTheme === 'dark') {
@@ -3208,7 +3585,9 @@ function loadThemePreference() {
 
 // Tab modal functions
 function openTabModal(tabName) {
+    console.log('Opening tab modal:', tabName);
     const modal = document.getElementById(`${tabName}-modal`);
+    console.log('Modal found:', modal);
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -3219,6 +3598,8 @@ function openTabModal(tabName) {
         } else if (tabName === 'progress') {
             updateProgressModal();
         }
+    } else {
+        console.error('Modal not found:', `${tabName}-modal`);
     }
 }
 
@@ -3357,5 +3738,7 @@ console.log('Functions exported:', {
     editProgram: typeof window.editProgram,
     deleteProgram: typeof window.deleteProgram,
     toggleProgramPublished: typeof window.toggleProgramPublished,
-    addNewProgram: typeof window.addNewProgram
+    addNewProgram: typeof window.addNewProgram,
+    openTabModal: typeof window.openTabModal,
+    closeTabModal: typeof window.closeTabModal
 });
