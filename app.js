@@ -13,23 +13,23 @@ function updateAdaptiveScale() {
     const heightScale = currentHeight / 932; // Base height (iPhone 14 Pro Max)
     const scaleFactor = Math.min(widthScale, heightScale);
     
-    // For very small screens (like iPhone SE), disable scaling
+    // For very small screens, use more aggressive scaling
     let adaptiveScale;
-    if (currentWidth <= 375) { // iPhone SE and similar small screens
-        // Disable scaling on very small screens
-        adaptiveScale = 1.0;
+    if (currentWidth <= 280) { // Galaxy Z Fold folded (280px)
+        // Extremely aggressive scaling for foldable phones
+        adaptiveScale = Math.max(0.5, Math.min(0.7, scaleFactor));
+    } else if (currentWidth <= 320) { // iPhone SE (320px)
+        // Very aggressive scaling for tiny screens
+        adaptiveScale = Math.max(0.6, Math.min(0.8, scaleFactor));
+    } else if (currentWidth <= 375) { // Small phones
+        // Moderate scaling for small screens
+        adaptiveScale = Math.max(0.7, Math.min(0.9, scaleFactor));
     } else {
         // For larger screens, use the original logic
         adaptiveScale = Math.max(0.7, Math.min(1.4, scaleFactor));
     }
     
-    // Calculate vertical scale factor for height adjustments
-    const verticalScale = Math.max(0.8, Math.min(1.3, currentHeight / 932));
-    const combinedScale = Math.min(adaptiveScale, verticalScale);
-    
     root.style.setProperty('--adaptive-scale', adaptiveScale);
-    root.style.setProperty('--vertical-scale', verticalScale);
-    root.style.setProperty('--combined-scale', combinedScale);
     
     // Ensure the container always covers full width
     const container = document.querySelector('.top-header-container');
@@ -38,21 +38,14 @@ function updateAdaptiveScale() {
         container.style.width = '100vw';
         container.style.minWidth = '100vw';
         container.style.overflow = 'visible';
-        
-        // On small screens, disable transform
-        if (currentWidth <= 375) {
-            container.style.transform = 'none';
-        }
     }
     
     console.log(`[Adaptive Scale] Screen: ${currentWidth}x${currentHeight}, Scale: ${adaptiveScale.toFixed(3)}`);
 }
 
-// Initialize adaptive scaling
-updateAdaptiveScale();
-
-// Update scale on window resize
-window.addEventListener('resize', updateAdaptiveScale);
+// Removed complex adaptive scaling - using simple responsive design instead
+// updateAdaptiveScale();
+// window.addEventListener('resize', updateAdaptiveScale);
 window.addEventListener('orientationchange', () => {
     setTimeout(updateAdaptiveScale, 100); // Small delay for orientation change
 });
@@ -1158,10 +1151,16 @@ function initializeTelegram() {
     // Get user data from Telegram
     user = tg.initDataUnsafe?.user;
     
-    // Set up theme
+    // Set up theme - по умолчанию светлая тема
     if (tg.colorScheme === 'dark') {
         document.body.classList.add('dark-theme');
-        }
+    } else {
+        // Убеждаемся, что светлая тема активна по умолчанию
+        document.body.classList.remove('dark-theme');
+    }
+    
+    // Load theme preference to set correct icon
+    loadThemePreference();
         
         // Hide dev button by default until verified
         hideDeveloperButton();
@@ -1296,6 +1295,9 @@ function initializeApp() {
             navigateToSection(section);
         });
     });
+    
+    // Load theme preference
+    loadThemePreference();
     
     // Load user profile if available
     if (user) {
@@ -3192,14 +3194,15 @@ function toggleTheme() {
 
 // Load theme preference
 function loadThemePreference() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'light'; // По умолчанию светлая тема
     const themeIcon = document.getElementById('theme-icon-slider');
     
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-theme');
-        if (themeIcon) themeIcon.textContent = '🌙';
+        if (themeIcon) themeIcon.textContent = '🌙'; // Луна для темной темы
     } else {
-        if (themeIcon) themeIcon.textContent = '☀️';
+        document.body.classList.remove('dark-theme'); // Убеждаемся, что светлая тема активна
+        if (themeIcon) themeIcon.textContent = '☀️'; // Солнце для светлой темы
     }
 }
 

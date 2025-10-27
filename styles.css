@@ -1,37 +1,13 @@
-/* CSS Variables for Adaptive Scaling */
+/* Simple CSS Variables */
 :root {
-    /* Base screen size (iPhone 14 Pro Max reference: 430px width) */
-    --base-screen-width: 430px;
-    --base-screen-height: 932px;
-    
-    /* Current screen dimensions */
-    --current-width: 100vw;
-    --current-height: 100vh;
-    
-    /* Scale factors */
-    --width-scale: calc(var(--current-width) / var(--base-screen-width));
-    --height-scale: calc(var(--current-height) / var(--base-screen-height));
-    --scale-factor: min(var(--width-scale), var(--height-scale));
-    
-    /* Clamp scale to reasonable bounds */
-    --min-scale: 0.6;
-    --max-scale: 1.4;
-    --adaptive-scale: clamp(var(--min-scale), var(--scale-factor), var(--max-scale));
-    
-    /* Base sizes for scaling (iPhone 14 Pro Max reference) */
-    --base-tab-size: 80px;
-    --base-toggle-size: 60px;
-    --base-font-title: 40px;
-    --base-font-subtitle: 22px;
-    --base-container-height: 13vh;
-    --base-padding: 10px;
-    --base-border-radius: 12px;
-    
-    /* Vertical scaling variables */
-    --base-avatar-top: 15vh;
-    --base-avatar-bottom: 140px;
-    --base-progress-width: auto;
-    --base-progress-font: 32px;
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
 }
 
 /* Reset and Base Styles */
@@ -169,13 +145,13 @@ video.exercise-video {
 /* Theme Toggle - Top Left in container */
 #switch.theme-toggle-top {
     position: absolute;
-    top: calc(var(--base-padding) * var(--adaptive-scale));
-    left: calc(var(--base-padding) * var(--adaptive-scale));
+    top: calc(10px * var(--adaptive-scale));
+    left: calc(10px * var(--adaptive-scale));
     width: calc(var(--base-toggle-size) * var(--adaptive-scale));
     height: calc(35px * var(--adaptive-scale));
     z-index: 1001;
-    background: #007bff;
-    border: calc(3px * var(--adaptive-scale)) solid #007bff;
+    background: transparent; /* Прозрачный фон */
+    border: none; /* Убираем рамку */
     border-radius: calc(18px * var(--adaptive-scale));
     pointer-events: auto; /* Enable clicks on toggle */
 }
@@ -189,7 +165,7 @@ video.exercise-video {
 .theme-slider-track {
     width: 100%;
     height: 100%;
-    background: #007bff;
+    background: #007bff; /* Синий цвет по умолчанию (светлая тема) */
     border-radius: calc(18px * var(--adaptive-scale));
     position: relative;
     transition: all 0.3s ease;
@@ -218,12 +194,12 @@ video.exercise-video {
 
 /* Dark theme styles */
 .dark-theme .theme-slider-track {
-    background: #dc3545;
+    background: #6c757d; /* Серый цвет для темной темы */
 }
 
 .dark-theme .theme-slider-thumb {
     background: white;
-    transform: translateX(35px);
+    transform: translateX(calc(35px * var(--adaptive-scale)));
 }
 
 .dark-theme .theme-icon-slider {
@@ -232,24 +208,16 @@ video.exercise-video {
 
 /* Убираем темную тему для аватара - теперь прозрачный фон */
 
-/* Top Header Container */
+/* Top Header Container - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ВВЕРХУ */
 .top-header-container {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: calc(var(--base-container-height) * var(--combined-scale));
+    width: 100%;
+    height: 15vh;
     z-index: 1000;
-    pointer-events: none; /* Allow clicks to pass through container */
-    transform: scale(var(--adaptive-scale));
-    transform-origin: top left;
-    /* Ensure container doesn't get clipped */
-    overflow: visible;
-    min-width: 100vw;
-    /* Prevent container from being clipped by parent elements */
-    max-width: none;
-    /* Ensure full coverage even when scaled - but not on very small screens */
-    width: 100vw;
+    pointer-events: none;
+    /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ВВЕРХУ */
 }
 
 /* Top Right Tabs - Vertical */
@@ -268,30 +236,30 @@ video.exercise-video {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: calc(12px * var(--adaptive-scale)) calc(16px * var(--adaptive-scale));
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: calc(15px * var(--adaptive-scale));
+    border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
-    width: calc(var(--base-tab-size) * var(--adaptive-scale));
-    height: calc(var(--base-tab-size) * var(--adaptive-scale));
-    pointer-events: auto; /* Enable clicks on tabs */
+    width: 80px;
+    height: 80px;
+    pointer-events: auto;
 }
 
 /* Progress Tab - Top Right */
 .progress-tab {
     position: absolute;
-    top: calc(var(--base-padding) * var(--adaptive-scale));
-    right: calc(var(--base-padding) * var(--adaptive-scale));
+    top: 10px;
+    right: 10px;
 }
 
 /* Leaderboard Tab - Bottom Right */
 .leaderboard-tab {
     position: absolute;
-    bottom: calc(var(--base-padding) * var(--adaptive-scale));
-    right: calc(var(--base-padding) * var(--adaptive-scale));
+    bottom: 10px;
+    right: 10px;
 }
 
 .tab-button-vertical:hover {
@@ -301,15 +269,15 @@ video.exercise-video {
 }
 
 .tab-icon-vertical {
-    font-size: calc(20px * var(--adaptive-scale));
-    margin-bottom: calc(6px * var(--adaptive-scale));
+    font-size: 20px;
+    margin-bottom: 6px;
 }
 
 .tab-text-vertical {
-    font-size: calc(11px * var(--adaptive-scale));
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: calc(0.5px * var(--adaptive-scale));
+    letter-spacing: 0.5px;
     color: rgba(0, 0, 0, 0.8);
 }
 
@@ -380,20 +348,20 @@ video.exercise-video {
 /* Welcome Section - Bottom Left in container */
 .welcome-section {
     position: absolute;
-    bottom: calc(var(--base-padding) * var(--adaptive-scale));
-    left: calc(var(--base-padding) * var(--adaptive-scale));
-    width: calc(100% - calc(var(--base-padding) * 2 * var(--adaptive-scale)));
-    padding: calc(20px * var(--adaptive-scale));
+    bottom: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    padding: 20px;
     background: transparent;
     text-align: left;
     z-index: 10;
-    pointer-events: auto; /* Enable clicks on welcome section */
+    pointer-events: auto;
 }
 
 .welcome-title {
-    font-size: calc(var(--base-font-title) * var(--adaptive-scale));
+    font-size: 40px;
     font-weight: 700;
-    margin: 0 0 calc(12px * var(--adaptive-scale)) 0;
+    margin: 0 0 12px 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -401,29 +369,30 @@ video.exercise-video {
 }
 
 .welcome-subtitle {
-    font-size: calc(var(--base-font-subtitle) * var(--adaptive-scale));
+    font-size: 22px;
     color: rgba(0, 0, 0, 0.7);
     margin: 0;
-    margin-top: calc(-8px * var(--adaptive-scale));
+    margin-top: -8px;
     font-weight: 500;
     line-height: 1.1;
 }
 
 /* Human Avatar Center */
-/* Human Avatar Center - From container bottom to level progress top */
+/* Human Avatar Center - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ОТ УРОВНЯ ПРОГРЕССА ДО ВЕРХНЕГО КОНТЕЙНЕРА */
 .human-avatar-center {
     position: fixed;
-    top: calc(var(--base-avatar-top) * var(--combined-scale));
-    left: calc(var(--base-padding) * var(--adaptive-scale));
-    width: calc(100% - calc(var(--base-padding) * 2 * var(--adaptive-scale)));
-    bottom: calc(var(--base-avatar-bottom) * var(--combined-scale));
+    top: 15vh; /* От верхнего контейнера (15vh) */
+    left: 10px;
+    width: calc(100% - 20px);
+    bottom: 160px; /* До уровня прогресса (140px + 20px отступ) */
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
-    border-radius: calc(var(--base-border-radius) * var(--adaptive-scale));
+    border-radius: 12px;
     padding: 10px;
     box-sizing: border-box;
+    /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ПО ЦЕНТРУ, ОТ УРОВНЯ ПРОГРЕССА ДО ВЕРХНЕГО КОНТЕЙНЕРА */
 }
 
 .avatar-large {
@@ -457,7 +426,7 @@ video.exercise-video {
     background: transparent;
     transition: all 0.5s ease;
     opacity: 1;
-    transform: scale(0.952);
+    transform: scale(0.9);
 }
 
 .avatar-image.loading {
@@ -682,18 +651,18 @@ video.exercise-video {
     color: rgba(0, 0, 0, 0.3);
 }
 
-/* Level Display - Bottom Center */
-/* Level Display Bottom - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
+/* Level Display - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ЧУТЬ ВЫШЕ МЕНЮ */
 .level-display-bottom {
     position: fixed;
-    bottom: calc(120px * var(--combined-scale));
+    bottom: 140px; /* Чуть выше меню (меню на 20px от низа) */
     left: 50%;
     transform: translateX(-50%);
-    width: calc(var(--base-progress-width) * var(--adaptive-scale));
-    min-width: calc(200px * var(--adaptive-scale)); /* Минимальная ширина для предотвращения переносов */
+    width: auto;
+    min-width: 200px;
     display: flex;
     justify-content: center;
-    padding: calc(12px * var(--adaptive-scale)) calc(20px * var(--adaptive-scale));
+    padding: 12px 20px;
+    /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ПО ЦЕНТРУ, ЧУТЬ ВЫШЕ МЕНЮ */
 }
 
 .level-info {
@@ -704,11 +673,11 @@ video.exercise-video {
 }
 
 .level-text {
-    font-size: calc(var(--base-progress-font) * var(--adaptive-scale));
+    font-size: 32px;
     font-weight: 600;
     color: #2c3e50;
     margin: 0;
-    white-space: nowrap; /* Предотвращаем переносы текста */
+    white-space: nowrap;
 }
 
 /* Leaderboard Section */
@@ -945,11 +914,12 @@ body {
     padding-bottom: 80px; /* Space for navbar */
 }
 
-/* Navigation - НЕЗАВИСИМЫЙ ЭЛЕМЕНТ */
+/* Navigation - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ВНИЗУ ПО ЦЕНТРУ */
 .navbar {
     position: fixed;
     bottom: 20px;
-    left: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 80%;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20px);
@@ -957,24 +927,69 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
     display: flex;
     justify-content: space-around;
-    padding: 15px 10px;
+    padding: 10px 8px;
     z-index: 1000;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ВНИЗУ ПО ЦЕНТРУ */
+}
+
+/* Orientation change - АДАПТИВНОЕ МЕНЮ ПРИ ПОВОРОТЕ ЭКРАНА */
+@media (orientation: landscape) and (max-height: 500px) {
+    /* Горизонтальная ориентация на маленьких экранах */
+    .navbar {
+        bottom: 10px;
+        width: 95%;
+        padding: 6px 4px;
+    }
+    
+    .nav-item {
+        padding: 4px 6px;
+        min-width: 35px;
+    }
+    
+    .nav-icon {
+        font-size: 14px;
+        margin-bottom: 1px;
+    }
+    
+    .nav-text {
+        font-size: 7px;
+        letter-spacing: 0.2px;
+    }
+    
+    .avatar-image {
+        transform: scale(0.6); /* Еще меньше в горизонтальной ориентации */
+    }
+}
+
+@media (orientation: portrait) and (max-width: 480px) {
+    /* Вертикальная ориентация на мобильных */
+    .navbar {
+        bottom: 20px;
+        width: 80%;
+        padding: 10px 8px;
+    }
+    
+    .nav-item {
+        padding: 12px 16px;
+        min-width: 60px;
+    }
+    
+    .nav-icon {
+        font-size: 22px;
+        margin-bottom: 6px;
+    }
+    
+    .nav-text {
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
 }
 
 /* Dark theme support for glassmorphism */
 
-/* Large Desktop Responsive */
+/* Large Desktop Responsive - ТОЛЬКО РАЗМЕРЫ ТЕКСТА И ЭЛЕМЕНТОВ */
 @media (min-width: 1440px) {
-    .top-header-container {
-        height: 12vh; /* Меньше высота на больших экранах */
-    }
-    
-    .human-avatar-center {
-        top: 12vh;
-        bottom: 140px;
-    }
-    
     .welcome-title {
         font-size: 40px;
     }
@@ -1003,17 +1018,8 @@ body {
     }
 }
 
-/* Desktop Responsive */
+/* Desktop Responsive - ТОЛЬКО РАЗМЕРЫ ТЕКСТА И ЭЛЕМЕНТОВ */
 @media (min-width: 1200px) and (max-width: 1439px) {
-    .top-header-container {
-        height: 14vh;
-    }
-    
-    .human-avatar-center {
-        top: 14vh;
-        bottom: 140px;
-    }
-    
     .welcome-title {
         font-size: 38px;
     }
@@ -1032,17 +1038,8 @@ body {
     }
 }
 
-/* Tablet Responsive */
+/* Tablet Responsive - ТОЛЬКО РАЗМЕРЫ ТЕКСТА И ЭЛЕМЕНТОВ */
 @media (max-width: 1024px) and (min-width: 769px) {
-    .top-header-container {
-        height: 18vh; /* Средняя высота для планшетов */
-    }
-    
-    .human-avatar-center {
-        top: 18vh;
-        bottom: 140px;
-    }
-    
     .welcome-title {
         font-size: 30px;
     }
@@ -1061,17 +1058,8 @@ body {
     }
 }
 
-/* Small Tablet Responsive */
+/* Small Tablet Responsive - ТОЛЬКО РАЗМЕРЫ ТЕКСТА И ЭЛЕМЕНТОВ */
 @media (max-width: 768px) and (min-width: 481px) {
-    .top-header-container {
-        height: 18vh;
-    }
-    
-    .human-avatar-center {
-        top: 18vh;
-        bottom: 140px;
-    }
-    
     .welcome-title {
         font-size: 28px;
     }
@@ -1090,85 +1078,242 @@ body {
     }
 }
 
-/* Small Mobile Responsive */
-/* Small Mobile Responsive - iPhone SE and similar */
-@media (max-width: 375px) {
-    .top-header-container {
-        height: 15vh !important; /* Фиксированная высота для маленьких экранов */
-        transform: none !important; /* Отключаем масштабирование */
-        width: 100vw !important;
-    }
-    
-    .human-avatar-center {
-        top: 15vh !important;
-        bottom: 140px !important;
-        left: 10px !important;
-        width: calc(100% - 20px) !important;
-    }
-    
+/* Galaxy Z Fold - Extremely narrow screen - ТОЛЬКО РАЗМЕРЫ ТЕКСТА И ЭЛЕМЕНТОВ */
+@media (max-width: 280px) {
     .welcome-title {
-        font-size: 24px !important; /* Фиксированный размер */
+        font-size: 16px;
+        line-height: 1.0;
     }
     
     .welcome-subtitle {
-        font-size: 14px !important; /* Фиксированный размер */
+        font-size: 10px;
+        line-height: 1.0;
+    }
+    
+    .welcome-section {
+        padding: 6px;
+        width: calc(100% - 12px);
+    }
+    
+    .tab-button-vertical {
+        width: 40px;
+        height: 40px;
+        padding: 4px 6px;
+    }
+    
+    .tab-icon-vertical {
+        font-size: 12px;
+        margin-bottom: 1px;
+    }
+    
+    .tab-text-vertical {
+        font-size: 6px;
+        letter-spacing: 0.2px;
+    }
+    
+    .theme-slider {
+        width: 40px;
+        height: 20px;
+    }
+    
+    .theme-slider-thumb {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .theme-icon-slider {
+        font-size: 8px;
+    }
+    
+    .level-text {
+        font-size: 14px;
+    }
+    
+    .level-display-bottom {
+        min-width: 120px;
+        padding: 6px 8px;
+    }
+    
+    .avatar-image {
+        transform: scale(0.5); /* Еще меньше для очень маленьких экранов */
+    }
+    
+    .dark-theme .theme-slider-thumb {
+        transform: translateX(20px);
+    }
+}
+
+/* Extra Small Mobile - iPhone SE - АДАПТИВНОЕ МЕНЮ И ИЗОБРАЖЕНИЕ */
+@media (max-width: 320px) {
+    .welcome-title {
+        font-size: 20px;
+        line-height: 1.1;
+    }
+    
+    .welcome-subtitle {
+        font-size: 12px;
+        line-height: 1.1;
     }
     
     .welcome-section {
         padding: 8px;
+        width: calc(100% - 16px);
     }
     
     .tab-button-vertical {
-        width: 65px !important; /* Фиксированный размер */
-        height: 65px !important;
-        padding: 8px 10px;
+        width: 40px;
+        height: 40px;
+        padding: 4px 6px;
     }
     
     .tab-icon-vertical {
-        font-size: 18px !important; /* Фиксированный размер */
+        font-size: 10px;
+        margin-bottom: 1px;
     }
     
     .tab-text-vertical {
-        font-size: 10px !important; /* Фиксированный размер */
-    }
-    
-    .level-text {
-        font-size: 22px !important;
-    }
-    
-    .level-display-bottom {
-        bottom: 120px !important;
-        min-width: 180px !important; /* Фиксированная минимальная ширина */
-        padding: 10px 15px !important;
+        font-size: 6px;
+        letter-spacing: 0.2px;
     }
     
     .theme-slider {
-        width: 65px !important; /* Фиксированный размер */
-        height: 32px !important;
+        width: 40px;
+        height: 20px;
     }
     
     .theme-slider-thumb {
-        width: 26px !important; /* Фиксированный размер */
-        height: 26px !important;
+        width: 14px;
+        height: 14px;
     }
     
-    .dark-theme .theme-slider-thumb {
-        transform: translateX(33px);
+    .theme-icon-slider {
+        font-size: 8px;
     }
     
-    /* Отключаем масштабирование для всех элементов */
-    .tab-button-vertical,
-    .theme-slider,
-    .theme-slider-track,
-    .theme-slider-thumb,
-    .theme-icon-slider,
-    .welcome-title,
-    .welcome-subtitle {
-        transform: none !important;
+    .level-text {
+        font-size: 20px;
+    }
+    
+    .level-display-bottom {
+        min-width: 150px;
+        padding: 8px 12px;
     }
     
     .avatar-image {
-        transform: scale(0.8); /* Еще меньше на очень маленьких экранах */
+        transform: scale(0.7); /* Уменьшаем изображение чтобы не обрезалось */
+    }
+    
+    /* Адаптивное навигационное меню */
+    .navbar {
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        padding: 6px 4px;
+    }
+    
+    .nav-item {
+        padding: 6px 8px;
+        min-width: 40px;
+    }
+    
+    .nav-icon {
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+    
+    .nav-text {
+        font-size: 8px;
+        letter-spacing: 0.2px;
+    }
+}
+
+/* Small Mobile Responsive - АДАПТИВНОЕ МЕНЮ И ИЗОБРАЖЕНИЕ */
+@media (max-width: 375px) {
+    .welcome-title {
+        font-size: 24px;
+        line-height: 1.1;
+    }
+    
+    .welcome-subtitle {
+        font-size: 14px;
+        line-height: 1.1;
+    }
+    
+    .welcome-section {
+        padding: 10px;
+        width: calc(100% - 20px);
+    }
+    
+    .tab-button-vertical {
+        width: 45px;
+        height: 45px;
+        padding: 5px 7px;
+    }
+    
+    .tab-icon-vertical {
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+    
+    .tab-text-vertical {
+        font-size: 7px;
+        letter-spacing: 0.3px;
+    }
+    
+    .theme-slider {
+        width: 45px;
+        height: 22px;
+    }
+    
+    .theme-slider-thumb {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .theme-icon-slider {
+        font-size: 9px;
+    }
+    
+    .level-text {
+        font-size: 24px;
+    }
+    
+    .level-display-bottom {
+        min-width: 160px;
+        padding: 10px 14px;
+    }
+    
+    .avatar-image {
+        transform: scale(0.8); /* Уменьшаем изображение чтобы не обрезалось */
+    }
+    
+    /* Адаптивное навигационное меню */
+    .navbar {
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 85%;
+        padding: 8px 6px;
+    }
+    
+    .nav-item {
+        padding: 8px 10px;
+        min-width: 45px;
+    }
+    
+    .nav-icon {
+        font-size: 18px;
+        margin-bottom: 3px;
+    }
+    
+    .nav-text {
+        font-size: 9px;
+        letter-spacing: 0.3px;
+    }
+    
+    .dark-theme .theme-slider-thumb {
+        transform: translateX(23px);
     }
 }
 
@@ -1215,7 +1360,7 @@ body {
     }
     
     .avatar-image {
-        transform: scale(0.952); /* Уменьшаем изображение на мобильных */
+        transform: scale(calc(0.8 * var(--adaptive-scale))); /* Уменьшаем изображение на мобильных */
     }
     
     .level-text {
@@ -2163,8 +2308,89 @@ body {
     line-height: 1.5;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Large Desktop - iPad Pro and similar */
+@media (min-width: 1024px) {
+    .human-avatar-center {
+        top: calc(15vh * var(--adaptive-scale));
+        bottom: calc(200px * var(--adaptive-scale)); /* Еще больше места для iPad Pro */
+    }
+    
+    .avatar-image {
+        transform: scale(calc(0.7 * var(--adaptive-scale))); /* Еще чуть меньше для iPad Pro */
+    }
+    
+    .level-display-bottom {
+        bottom: calc(160px * var(--adaptive-scale)); /* Больше места от навигации */
+    }
+    
+    .level-text {
+        font-size: calc(36px * var(--adaptive-scale)); /* Крупнее на больших экранах */
+    }
+    
+    .navbar {
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(60% * var(--adaptive-scale)); /* Уже на больших экранах */
+        padding: calc(12px * var(--adaptive-scale)) calc(10px * var(--adaptive-scale));
+    }
+}
+
+/* Desktop */
+@media (min-width: 769px) and (max-width: 1023px) {
+    .human-avatar-center {
+        top: calc(15vh * var(--adaptive-scale));
+        bottom: calc(190px * var(--adaptive-scale)); /* Больше места для iPad Air */
+    }
+    
+    .avatar-image {
+        transform: scale(calc(0.75 * var(--adaptive-scale))); /* Еще чуть меньше для iPad Air */
+    }
+    
+    .level-display-bottom {
+        bottom: calc(150px * var(--adaptive-scale));
+    }
+    
+    .level-text {
+        font-size: calc(34px * var(--adaptive-scale));
+    }
+    
+    .navbar {
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(70% * var(--adaptive-scale));
+        padding: calc(11px * var(--adaptive-scale)) calc(9px * var(--adaptive-scale));
+    }
+}
+
+/* iPad Mini and similar tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+    .human-avatar-center {
+        top: calc(15vh * var(--adaptive-scale));
+        bottom: calc(180px * var(--adaptive-scale)); /* Больше места для iPad Mini */
+    }
+    
+    .avatar-image {
+        transform: scale(calc(0.8 * var(--adaptive-scale))); /* Уменьшаем чтобы не обрезалось */
+    }
+    
+    .level-display-bottom {
+        bottom: calc(160px * var(--adaptive-scale));
+    }
+    
+    .level-text {
+        font-size: calc(32px * var(--adaptive-scale));
+    }
+    
+    .navbar {
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(75% * var(--adaptive-scale));
+        padding: calc(10px * var(--adaptive-scale)) calc(8px * var(--adaptive-scale));
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
     .section {
         padding: 15px;
     }
@@ -2187,11 +2413,11 @@ body {
     }
     
     .navbar {
-        left: 10px;
-        right: 10px;
-        width: calc(100% - 20px);
-        bottom: 15px;
-        padding: 12px 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(85% * var(--adaptive-scale));
+        bottom: calc(15px * var(--adaptive-scale));
+        padding: calc(10px * var(--adaptive-scale)) calc(8px * var(--adaptive-scale));
     }
     
     .nav-item {
