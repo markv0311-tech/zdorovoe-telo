@@ -2430,19 +2430,29 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         const isVideoFile = exercise.video_url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
                         
                         if (isVideoFile) {
-                            // Direct video file - restore native controls
+                            // Direct video file - restore native controls with fullscreen support
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0; position: relative;">
                                     <video class="exercise-video" 
                                            controls 
                                            preload="metadata" 
                                            style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;"
-                                           playsinline>
+                                           playsinline
+                                           webkit-playsinline
+                                           allowfullscreen
+                                           webkitallowfullscreen
+                                           mozallowfullscreen
+                                           msallowfullscreen
+                                           onloadedmetadata="this.requestFullscreen = this.requestFullscreen || this.webkitRequestFullscreen || this.mozRequestFullScreen || this.msRequestFullscreen;"
+                                           ondoubleclick="if(this.requestFullscreen) this.requestFullscreen();">
                                         <source src="${exercise.video_url}" type="video/mp4">
                                         <source src="${exercise.video_url}" type="video/webm">
                                         <source src="${exercise.video_url}" type="video/ogg">
                                         Ваш браузер не поддерживает видео.
                                     </video>
+                                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;" onclick="this.previousElementSibling.requestFullscreen && this.previousElementSibling.requestFullscreen();">
+                                        ⛶ Полный экран
+                                    </div>
                                 </div>
                             `;
                         } else {
@@ -2454,11 +2464,17 @@ async function openExerciseModule(programId, dayIndex = 1) {
                                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: transparent;" 
                                             frameborder="0" 
                                             allowfullscreen
+                                            webkitallowfullscreen
+                                            mozallowfullscreen
+                                            msallowfullscreen
                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                     </iframe>
                                     <div style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
                                         <p style="margin: 0 0 10px 0; color: #6c757d;">Видео недоступно для встраивания</p>
                                         <a href="${exercise.video_url}" target="_blank" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Открыть видео</a>
+                                    </div>
+                                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;" onclick="window.open('${exercise.video_url}', '_blank');">
+                                        ⛶ Открыть в браузере
                                     </div>
                                 </div>
                             `;

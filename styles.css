@@ -2689,3 +2689,28 @@ body {
         pointer-events: none;
     }
 }
+
+/* Fullscreen support for videos */
+video.exercise-video:-webkit-full-screen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+video.exercise-video:-moz-full-screen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+video.exercise-video:-ms-fullscreen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+video.exercise-video:fullscreen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
