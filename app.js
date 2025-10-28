@@ -135,7 +135,7 @@ function updateAdaptiveScale() {
             top: '0',
             left: '0',
             width: '100%',
-            height: `calc(16.9884vh + 14.52px)`, // Используем наше значение из CSS
+            height: `calc(15.444vh + 13.2px)`, // Используем наше значение из CSS
             zIndex: '1000',
             pointerEvents: 'none',
             padding: `${10 * scaleFactor}px ${15 * scaleFactor}px`,
@@ -229,7 +229,7 @@ function updateAdaptiveScale() {
         },
         // Удалено - изображение будет управляться только через CSS контейнера
         '.human-avatar-center': {
-            top: 'calc(16.9884vh + 14.52px)', // Используем наше значение из CSS
+            top: 'calc(15.444vh + 13.2px)', // Используем наше значение из CSS
             left: '10px',
             width: 'calc(100% - 20px)',
             bottom: '180px',
@@ -292,7 +292,7 @@ function updateAdaptiveScale() {
             transition: 'all 0.3s ease'
         },
         '.avatar-image': {
-            transform: 'scale(0.9216)' // Используем наше значение из CSS
+            transform: 'scale(1.024)' // Используем наше значение из CSS
         }
     };
     
@@ -1443,6 +1443,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Удалены все принудительные стили - это задача CSS, а не JavaScript
     loadUserData();
     
+    // Ensure only one HTML5 video plays at a time
+    setupExclusiveVideoPlayback();
+    
+    // Lock orientation to portrait on main screen only
+    setupOrientationLock();
+    
     console.log('App initialization complete');
 });
 
@@ -1669,6 +1675,140 @@ function initializeApp() {
     // Initialize calendar
     updateCalendar();
     updateProgressStats();
+}
+
+// Allow only one <video> playing at a time
+function setupExclusiveVideoPlayback() {
+    try {
+        const bind = (video) => {
+            if (!video || video.__exclusiveBound) return;
+            video.addEventListener('play', () => {
+                document.querySelectorAll('video').forEach(other => {
+                    if (other !== video && !other.paused && !other.ended) {
+                        try { other.pause(); } catch (e) { /* ignore */ }
+                    }
+                });
+            });
+            video.__exclusiveBound = true;
+        };
+        
+        // Bind existing
+        document.querySelectorAll('video').forEach(bind);
+        
+        // Bind future via MutationObserver we already use
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(m => {
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                        if (node.tagName === 'VIDEO') bind(node);
+                        node.querySelectorAll && node.querySelectorAll('video').forEach(bind);
+                    }
+                });
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    } catch (err) {
+        console.warn('setupExclusiveVideoPlayback failed', err);
+    }
+}
+
+// IntersectionObserver-based lazy loader for iframes/videos
+function setupLazyMediaLoading() {
+    try {
+        const iframes = Array.from(document.querySelectorAll('iframe.exercise-video[data-src]'));
+        if (!('IntersectionObserver' in window)) {
+            iframes.forEach(f => { f.src = f.dataset.src; });
+            return;
+        }
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    if (el.dataset && el.dataset.src) {
+                        el.src = el.dataset.src;
+                        delete el.dataset.src;
+                        io.unobserve(el);
+                    }
+                }
+            });
+        }, { rootMargin: '200px 0px', threshold: 0.01 });
+        iframes.forEach(el => io.observe(el));
+    } catch (e) {
+        console.warn('setupLazyMediaLoading failed', e);
+    }
+}
+
+// Lock orientation to portrait on main screen only
+function setupOrientationLock() {
+    try {
+        // Check if we're on main screen
+        const isMainScreen = () => {
+            const mainScreen = document.querySelector('.main-screen');
+            const exerciseModal = document.getElementById('exercise-modal');
+            const programModal = document.getElementById('program-modal');
+            
+            return mainScreen && mainScreen.style.display !== 'none' && 
+                   (!exerciseModal || exerciseModal.classList.contains('hidden')) &&
+                   (!programModal || programModal.classList.contains('hidden'));
+        };
+        
+        // Lock orientation to portrait when on main screen
+        const lockOrientation = async () => {
+            if (isMainScreen() && 'screen' in window && 'orientation' in screen) {
+                try {
+                    await screen.orientation.lock('portrait');
+                    console.log('Orientation locked to portrait on main screen');
+                } catch (err) {
+                    console.warn('Could not lock orientation:', err);
+                }
+            }
+        };
+        
+        // Unlock orientation when leaving main screen
+        const unlockOrientation = async () => {
+            if (!isMainScreen() && 'screen' in window && 'orientation' in screen) {
+                try {
+                    await screen.orientation.unlock();
+                    console.log('Orientation unlocked');
+                } catch (err) {
+                    console.warn('Could not unlock orientation:', err);
+                }
+            }
+        };
+        
+        // Lock on page load if on main screen
+        lockOrientation();
+        
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (isMainScreen()) {
+                    lockOrientation();
+                } else {
+                    unlockOrientation();
+                }
+            }, 100);
+        });
+        
+        // Listen for modal changes
+        const observer = new MutationObserver(() => {
+            if (isMainScreen()) {
+                lockOrientation();
+            } else {
+                unlockOrientation();
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
+        });
+        
+    } catch (error) {
+        console.warn('Orientation lock setup failed:', error);
+    }
 }
 
 // Setup event listeners
@@ -2268,13 +2408,13 @@ async function openExerciseModule(programId, dayIndex = 1) {
                             videoId = exercise.video_url.split('youtu.be/')[1]?.split('?')[0];
                         }
                         if (videoId) {
-                            videoHTML = `<iframe class="exercise-video" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                            videoHTML = `<iframe class="exercise-video" data-src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe>`;
                         } else {
                             videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
                         }
                     } else if (exercise.video_url.includes('youtube.com/embed')) {
                         // Already embed format
-                        videoHTML = `<iframe class="exercise-video" src="${exercise.video_url}" frameborder="0" allowfullscreen></iframe>`;
+                        videoHTML = `<iframe class="exercise-video" data-src="${exercise.video_url}" loading="lazy" frameborder="0" allowfullscreen></iframe>`;
                     } else if (exercise.video_url.includes('getcourse.ru') || exercise.video_url.includes('fs.getcourse.ru')) {
                         // GetCourse video - try multiple embedding methods
                         let embedUrl = '';
@@ -2290,14 +2430,13 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         const isVideoFile = exercise.video_url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
                         
                         if (isVideoFile) {
-                            // Direct video file - use HTML5 video player with optimizations
+                            // Direct video file - restore native controls
                             videoHTML = `
-                                <div class="getcourse-video-container" style="margin: 10px 0;">
+                                <div class="getcourse-video-container" style="margin: 10px 0; position: relative;">
                                     <video class="exercise-video" 
                                            controls 
                                            preload="metadata" 
                                            style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;"
-                                           crossorigin="anonymous"
                                            playsinline>
                                         <source src="${exercise.video_url}" type="video/mp4">
                                         <source src="${exercise.video_url}" type="video/webm">
@@ -2311,7 +2450,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
                             videoHTML = `
                                 <div class="getcourse-video-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; border-radius: 10px; overflow: hidden;">
                                     <iframe class="exercise-video" 
-                                            src="${embedUrl}" 
+                                            data-src="${embedUrl}" loading="lazy"
                                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: transparent;" 
                                             frameborder="0" 
                                             allowfullscreen
@@ -2328,7 +2467,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         // Vimeo URL - convert to embed
                         const videoId = exercise.video_url.split('vimeo.com/')[1]?.split('?')[0];
                         if (videoId) {
-                            videoHTML = `<iframe class="exercise-video" src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                            videoHTML = `<iframe class="exercise-video" data-src="https://player.vimeo.com/video/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe>`;
                         } else {
                             videoHTML = `<a href="${exercise.video_url}" target="_blank" class="video-link" style="display: block; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center; color: #007bff; text-decoration: none; font-weight: 600;">📹 Открыть видео</a>`;
                         }
@@ -2353,6 +2492,9 @@ async function openExerciseModule(programId, dayIndex = 1) {
             modal.classList.remove('hidden');
         modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+        
+        // Lazy-load iframes: move data-src -> src when visible
+        setupLazyMediaLoading();
     } else {
         console.error('Exercise modal elements not found');
         }
