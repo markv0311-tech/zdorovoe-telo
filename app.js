@@ -1844,6 +1844,9 @@ function setupEventListeners() {
 function navigateToSection(sectionName) {
     console.log('Navigating to section:', sectionName);
     
+    // Stop all videos when navigating between sections
+    stopAllVideos();
+    
     // Log current active sections before change
     const currentActiveSections = document.querySelectorAll('.section.active');
     console.log('Current active sections before change:', Array.from(currentActiveSections).map(s => s.id));
@@ -2253,6 +2256,7 @@ function openProgramModal(program) {
 
 function closeProgramModal() {
     console.log('Closing program modal');
+    stopAllVideos(); // Stop all videos when closing modal
     const modal = document.getElementById('program-modal');
     if (modal) {
         modal.classList.add('hidden');
@@ -2430,7 +2434,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
                         const isVideoFile = exercise.video_url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
                         
                         if (isVideoFile) {
-                            // Direct video file - restore native controls with fullscreen support
+                            // Direct video file - native controls, no custom overlay
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0; position: relative;">
                                     <video class="exercise-video" 
@@ -2450,9 +2454,6 @@ async function openExerciseModule(programId, dayIndex = 1) {
                                         <source src="${exercise.video_url}" type="video/ogg">
                                         Ваш браузер не поддерживает видео.
                                     </video>
-                                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;" onclick="this.previousElementSibling.requestFullscreen && this.previousElementSibling.requestFullscreen();">
-                                        ⛶ Полный экран
-                                    </div>
                                 </div>
                             `;
                         } else {
@@ -2472,9 +2473,6 @@ async function openExerciseModule(programId, dayIndex = 1) {
                                     <div style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
                                         <p style="margin: 0 0 10px 0; color: #6c757d;">Видео недоступно для встраивания</p>
                                         <a href="${exercise.video_url}" target="_blank" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Открыть видео</a>
-                                    </div>
-                                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;" onclick="window.open('${exercise.video_url}', '_blank');">
-                                        ⛶ Открыть в браузере
                                     </div>
                                 </div>
                             `;
@@ -2522,6 +2520,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
 
 function closeExerciseModal() {
     console.log('Closing exercise modal');
+    stopAllVideos(); // Stop all videos when closing modal
     const modal = document.getElementById('exercise-modal');
     if (modal) {
         modal.classList.add('hidden');
@@ -2530,9 +2529,84 @@ function closeExerciseModal() {
     }
 }
 
+// Stop all videos function
+function stopAllVideos() {
+    console.log('Stopping all videos...');
+    
+    // Stop all HTML5 video elements
+    document.querySelectorAll('video').forEach(video => {
+        try {
+            if (!video.paused) {
+                video.pause();
+                video.currentTime = 0; // Reset to beginning
+                console.log('Stopped HTML5 video');
+            }
+        } catch (e) {
+            console.log('Error stopping HTML5 video:', e.message);
+        }
+    });
+    
+    // Stop all iframe videos (YouTube, Vimeo, etc.)
+    document.querySelectorAll('iframe').forEach(iframe => {
+        try {
+            // For YouTube videos
+            if (iframe.src.includes('youtube.com') || iframe.src.includes('youtu.be')) {
+                iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                console.log('Sent pause command to YouTube video');
+            }
+            // For Vimeo videos
+            if (iframe.src.includes('vimeo.com')) {
+                iframe.contentWindow.postMessage('{"method":"pause"}', '*');
+                console.log('Sent pause command to Vimeo video');
+            }
+            // For Kinoscope videos
+            if (iframe.src.includes('kinescope.io')) {
+                iframe.contentWindow.postMessage('{"method":"pause"}', '*');
+                console.log('Sent pause command to Kinoscope video');
+            }
+        } catch (e) {
+            // Ignore cross-origin errors
+            console.log('Cannot control iframe video:', e.message);
+        }
+    });
+    
+    // Additional method: remove iframe src to force stop
+    document.querySelectorAll('iframe.exercise-video').forEach(iframe => {
+        try {
+            const currentSrc = iframe.src;
+            if (currentSrc) {
+                iframe.src = 'about:blank';
+                console.log('Removed iframe src to stop video');
+                // Restore src after a short delay to allow proper cleanup
+                setTimeout(() => {
+                    iframe.src = currentSrc;
+                }, 100);
+            }
+        } catch (e) {
+            console.log('Error removing iframe src:', e.message);
+        }
+    });
+    
+    // Nuclear option: completely remove and recreate iframe elements
+    document.querySelectorAll('iframe.exercise-video').forEach(iframe => {
+        try {
+            const parent = iframe.parentElement;
+            if (parent) {
+                const newIframe = iframe.cloneNode(true);
+                newIframe.src = 'about:blank';
+                parent.replaceChild(newIframe, iframe);
+                console.log('Replaced iframe to force stop');
+            }
+        } catch (e) {
+            console.log('Error replacing iframe:', e.message);
+        }
+    });
+}
+
 // Close all modals function
 function closeAllModals() {
     console.log('Closing all modals...');
+    stopAllVideos(); // Stop all videos when closing modals
     closeProgramModal();
     closeExerciseModal();
     // Hide subscription overlay if visible
@@ -2746,6 +2820,9 @@ function loadDeveloperContent() {
     
     // Load programs
     loadDeveloperPrograms();
+    
+    // Load diagnosis modules
+    loadDiagnosisModulesForEditor();
     
     // Load settings
     const settings = { calendar_enabled: true };
@@ -3486,6 +3563,7 @@ window.openExerciseModule = openExerciseModule;
 window.closeExerciseModal = closeExerciseModal;
 window.closeAllModals = closeAllModals;
 window.killAllModals = killAllModals;
+window.stopAllVideos = stopAllVideos;
 window.saveProfile = saveProfile;
 window.renewSubscription = renewSubscription;
 window.openDeveloperAccess = openDeveloperAccess;
@@ -3515,28 +3593,514 @@ window.exportContent = exportContent;
 window.importContent = importContent;
 
 // Self-Diagnosis Functions
+
+// Diagnosis modules data structure
+let diagnosisModules = {
+    'neck': {
+        name: 'Шея',
+        videos: [
+            { id: 1, title: 'Диагностика шеи - часть 1', url: 'https://kinescope.io/aCxDPyeGfjeJe2A6ig3dZ3', order: 1 },
+            { id: 2, title: 'Диагностика шеи - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
+            { id: 3, title: 'Диагностика шеи - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+        ]
+    },
+    'shoulder': {
+        name: 'Плечо',
+        videos: [
+            { id: 4, title: 'Диагностика плеча - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
+            { id: 5, title: 'Диагностика плеча - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
+            { id: 6, title: 'Диагностика плеча - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+        ]
+    },
+    'lower-back': {
+        name: 'Поясница',
+        videos: [
+            { id: 7, title: 'Диагностика поясницы - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
+            { id: 8, title: 'Диагностика поясницы - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
+            { id: 9, title: 'Диагностика поясницы - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+        ]
+    },
+    'hip': {
+        name: 'Таз',
+        videos: [
+            { id: 10, title: 'Диагностика таза - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
+            { id: 11, title: 'Диагностика таза - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+        ]
+    },
+    'knee': {
+        name: 'Колено',
+        videos: [
+            { id: 12, title: 'Диагностика колена - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
+            { id: 13, title: 'Диагностика колена - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+        ]
+    },
+    'foot': {
+        name: 'Стопа',
+        videos: [
+            { id: 14, title: 'Диагностика стопы - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
+            { id: 15, title: 'Диагностика стопы - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+        ]
+    }
+};
+
 function startDiagnostic(module) {
     console.log('Starting diagnostic for:', module);
     
-    const moduleNames = {
-        'neck': 'Шея',
-        'shoulder': 'Плечо', 
-        'lower-back': 'Поясница',
-        'hip': 'Таз',
-        'knee': 'Колено',
-        'foot': 'Стопа'
-    };
+    // Stop all videos before starting new diagnostic
+    stopAllVideos();
     
-    showToast(`Запуск диагностики: ${moduleNames[module]}`, 'info');
+    // Get module data
+    const moduleData = diagnosisModules[module];
+    if (!moduleData || moduleData.videos.length === 0) {
+        showToast('Видео для диагностики не найдены', 'error');
+        return;
+    }
     
-    // TODO: Implement actual diagnostic logic
-    // For now, just show a placeholder
+    // If only one video, show it directly
+    if (moduleData.videos.length === 1) {
+        showDiagnosticVideo(module, moduleData.videos[0].url);
+        return;
+    }
+    
+    // If multiple videos, show selection modal
+    showDiagnosticVideoSelection(module, moduleData);
+}
+
+// Show diagnostic video selection modal
+function showDiagnosticVideoSelection(module, moduleData) {
+    const modal = document.getElementById('exercise-modal');
+    const modalBody = document.getElementById('exercise-modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="diagnostic-video-selection">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleData.name}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px;">Выберите видео для диагностики</p>
+                
+                <div class="video-selection-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+                    ${moduleData.videos.map((video, index) => `
+                        <div class="video-selection-item" style="display: flex; align-items: center; padding: 15px; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" 
+                             onclick="selectDiagnosticVideo('${module}', ${video.id})"
+                             onmouseover="this.style.borderColor='#007bff'; this.style.backgroundColor='#e3f2fd';"
+                             onmouseout="this.style.borderColor='#e9ecef'; this.style.backgroundColor='#f8f9fa';">
+                            <div style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">
+                                ${video.order}
+                            </div>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 16px;">${video.title}</h4>
+                                <p style="margin: 0; color: #6c757d; font-size: 14px;">Нажмите для просмотра</p>
+                            </div>
+                            <div style="color: #007bff; font-size: 20px;">▶</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="closeDiagnosticModal()" style="flex: 1;">Отмена</button>
+                </div>
+            </div>
+        `;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Select diagnostic video
+function selectDiagnosticVideo(module, videoId) {
+    const moduleData = diagnosisModules[module];
+    const video = moduleData.videos.find(v => v.id === videoId);
+    
+    if (video) {
+        showDiagnosticVideo(module, video.url);
+    } else {
+        showToast('Видео не найдено', 'error');
+    }
+}
+
+// Show diagnostic video selection modal
+function showDiagnosticVideoModal(module, moduleName) {
+    const modal = document.getElementById('exercise-modal');
+    const modalBody = document.getElementById('exercise-modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="diagnostic-video-selection">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleName}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px;">Выберите формат видео для диагностики</p>
+                
+                <div class="video-format-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                    <button class="video-format-btn" onclick="selectDiagnosticVideoFormat('${module}', 'youtube')" style="padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; background: white; cursor: pointer; transition: all 0.3s;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">📺</div>
+                        <div style="font-weight: 600; color: #2c3e50;">YouTube</div>
+                        <div style="font-size: 12px; color: #6c757d;">Встроенное видео</div>
+                    </button>
+                    
+                    <button class="video-format-btn" onclick="selectDiagnosticVideoFormat('${module}', 'kinoscope')" style="padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; background: white; cursor: pointer; transition: all 0.3s;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">🎬</div>
+                        <div style="font-weight: 600; color: #2c3e50;">Kinoscope</div>
+                        <div style="font-size: 12px; color: #6c757d;">Прямая ссылка</div>
+                    </button>
+                    
+                    <button class="video-format-btn" onclick="selectDiagnosticVideoFormat('${module}', 'getcourse')" style="padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; background: white; cursor: pointer; transition: all 0.3s;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">📚</div>
+                        <div style="font-weight: 600; color: #2c3e50;">GetCourse</div>
+                        <div style="font-size: 12px; color: #6c757d;">Курсовая платформа</div>
+                    </button>
+                    
+                    <button class="video-format-btn" onclick="selectDiagnosticVideoFormat('${module}', 'custom')" style="padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; background: white; cursor: pointer; transition: all 0.3s;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">🔗</div>
+                        <div style="font-weight: 600; color: #2c3e50;">Другое</div>
+                        <div style="font-size: 12px; color: #6c757d;">Своя ссылка</div>
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="closeDiagnosticModal()" style="flex: 1;">Отмена</button>
+                </div>
+            </div>
+        `;
+        
+        // Show modal
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '9999';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Handle video format selection for diagnostic
+function selectDiagnosticVideoFormat(module, format) {
+    const modal = document.getElementById('exercise-modal');
+    const modalBody = document.getElementById('exercise-modal-body');
+    
+    if (modal && modalBody) {
+        let placeholder = '';
+        
+        switch(format) {
+            case 'youtube':
+                placeholder = 'https://youtube.com/watch?v=...';
+                break;
+            case 'kinoscope':
+                placeholder = 'https://kinoscope.ru/video/...';
+                break;
+            case 'getcourse':
+                placeholder = 'https://getcourse.ru/...';
+                break;
+            case 'custom':
+                placeholder = 'https://example.com/video.mp4';
+                break;
+        }
+        
+        modalBody.innerHTML = `
+            <div class="diagnostic-video-input">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${getModuleName(module)}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px;">Вставьте ссылку на видео</p>
+                
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">URL видео</label>
+                    <input type="url" id="diagnostic-video-url" placeholder="${placeholder}" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button class="btn btn-primary" onclick="startDiagnosticWithVideo('${module}')" style="flex: 1;">Начать диагностику</button>
+                    <button class="btn btn-secondary" onclick="showDiagnosticVideoModal('${module}', '${getModuleName(module)}')" style="flex: 1;">Назад</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Start diagnostic with video
+function startDiagnosticWithVideo(module) {
+    // Stop all videos before starting new diagnostic
+    stopAllVideos();
+    
+    const videoUrl = document.getElementById('diagnostic-video-url').value;
+    
+    if (!videoUrl) {
+        showToast('Введите ссылку на видео', 'error');
+        return;
+    }
+    
+    // Close modal
+    const modal = document.getElementById('exercise-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    // Show diagnostic with video
+    showDiagnosticVideo(module, videoUrl);
+}
+
+// Show diagnostic video player
+function showDiagnosticVideo(module, videoUrl) {
+    // Stop all videos before showing new diagnostic video
+    stopAllVideos();
+    
+    const moduleName = getModuleName(module);
+    
+    // Simple iframe for predefined videos
+    const videoHTML = `
+        <div class="video-container-universal">
+            <iframe class="exercise-video" 
+                    src="${videoUrl}" 
+                    frameborder="0" 
+                    allowfullscreen
+                    style="width: 100%; height: 300px; border-radius: 10px;">
+            </iframe>
+        </div>
+    `;
+    
+    // Show diagnostic modal with video
+    const modal = document.getElementById('exercise-modal');
+    const modalBody = document.getElementById('exercise-modal-body');
+    
+    if (modal && modalBody) {
+        modalBody.innerHTML = `
+            <div class="diagnostic-video-player">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleName}</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Следуйте инструкциям в видео</p>
+                
+                <div style="margin-bottom: 20px;">
+                    ${videoHTML}
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="goToDiagnostics()" style="flex: 1;">Назад</button>
+                    <button class="btn btn-primary" onclick="goToExercises()" style="flex: 1;">К упражнениям</button>
+                </div>
+            </div>
+        `;
+        
+        // Show modal
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '9999';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Complete diagnostic
+function completeDiagnostic(module) {
+    const moduleName = getModuleName(module);
+    showToast(`Диагностика "${moduleName}" завершена!`, 'success');
+    closeDiagnosticModal();
+}
+
+// Close diagnostic modal
+function closeDiagnosticModal() {
+    stopAllVideos(); // Stop all videos when closing modal
+    
+    // Force hide all video containers
+    document.querySelectorAll('.video-container-universal').forEach(container => {
+        container.style.display = 'none';
+    });
+    
+    const modal = document.getElementById('exercise-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    // Additional cleanup after a short delay
     setTimeout(() => {
-        showToast(`Диагностика ${moduleNames[module]} завершена!`, 'success');
-    }, 2000);
+        document.querySelectorAll('.video-container-universal').forEach(container => {
+            container.style.display = '';
+        });
+    }, 500);
+}
+
+// Navigate to diagnostics section
+function goToDiagnostics() {
+    closeDiagnosticModal();
+    navigateToSection('diagnosis');
+}
+
+// Navigate to exercises section
+function goToExercises() {
+    closeDiagnosticModal();
+    navigateToSection('exercises');
+}
+
+// Get module name
+function getModuleName(module) {
+    return diagnosisModules[module]?.name || module;
 }
 
 window.startDiagnostic = startDiagnostic;
+window.showDiagnosticVideoModal = showDiagnosticVideoModal;
+window.selectDiagnosticVideoFormat = selectDiagnosticVideoFormat;
+window.startDiagnosticWithVideo = startDiagnosticWithVideo;
+window.showDiagnosticVideo = showDiagnosticVideo;
+window.completeDiagnostic = completeDiagnostic;
+window.closeDiagnosticModal = closeDiagnosticModal;
+window.getModuleName = getModuleName;
+window.goToDiagnostics = goToDiagnostics;
+window.goToExercises = goToExercises;
+window.showDiagnosticVideoSelection = showDiagnosticVideoSelection;
+window.selectDiagnosticVideo = selectDiagnosticVideo;
+
+// Diagnosis Editor Functions
+function loadDiagnosisModulesForEditor() {
+    const modulesContainer = document.getElementById('dev-diagnosis-modules');
+    if (!modulesContainer) return;
+    
+    modulesContainer.innerHTML = '';
+    
+    Object.keys(diagnosisModules).forEach(moduleKey => {
+        const module = diagnosisModules[moduleKey];
+        const moduleElement = createDiagnosisModuleElement(moduleKey, module);
+        modulesContainer.appendChild(moduleElement);
+    });
+}
+
+function createDiagnosisModuleElement(moduleKey, module) {
+    const div = document.createElement('div');
+    div.className = 'diagnosis-module-item';
+    div.innerHTML = `
+        <div class="module-header">
+            <h4>${module.name}</h4>
+            <div class="module-actions">
+                <button class="btn btn-sm btn-primary" onclick="editDiagnosisModule('${moduleKey}')">Редактировать</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteDiagnosisModule('${moduleKey}')">Удалить</button>
+            </div>
+        </div>
+        <div class="module-videos">
+            ${module.videos.map(video => `
+                <div class="video-item">
+                    <span class="video-order">${video.order}</span>
+                    <span class="video-title">${video.title}</span>
+                    <div class="video-actions">
+                        <button class="btn btn-xs btn-secondary" onclick="editDiagnosisVideo('${moduleKey}', ${video.id})">Изменить</button>
+                        <button class="btn btn-xs btn-danger" onclick="deleteDiagnosisVideo('${moduleKey}', ${video.id})">Удалить</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <button class="btn btn-sm btn-success" onclick="addDiagnosisVideo('${moduleKey}')">Добавить видео</button>
+    `;
+    return div;
+}
+
+function addDiagnosisModule() {
+    const moduleName = prompt('Введите название модуля:');
+    if (!moduleName) return;
+    
+    const moduleKey = moduleName.toLowerCase().replace(/\s+/g, '-');
+    diagnosisModules[moduleKey] = {
+        name: moduleName,
+        videos: []
+    };
+    
+    loadDiagnosisModulesForEditor();
+    showToast('Модуль добавлен', 'success');
+}
+
+function editDiagnosisModule(moduleKey) {
+    const module = diagnosisModules[moduleKey];
+    const newName = prompt('Введите новое название модуля:', module.name);
+    if (newName && newName !== module.name) {
+        module.name = newName;
+        loadDiagnosisModulesForEditor();
+        showToast('Модуль обновлен', 'success');
+    }
+}
+
+function deleteDiagnosisModule(moduleKey) {
+    if (confirm('Вы уверены, что хотите удалить этот модуль?')) {
+        delete diagnosisModules[moduleKey];
+        loadDiagnosisModulesForEditor();
+        showToast('Модуль удален', 'success');
+    }
+}
+
+function addDiagnosisVideo(moduleKey) {
+    const module = diagnosisModules[moduleKey];
+    const title = prompt('Введите название видео:');
+    if (!title) return;
+    
+    const url = prompt('Введите URL видео:');
+    if (!url) return;
+    
+    const maxId = Math.max(...Object.values(diagnosisModules).flatMap(m => m.videos).map(v => v.id), 0);
+    const newOrder = module.videos.length + 1;
+    
+    module.videos.push({
+        id: maxId + 1,
+        title: title,
+        url: url,
+        order: newOrder
+    });
+    
+    loadDiagnosisModulesForEditor();
+    showToast('Видео добавлено', 'success');
+}
+
+function editDiagnosisVideo(moduleKey, videoId) {
+    const module = diagnosisModules[moduleKey];
+    const video = module.videos.find(v => v.id === videoId);
+    if (!video) return;
+    
+    const newTitle = prompt('Введите новое название видео:', video.title);
+    if (newTitle && newTitle !== video.title) {
+        video.title = newTitle;
+    }
+    
+    const newUrl = prompt('Введите новый URL видео:', video.url);
+    if (newUrl && newUrl !== video.url) {
+        video.url = newUrl;
+    }
+    
+    loadDiagnosisModulesForEditor();
+    showToast('Видео обновлено', 'success');
+}
+
+function deleteDiagnosisVideo(moduleKey, videoId) {
+    if (confirm('Вы уверены, что хотите удалить это видео?')) {
+        const module = diagnosisModules[moduleKey];
+        module.videos = module.videos.filter(v => v.id !== videoId);
+        
+        // Reorder remaining videos
+        module.videos.forEach((video, index) => {
+            video.order = index + 1;
+        });
+        
+        loadDiagnosisModulesForEditor();
+        showToast('Видео удалено', 'success');
+    }
+}
+
+// Export diagnosis editor functions
+window.loadDiagnosisModulesForEditor = loadDiagnosisModulesForEditor;
+window.addDiagnosisModule = addDiagnosisModule;
+window.editDiagnosisModule = editDiagnosisModule;
+window.deleteDiagnosisModule = deleteDiagnosisModule;
+window.addDiagnosisVideo = addDiagnosisVideo;
+window.editDiagnosisVideo = editDiagnosisVideo;
+window.deleteDiagnosisVideo = deleteDiagnosisVideo;
 
 // Progress System
 const PROGRESS_LEVELS = [

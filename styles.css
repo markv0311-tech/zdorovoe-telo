@@ -140,10 +140,92 @@ video.exercise-video {
     color: #0056b3;
 }
 
+
 /* Loading spinner animation */
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Diagnosis Editor Styles */
+.diagnosis-module-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.module-header h4 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.module-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.module-videos {
+    margin-bottom: 15px;
+}
+
+.video-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.video-order {
+    background: #007bff;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.video-title {
+    flex: 1;
+    font-size: 14px;
+    color: #495057;
+}
+
+.video-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
 }
 
 /* УДАЛЕН - больше не нужен общий контейнер */

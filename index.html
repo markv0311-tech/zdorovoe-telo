@@ -316,6 +316,7 @@
                 <div class="developer-tabs">
                     <div class="dev-tab active" data-tab="home-content">Главная</div>
                     <div class="dev-tab" data-tab="programs-content">Программы</div>
+                    <div class="dev-tab" data-tab="diagnosis-content">Диагностика</div>
                     <div class="dev-tab" data-tab="settings-content">Настройки</div>
                 </div>
                 
@@ -348,6 +349,15 @@
                         <!-- Programs will be loaded here -->
                     </div>
                     <button class="save-button" data-action="program-add">Добавить программу</button>
+                </div>
+                
+                <!-- Diagnosis Content Editor -->
+                <div id="diagnosis-content" class="dev-tab-content">
+                    <h3>Управление диагностикой</h3>
+                    <div class="diagnosis-modules" id="dev-diagnosis-modules">
+                        <!-- Diagnosis modules will be loaded here -->
+                    </div>
+                    <button class="save-button" onclick="addDiagnosisModule()">Добавить модуль</button>
                 </div>
                 
                 <!-- Settings Editor -->
