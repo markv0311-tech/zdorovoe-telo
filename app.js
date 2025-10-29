@@ -1690,15 +1690,15 @@ function initializeApp() {
     }
     
     // Load saved profile data
-    if (userProfile.name) {
+    if (userProfile && userProfile.name) {
         const userNameEl = safeGetElement('user-name', 'load saved profile');
         if (userNameEl) userNameEl.value = userProfile.name;
     }
-    if (userProfile.birthdate) {
+    if (userProfile && userProfile.birthdate) {
         const userBirthdateEl = safeGetElement('user-birthdate', 'load saved profile');
         if (userBirthdateEl) userBirthdateEl.value = userProfile.birthdate;
     }
-    if (userProfile.problem) {
+    if (userProfile && userProfile.problem) {
         const userProblemEl = safeGetElement('user-problem', 'load saved profile');
         if (userProblemEl) userProblemEl.value = userProfile.problem;
     }
@@ -1866,11 +1866,17 @@ async function loadUserProgress() {
     try {
         if (!user?.id) {
             console.warn('No user ID available for progress tracking');
+            // Try to load from cache if no user ID
+            loadProgressFromCache();
             return;
         }
 
+        console.log('Loading user progress for user ID:', user.id);
         const { data, error } = await supabase
             .rpc('get_user_progress', { p_tg_user_id: user.id });
+
+        console.log('Supabase response - data:', data);
+        console.log('Supabase response - error:', error);
 
         if (error) {
             console.error('Error loading user progress:', error);
@@ -1879,6 +1885,11 @@ async function loadUserProgress() {
 
         if (data) {
             userProgress = data;
+            // Normalize fields to what UI expects (camel helpers)
+            userProgress.completedDays = Array.isArray(userProgress.completed_days) ? userProgress.completed_days.length : 0;
+            userProgress.currentStreak = userProgress.level_info?.current_streak || 0;
+            userProgress.totalDays = userProgress.level_info?.total_days || 0;
+            userProgress.longestStreak = userProgress.level_info?.longest_streak || 0;
             console.log('User progress loaded from database:', userProgress);
             
             // Store in localStorage for persistence
@@ -1895,6 +1906,11 @@ async function loadUserProgress() {
                 },
                 completed_days: []
             };
+            // Derived helpers
+            userProgress.completedDays = 0;
+            userProgress.currentStreak = 0;
+            userProgress.totalDays = 0;
+            userProgress.longestStreak = 0;
             localStorage.setItem('userProgress', JSON.stringify(userProgress));
         }
         
@@ -1970,6 +1986,11 @@ async function markDayCompleted(programId, dayIndex) {
                     userProgress.completed_days = [];
                 }
                 userProgress.completed_days.unshift(completedDay);
+                    // Recompute derived helpers
+                    userProgress.completedDays = userProgress.completed_days.length;
+                    userProgress.currentStreak = userProgress.level_info?.current_streak || 0;
+                    userProgress.totalDays = userProgress.level_info?.total_days || 0;
+                    userProgress.longestStreak = userProgress.level_info?.longest_streak || 0;
             }
             
             // Store updated progress in localStorage
@@ -2359,6 +2380,12 @@ function navigateToSection(sectionName) {
         targetSection.classList.add('active');
         console.log('Section activated:', sectionName);
         
+        // If navigating to progress section, update it
+        if (sectionName === 'progress') {
+            console.log('Updating progress section');
+            updateProgressUI();
+        }
+        
         // If navigating to profile section, update it
         if (sectionName === 'profile') {
             console.log('Updating profile section');
@@ -2458,9 +2485,9 @@ function updateCalendar() {
         dayElement.textContent = day;
         dayElement.dataset.date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         
-        // Check if this day is completed
-        const dateKey = dayElement.dataset.date;
-        if (userProgress[dateKey]) {
+        // Check if this day is completed (based on completed_days)
+        const dayDate = new Date(year, month, day);
+        if (isDayCompleted(dayDate)) {
             dayElement.classList.add('completed');
         }
         
@@ -2480,28 +2507,19 @@ function changeMonth(direction) {
 }
 
 function toggleDayCompletion(dayElement) {
-    const date = dayElement.dataset.date;
-    if (!date) return;
-    
+    // Disable legacy local toggling to avoid corrupting structured userProgress
+    // Visual toggle only
     const isCompleted = dayElement.classList.contains('completed');
-    console.log('Toggling day completion for:', date, 'currently completed:', isCompleted);
-    
     if (isCompleted) {
         dayElement.classList.remove('completed');
-        delete userProgress[date];
     } else {
         dayElement.classList.add('completed');
-        userProgress[date] = true;
     }
-    
-    // Save progress locally only
-    SafeStorage.setItem('userProgress', JSON.stringify(userProgress));
-    Logger.log('Progress saved to localStorage:', userProgress);
     updateProgressStats();
 }
 
 function updateProgressStats() {
-    const completedDays = Object.keys(userProgress).length;
+    const completedDays = Array.isArray(userProgress?.completed_days) ? userProgress.completed_days.length : (userProgress?.completedDays || 0);
     const completedDaysEl = document.getElementById('completed-days');
     if (completedDaysEl) {
         completedDaysEl.textContent = completedDays;
@@ -2511,15 +2529,14 @@ function updateProgressStats() {
     const today = new Date();
     let streak = 0;
     let checkDate = new Date(today);
-    
-    while (true) {
-        const dateKey = checkDate.toISOString().split('T')[0];
-        if (userProgress[dateKey]) {
-            streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            break;
-        }
+    const completedSet = new Set(
+        Array.isArray(userProgress?.completed_days)
+            ? userProgress.completed_days.map(d => new Date(d.completed_at).toDateString())
+            : []
+    );
+    while (completedSet.has(checkDate.toDateString())) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
     }
     
     const currentStreakEl = document.getElementById('current-streak');
@@ -4258,6 +4275,25 @@ function loadProfileFromCache() {
     }
 }
 
+// Load progress from localStorage on initialization
+function loadProgressFromCache() {
+    const cachedProgress = localStorage.getItem('userProgress');
+    console.log('Loading progress from cache:', !!cachedProgress);
+    if (cachedProgress) {
+        try {
+            userProgress = JSON.parse(cachedProgress);
+            console.log('User progress loaded from cache:', userProgress);
+            updateProgressUI();
+            updateCalendarHighlighting();
+        } catch (e) {
+            console.warn('Failed to parse cached progress:', e);
+            userProgress = null;
+        }
+    } else {
+        console.log('No cached progress found');
+    }
+}
+
 // Export all functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
@@ -5030,8 +5066,9 @@ function generateCalendar() {
 
 // Check if a day is completed
 function isDayCompleted(date) {
-    const dateStr = date.toISOString().split('T')[0];
-    return userProgress.completedDates && userProgress.completedDates.includes(dateStr);
+    if (!userProgress || !Array.isArray(userProgress.completed_days)) return false;
+    const target = date.toDateString();
+    return userProgress.completed_days.some(d => new Date(d.completed_at).toDateString() === target);
 }
 
 // Theme toggle
@@ -5132,13 +5169,14 @@ function loadLeaderboardModal() {
 
 // Update progress modal
 function updateProgressModal() {
-    // Check if userProgress exists
-    if (!userProgress) {
-        console.log('userProgress is null, skipping progress modal update');
-        return;
-    }
+    // Allow rendering even if userProgress isn't loaded yet
+    const safeUserProgress = userProgress || {
+        completedDays: 0,
+        currentStreak: 0,
+        completed_days: []
+    };
     
-    const completedDays = userProgress.completedDays || 0;
+    const completedDays = safeUserProgress.completedDays || 0;
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
     
@@ -5156,7 +5194,7 @@ function updateProgressModal() {
     const currentStreakEl = document.getElementById('current-streak-modal');
     
     if (completedDaysEl) completedDaysEl.textContent = completedDays;
-    if (currentStreakEl) currentStreakEl.textContent = userProgress.currentStreak || 0;
+    if (currentStreakEl) currentStreakEl.textContent = safeUserProgress.currentStreak || 0;
     
     // Generate calendar for modal
     generateCalendarModal();
