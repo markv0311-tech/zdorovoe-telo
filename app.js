@@ -1459,14 +1459,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Load profile from cache first (for immediate UI update)
+    loadProfileFromCache();
+    
     // Load fresh data from database (this will override cache if user is logged in)
     if (user?.id) {
         loadUserProgress();
         loadUserProfile();
     }
-    
-    // Load profile from cache
-    loadProfileFromCache();
     
     // Ensure only one HTML5 video plays at a time
     setupExclusiveVideoPlayback();
@@ -1503,6 +1503,11 @@ function initializeTelegram() {
         console.log('[TG] initDataUnsafe.user:', window.Telegram?.WebApp?.initDataUnsafe?.user || null);
     // Get user data from Telegram
     user = tg.initDataUnsafe?.user;
+    
+    // Load user profile after user is initialized
+    if (user?.id) {
+        loadUserProfile();
+    }
     
     // Set up theme - по умолчанию светлая тема
     if (tg.colorScheme === 'dark') {
@@ -2357,7 +2362,12 @@ function navigateToSection(sectionName) {
         // If navigating to profile section, update it
         if (sectionName === 'profile') {
             console.log('Updating profile section');
-            populateProfileForm();
+            // Load profile if not already loaded
+            if (!userProfile && user?.id) {
+                loadUserProfile();
+            } else {
+                populateProfileForm();
+            }
         }
     } else {
         console.error('Section not found:', sectionName);
@@ -4080,6 +4090,8 @@ async function loadUserProfile() {
     try {
         if (!user?.id) {
             console.warn('No user ID available for profile loading');
+            // Try to load from cache if no user ID
+            loadProfileFromCache();
             return;
         }
 
@@ -4120,7 +4132,11 @@ async function loadUserProfile() {
 
 // Populate profile form with user data
 function populateProfileForm() {
-    if (!userProfile) return;
+    console.log('Populating profile form, userProfile:', userProfile);
+    if (!userProfile) {
+        console.log('No userProfile data to populate');
+        return;
+    }
     
     const nameField = document.getElementById('user-name');
     const ageField = document.getElementById('user-age');
@@ -4227,6 +4243,7 @@ async function saveProfile() {
 // Load profile from localStorage on initialization
 function loadProfileFromCache() {
     const cachedProfile = localStorage.getItem('userProfile');
+    console.log('Loading profile from cache:', !!cachedProfile);
     if (cachedProfile) {
         try {
             userProfile = JSON.parse(cachedProfile);
@@ -4236,6 +4253,8 @@ function loadProfileFromCache() {
             console.warn('Failed to parse cached profile:', e);
             userProfile = null;
         }
+    } else {
+        console.log('No cached profile found');
     }
 }
 
