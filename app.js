@@ -379,22 +379,24 @@ let isEditor = false;
 // Supabase client
 let supabase = null;
 
-// Переопределяем console.log для автоматического добавления DEBUG флага
+// Переопределяем console.* безопасно, используя оригинальные методы,
+// чтобы избежать рекурсии между Logger и перехватами console
 const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
 console.log = function(...args) {
     if (DEBUG) {
-        Logger.log(...args);
+        originalLog('%c[DEBUG]', 'color: #007bff; font-weight: bold;', ...args);
     }
 };
 
-const originalError = console.error;
 console.error = function(...args) {
-    Logger.error(...args);
+    originalError('%c[ERROR]', 'color: #dc3545; font-weight: bold;', ...args);
 };
 
-const originalWarn = console.warn;
 console.warn = function(...args) {
-    Logger.warn(...args);
+    originalWarn('%c[WARN]', 'color: #ffc107; font-weight: bold;', ...args);
 };
 
 // Cache functions
@@ -5191,9 +5193,7 @@ function openTabModal(tabName) {
         document.body.style.overflow = 'hidden';
         
         // Load content if needed
-        if (tabName === 'leaderboard') {
-            loadLeaderboardModal();
-        } else if (tabName === 'progress') {
+        if (tabName === 'progress') {
             updateProgressModal();
         }
     } else {
@@ -5208,40 +5208,7 @@ function closeTabModal() {
     document.body.style.overflow = '';
 }
 
-// Load leaderboard data for modal
-function loadLeaderboardModal() {
-    const leaderboardList = document.getElementById('leaderboard-list-modal');
-    if (!leaderboardList) return;
-    
-    // Mock data for now - will be replaced with real data from Supabase
-    const mockLeaderboard = [
-        { rank: 1, name: 'Алексей', days: 45, avatar: '🏆' },
-        { rank: 2, name: 'Мария', days: 38, avatar: '🥈' },
-        { rank: 3, name: 'Дмитрий', days: 32, avatar: '🥉' },
-        { rank: 4, name: 'Анна', days: 28, avatar: '💪' },
-        { rank: 5, name: 'Сергей', days: 25, avatar: '🏃‍♂️' }
-    ];
-    
-    leaderboardList.innerHTML = '';
-    
-    mockLeaderboard.forEach(user => {
-        const item = document.createElement('div');
-        item.className = 'leaderboard-item';
-        
-        const rankClass = user.rank <= 3 ? `top-${user.rank}` : '';
-        
-        item.innerHTML = `
-            <div class="leaderboard-rank ${rankClass}">${user.rank}</div>
-            <div class="leaderboard-avatar">${user.avatar}</div>
-            <div class="leaderboard-info">
-                <p class="leaderboard-name">${user.name}</p>
-                <p class="leaderboard-days">${user.days} дней</p>
-            </div>
-        `;
-        
-        leaderboardList.appendChild(item);
-    });
-}
+// Leaderboard removed
 
 // Update progress modal
 function updateProgressModal() {
