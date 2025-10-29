@@ -1443,7 +1443,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Удалены все принудительные стили - это задача CSS, а не JavaScript
     loadUserData();
     
-    // Load user progress
+    // Load user progress from localStorage first, then from database
+    const cachedProgress = localStorage.getItem('userProgress');
+    if (cachedProgress) {
+        try {
+            userProgress = JSON.parse(cachedProgress);
+            console.log('User progress loaded from cache:', userProgress);
+            updateProgressUI();
+        } catch (e) {
+            console.warn('Failed to parse cached progress:', e);
+        }
+    }
+    
+    // Load fresh data from database
     loadUserProgress();
     
     // Ensure only one HTML5 video plays at a time
@@ -1852,6 +1864,9 @@ async function loadUserProgress() {
         userProgress = data;
         console.log('User progress loaded:', userProgress);
         
+        // Store in localStorage for persistence
+        localStorage.setItem('userProgress', JSON.stringify(userProgress));
+        
         // Update UI with progress data
         updateProgressUI();
         
@@ -1963,7 +1978,55 @@ function updateProgressUI() {
 // Update progress tab content
 function updateProgressTab() {
     const progressTab = document.getElementById('progress-content');
-    if (!progressTab || !userProgress) return;
+    if (!progressTab) return;
+
+    // If no progress data, show empty state
+    if (!userProgress || !userProgress.level_info) {
+        progressTab.innerHTML = `
+            <div class="progress-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-content">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Текущий уровень</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Всего дней</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-content">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Текущая серия</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-content">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Лучшая серия</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-calendar">
+                <h3>Календарь активности</h3>
+                <div id="progress-calendar-grid" class="calendar-grid">
+                    <!-- Calendar will be generated here -->
+                </div>
+            </div>
+        `;
+        generateProgressCalendar();
+        return;
+    }
 
     const levelInfo = userProgress.level_info;
     
@@ -2123,16 +2186,14 @@ function showLevelUpNotification(newLevel) {
     }, 5000);
 }
 
-// Check if day is already completed today
+// Check if any day is already completed today
 function isDayCompletedToday(programId, dayIndex) {
     if (!userProgress || !userProgress.completed_days) return false;
     
     const today = new Date().toDateString();
-    const programIdNum = parseInt(programId);
     
+    // Check if ANY day was completed today (not just this specific day)
     return userProgress.completed_days.some(day => 
-        day.program_id === programIdNum && 
-        day.day_index === dayIndex && 
         new Date(day.completed_at).toDateString() === today
     );
 }
@@ -2887,7 +2948,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
             ? `<div class="completion-status" style="text-align: center; margin: 30px 0 20px 0; padding: 15px; background: #d4edda; color: #155724; border-radius: 25px; border: 1px solid #c3e6cb;">
                 <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
                 <div style="font-weight: 600;">День выполнен!</div>
-                <div style="font-size: 14px; margin-top: 5px;">Вы уже отметили этот день как выполненный сегодня</div>
+                <div style="font-size: 14px; margin-top: 5px;">Вы уже отметили день как выполненный сегодня</div>
                </div>`
             : `<div class="completion-actions" style="text-align: center; margin: 30px 0 20px 0;">
                 <button class="btn btn-success glass-button" onclick="markDayCompleted(${programId}, ${dayIndex})" 

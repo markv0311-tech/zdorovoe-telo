@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS user_progress (
     completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     completed_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(tg_user_id, program_id, day_index, completed_date)
+    UNIQUE(tg_user_id, completed_date)
 );
 
 -- Create user_levels table for tracking user progression
@@ -298,18 +298,16 @@ DECLARE
     v_existing_count INTEGER;
     v_today DATE := CURRENT_DATE;
 BEGIN
-    -- Check if already completed today
+    -- Check if already completed any day today
     SELECT COUNT(*) INTO v_existing_count
     FROM user_progress 
     WHERE tg_user_id = p_tg_user_id 
-      AND program_id = p_program_id 
-      AND day_index = p_day_index 
       AND completed_date = v_today;
     
     IF v_existing_count > 0 THEN
         RETURN json_build_object(
             'success', false,
-            'message', 'День уже отмечен как выполненный сегодня'
+            'message', 'Вы уже отметили день как выполненный сегодня. Можно отметить только один день в день.'
         );
     END IF;
     
