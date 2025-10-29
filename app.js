@@ -1448,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cachedProgress = localStorage.getItem('userProgress');
     if (cachedProgress) {
         try {
-            userProgress = JSON.parse(cachedProgress);
+            userProgress = normalizeUserProgress(JSON.parse(cachedProgress));
             console.log('User progress loaded from cache:', userProgress);
             // Update UI immediately with cached data
             updateProgressUI();
@@ -1861,6 +1861,55 @@ function setupOrientationLock() {
 
 // ===== PROGRESS TRACKING FUNCTIONS =====
 
+// Normalize various possible shapes of progress data into a consistent structure
+function normalizeUserProgress(raw) {
+    const safe = raw && typeof raw === 'object' ? raw : {};
+
+    // Extract completed days from possible shapes
+    let completedDaysArray = [];
+    if (Array.isArray(safe.completed_days)) {
+        completedDaysArray = safe.completed_days;
+    } else if (Array.isArray(safe.completedDays)) {
+        completedDaysArray = safe.completedDays;
+    } else if (Array.isArray(safe.days)) {
+        completedDaysArray = safe.days;
+    }
+
+    // Normalize items to objects with completed_at
+    completedDaysArray = completedDaysArray.map(d => {
+        if (d && typeof d === 'object' && d.completed_at) return d;
+        // If string or timestamp
+        const dateStr = typeof d === 'string' ? d : (d?.date || d?.completedAt);
+        return { completed_at: dateStr || new Date().toISOString(), program_id: d?.program_id, day_index: d?.day_index };
+    });
+
+    // Ensure level_info exists and consistent
+    let levelInfo = safe.level_info;
+    if (!levelInfo || typeof levelInfo !== 'object') {
+        levelInfo = {
+            current_level: safe.current_level ?? 1,
+            total_days: safe.total_days ?? completedDaysArray.length,
+            current_streak: safe.current_streak ?? 0,
+            longest_streak: safe.longest_streak ?? 0,
+            last_activity: safe.last_activity ?? null
+        };
+    }
+
+    const normalized = {
+        ...safe,
+        level_info: levelInfo,
+        completed_days: completedDaysArray
+    };
+
+    // Derived helpers
+    normalized.completedDays = Array.isArray(normalized.completed_days) ? normalized.completed_days.length : 0;
+    normalized.currentStreak = normalized.level_info?.current_streak || 0;
+    normalized.totalDays = normalized.level_info?.total_days || 0;
+    normalized.longestStreak = normalized.level_info?.longest_streak || 0;
+
+    return normalized;
+}
+
 // Load user progress from database
 async function loadUserProgress() {
     try {
@@ -1880,37 +1929,64 @@ async function loadUserProgress() {
 
         if (error) {
             console.error('Error loading user progress:', error);
+            // Preserve cached progress on error
             return;
         }
 
+        // Load cached progress for potential merge
+        let cached = null;
+        try {
+            const cachedRaw = localStorage.getItem('userProgress');
+            cached = cachedRaw ? JSON.parse(cachedRaw) : null;
+        } catch (_) {}
+
         if (data) {
-            userProgress = data;
-            // Normalize fields to what UI expects (camel helpers)
-            userProgress.completedDays = Array.isArray(userProgress.completed_days) ? userProgress.completed_days.length : 0;
-            userProgress.currentStreak = userProgress.level_info?.current_streak || 0;
-            userProgress.totalDays = userProgress.level_info?.total_days || 0;
-            userProgress.longestStreak = userProgress.level_info?.longest_streak || 0;
+            // Prefer server data; if server has empty completed_days but cache has items, preserve cache items
+            const raw = Array.isArray(data) ? (data[0] || {}) : (data || {});
+            const server = raw;
+            
+            // Normalize: some RPCs may return level fields at the root; ensure level_info object exists
+            if (!server.level_info) {
+                const inferredLevelInfo = {
+                    current_level: server.current_level ?? 1,
+                    total_days: server.total_days ?? (Array.isArray(server.completed_days) ? server.completed_days.length : 0),
+                    current_streak: server.current_streak ?? 0,
+                    longest_streak: server.longest_streak ?? 0,
+                    last_activity: server.last_activity ?? null
+                };
+                server.level_info = inferredLevelInfo;
+            }
+            
+            const serverCompleted = Array.isArray(server.completed_days) ? server.completed_days : [];
+            const cachedCompleted = Array.isArray(cached?.completed_days) ? cached.completed_days : [];
+            let merged = server;
+            if (serverCompleted.length === 0 && cachedCompleted.length > 0) {
+                merged.completed_days = cachedCompleted;
+            }
+            userProgress = normalizeUserProgress(merged);
             console.log('User progress loaded from database:', userProgress);
             
             // Store in localStorage for persistence
             localStorage.setItem('userProgress', JSON.stringify(userProgress));
         } else {
-            console.log('No progress data found, initializing empty progress');
-            userProgress = {
-                level_info: {
-                    current_level: 1,
-                    total_days: 0,
-                    current_streak: 0,
-                    longest_streak: 0,
-                    last_activity: null
-                },
-                completed_days: []
-            };
+            console.log('No progress data found from server; preserving cached progress');
+            // Do NOT overwrite cache with empty structure; fall back to cache or minimal default
+            if (cached) {
+                userProgress = normalizeUserProgress(cached);
+            } else {
+                userProgress = {
+                    level_info: {
+                        current_level: 1,
+                        total_days: 0,
+                        current_streak: 0,
+                        longest_streak: 0,
+                        last_activity: null
+                    },
+                    completed_days: []
+                };
+            }
             // Derived helpers
-            userProgress.completedDays = 0;
-            userProgress.currentStreak = 0;
-            userProgress.totalDays = 0;
-            userProgress.longestStreak = 0;
+            userProgress = normalizeUserProgress(userProgress);
             localStorage.setItem('userProgress', JSON.stringify(userProgress));
         }
         
@@ -3214,13 +3290,13 @@ function saveProfile() {
 // Load user data
 function loadUserData() {
     // Load saved profile data
-    if (userProfile.name) {
+    if (userProfile && userProfile.name) {
         document.getElementById('user-name').value = userProfile.name;
     }
-    if (userProfile.birthdate) {
+    if (userProfile && userProfile.birthdate) {
         document.getElementById('user-birthdate').value = userProfile.birthdate;
     }
-    if (userProfile.problem) {
+    if (userProfile && userProfile.problem) {
         document.getElementById('user-problem').value = userProfile.problem;
     }
     
@@ -4281,7 +4357,7 @@ function loadProgressFromCache() {
     console.log('Loading progress from cache:', !!cachedProgress);
     if (cachedProgress) {
         try {
-            userProgress = JSON.parse(cachedProgress);
+            userProgress = normalizeUserProgress(JSON.parse(cachedProgress));
             console.log('User progress loaded from cache:', userProgress);
             updateProgressUI();
             updateCalendarHighlighting();
