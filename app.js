@@ -348,6 +348,7 @@ window.addEventListener('orientationchange', () => {
 let tg = window.Telegram?.WebApp;
 let user = null;
 let userProgress = null;
+let userProfile = null;
 let currentMonth = new Date();
 let programs = [];
 
@@ -371,7 +372,7 @@ function safeGetElement(id, context = '') {
     return element;
 }
 
-let userProfile = safeGetStorage('userProfile', {});
+// userProfile is already declared above
 let isDeveloperMode = false;
 let isEditor = false;
 
@@ -1016,7 +1017,7 @@ async function handleProgramDays(programId) {
         if (modal && modalBody) {
             modalBody.innerHTML = `
                 <div class="program-days-management">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Управление днями: ${program.title}</h2>
+                    <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Управление днями: ${program.title}</h2>
                     
                     <div style="margin-bottom: 20px;">
                         <button data-action="day-add" data-id="${programId}" class="btn btn-primary" style="margin-bottom: 15px;">
@@ -1278,7 +1279,7 @@ async function handleDayExercises(dayId) {
         if (modal && modalBody) {
             modalBody.innerHTML = `
                 <div class="exercises-management">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Упражнения: ${day.programs.title} - День ${day.day_index}</h2>
+                    <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Упражнения: ${day.programs.title} - День ${day.day_index}</h2>
                     
                     <div style="margin-bottom: 20px;">
                         <button data-action="exercise-add" data-id="${dayId}" class="btn btn-primary" style="margin-bottom: 15px;">
@@ -1449,14 +1450,23 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             userProgress = JSON.parse(cachedProgress);
             console.log('User progress loaded from cache:', userProgress);
+            // Update UI immediately with cached data
             updateProgressUI();
+            updateCalendarHighlighting();
         } catch (e) {
             console.warn('Failed to parse cached progress:', e);
+            userProgress = null;
         }
     }
     
-    // Load fresh data from database
-    loadUserProgress();
+    // Load fresh data from database (this will override cache if user is logged in)
+    if (user?.id) {
+        loadUserProgress();
+        loadUserProfile();
+    }
+    
+    // Load profile from cache
+    loadProfileFromCache();
     
     // Ensure only one HTML5 video plays at a time
     setupExclusiveVideoPlayback();
@@ -1635,6 +1645,7 @@ function initializeApp() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function() {
             const section = this.dataset.section;
+            console.log('Navigation clicked:', section, 'Text:', this.querySelector('.nav-text').textContent);
             navigateToSection(section);
         });
     });
@@ -1861,11 +1872,26 @@ async function loadUserProgress() {
             return;
         }
 
-        userProgress = data;
-        console.log('User progress loaded:', userProgress);
-        
-        // Store in localStorage for persistence
-        localStorage.setItem('userProgress', JSON.stringify(userProgress));
+        if (data) {
+            userProgress = data;
+            console.log('User progress loaded from database:', userProgress);
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('userProgress', JSON.stringify(userProgress));
+        } else {
+            console.log('No progress data found, initializing empty progress');
+            userProgress = {
+                level_info: {
+                    current_level: 1,
+                    total_days: 0,
+                    current_streak: 0,
+                    longest_streak: 0,
+                    last_activity: null
+                },
+                completed_days: []
+            };
+            localStorage.setItem('userProgress', JSON.stringify(userProgress));
+        }
         
         // Update UI with progress data
         updateProgressUI();
@@ -1925,11 +1951,33 @@ async function markDayCompleted(programId, dayIndex) {
                 button.onclick = null; // Remove click handler
             }
             
-            // Update local progress data
-            userProgress = data.level_info;
+            // Update local progress data immediately
+            if (userProgress) {
+                userProgress.level_info = data.level_info;
+                // Add the completed day to the list
+                const today = new Date();
+                const completedDay = {
+                    program_id: parseInt(programId),
+                    day_index: dayIndex,
+                    completed_at: today.toISOString()
+                };
+                if (!userProgress.completed_days) {
+                    userProgress.completed_days = [];
+                }
+                userProgress.completed_days.unshift(completedDay);
+            }
             
-            // Reload progress to get updated data
-            await loadUserProgress();
+            // Store updated progress in localStorage
+            localStorage.setItem('userProgress', JSON.stringify(userProgress));
+            
+            // Update UI immediately
+            updateProgressUI();
+            updateCalendarHighlighting();
+            
+            // Reload progress from database to get fresh data
+            setTimeout(async () => {
+                await loadUserProgress();
+            }, 1000);
             
             // Show level up notification if applicable
             if (data.level_info.current_level > 1) {
@@ -1963,12 +2011,20 @@ async function markDayCompleted(programId, dayIndex) {
 
 // Update progress UI elements
 function updateProgressUI() {
-    if (!userProgress) return;
+    if (!userProgress) {
+        console.log('No user progress data available');
+        return;
+    }
+
+    console.log('Updating progress UI with data:', userProgress);
 
     // Update progress tab if it exists
     const progressTab = document.getElementById('progress-content');
     if (progressTab) {
+        console.log('Updating progress tab');
         updateProgressTab();
+    } else {
+        console.log('Progress tab not found');
     }
 
     // Update calendar if it exists
@@ -2278,6 +2334,7 @@ function setupEventListeners() {
 // Navigation functions
 function navigateToSection(sectionName) {
     console.log('Navigating to section:', sectionName);
+    console.log('Available sections:', ['home', 'diagnosis', 'exercises', 'profile']);
     
     // Stop all videos when navigating between sections
     stopAllVideos();
@@ -2296,6 +2353,12 @@ function navigateToSection(sectionName) {
     if (targetSection) {
         targetSection.classList.add('active');
         console.log('Section activated:', sectionName);
+        
+        // If navigating to profile section, update it
+        if (sectionName === 'profile') {
+            console.log('Updating profile section');
+            populateProfileForm();
+        }
     } else {
         console.error('Section not found:', sectionName);
     }
@@ -2663,7 +2726,7 @@ function openProgramModal(program) {
         modalBody.innerHTML = `
             <div class="program-detail">
                 <img src="${program.image_url}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
-                <h2 style="color: #2c3e50; margin-bottom: 15px;">${program.title}</h2>
+                <h2 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px;">${program.title}</h2>
                 <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
                 <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Нажмите "Выбрать программу" для просмотра дней</p>
                 <button class="cta-button" onclick="openDaySelection('${program.id}')" style="width: 100%;">
@@ -2752,7 +2815,7 @@ async function openDaySelection(programId) {
         if (modal && modalBody) {
             let daysHTML = `
                 <div class="day-selection">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+                    <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center; font-size: 20px;">${program.title}</h2>
                     <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">Выберите день тренировки</p>
                     <div class="days-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 15px; margin-bottom: 20px;">
             `;
@@ -2835,7 +2898,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
     if (modal && modalBody) {
         let exercisesHTML = `
             <div class="exercise-module">
-                <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">${program.title}</h2>
+                <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center; font-size: 20px;">${program.title}</h2>
                     <p style="color: #6c757d; margin-bottom: 30px; text-align: center;">День ${dayIndex} - ${exercises.length} упражнений</p>
             `;
             
@@ -4010,11 +4073,178 @@ async function handleDeleteExercise(exerciseId) {
     }
 }
 
+// ===== USER PROFILE FUNCTIONS =====
+
+// Load user profile from database
+async function loadUserProfile() {
+    try {
+        if (!user?.id) {
+            console.warn('No user ID available for profile loading');
+            return;
+        }
+
+        const { data, error } = await supabase
+            .rpc('get_user_profile', { p_tg_user_id: user.id });
+
+        if (error) {
+            console.error('Error loading user profile:', error);
+            return;
+        }
+
+        if (data && Object.keys(data).length > 0) {
+            userProfile = data;
+            console.log('User profile loaded:', userProfile);
+            
+            // Populate form fields
+            populateProfileForm();
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        } else {
+            console.log('No profile data found, initializing empty profile');
+            userProfile = {
+                tg_user_id: user.id,
+                username: user.username || '',
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                age: null,
+                gender: '',
+                problem: ''
+            };
+        }
+        
+    } catch (error) {
+        console.error('Failed to load user profile:', error);
+    }
+}
+
+// Populate profile form with user data
+function populateProfileForm() {
+    if (!userProfile) return;
+    
+    const nameField = document.getElementById('user-name');
+    const ageField = document.getElementById('user-age');
+    const genderField = document.getElementById('user-gender');
+    const problemField = document.getElementById('user-problem');
+    
+    if (nameField) nameField.value = userProfile.first_name || '';
+    if (ageField) ageField.value = userProfile.age || '';
+    if (genderField) genderField.value = userProfile.gender || '';
+    if (problemField) problemField.value = userProfile.problem || '';
+}
+
+// Save user profile
+async function saveProfile() {
+    try {
+        if (!user?.id) {
+            showNotification('Ошибка: пользователь не авторизован', 'error');
+            return;
+        }
+
+        // Get form data
+        const nameField = document.getElementById('user-name');
+        const ageField = document.getElementById('user-age');
+        const genderField = document.getElementById('user-gender');
+        const problemField = document.getElementById('user-problem');
+        
+        const firstName = nameField?.value?.trim() || '';
+        const age = ageField?.value ? parseInt(ageField.value) : null;
+        const gender = genderField?.value || '';
+        const problem = problemField?.value || '';
+        
+        // Validate required fields
+        if (!firstName) {
+            showNotification('Пожалуйста, введите имя', 'warning');
+            return;
+        }
+        
+        if (!age || age < 1 || age > 120) {
+            showNotification('Пожалуйста, введите корректный возраст (1-120 лет)', 'warning');
+            return;
+        }
+        
+        if (!gender) {
+            showNotification('Пожалуйста, выберите пол', 'warning');
+            return;
+        }
+        
+        if (!problem) {
+            showNotification('Пожалуйста, выберите проблемную зону', 'warning');
+            return;
+        }
+
+        // Show loading state
+        const saveButton = document.querySelector('.save-button');
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Сохранение...';
+        }
+
+        const { data, error } = await supabase
+            .rpc('save_user_profile', {
+                p_tg_user_id: user.id,
+                p_username: user.username || '',
+                p_first_name: firstName,
+                p_last_name: user.last_name || '',
+                p_age: age,
+                p_gender: gender,
+                p_problem: problem
+            });
+
+        if (error) {
+            console.error('Error saving user profile:', error);
+            showNotification('Ошибка при сохранении профиля', 'error');
+            return;
+        }
+
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Update local profile data
+            userProfile = data.profile;
+            
+            // Store in localStorage
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            
+            console.log('Profile saved successfully:', userProfile);
+        } else {
+            showNotification('Ошибка при сохранении профиля', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Failed to save profile:', error);
+        showNotification('Ошибка при сохранении профиля', 'error');
+    } finally {
+        // Restore button state
+        const saveButton = document.querySelector('.save-button');
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Сохранить изменения';
+        }
+    }
+}
+
+// Load profile from localStorage on initialization
+function loadProfileFromCache() {
+    const cachedProfile = localStorage.getItem('userProfile');
+    if (cachedProfile) {
+        try {
+            userProfile = JSON.parse(cachedProfile);
+            console.log('User profile loaded from cache:', userProfile);
+            populateProfileForm();
+        } catch (e) {
+            console.warn('Failed to parse cached profile:', e);
+            userProfile = null;
+        }
+    }
+}
+
 // Export all functions for global access
 window.navigateToSection = navigateToSection;
 window.changeMonth = changeMonth;
 window.openProgramModal = openProgramModal;
 window.closeProgramModal = closeProgramModal;
+window.saveProfile = saveProfile;
 window.openDaySelection = openDaySelection;
 window.openExerciseModule = openExerciseModule;
 window.closeExerciseModal = closeExerciseModal;

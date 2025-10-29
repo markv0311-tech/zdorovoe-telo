@@ -29,10 +29,6 @@
                     <span class="nav-icon">💪</span>
                     <span class="nav-text">Упражнения</span>
                 </div>
-                <div class="nav-item" data-section="progress">
-                    <span class="nav-icon">📊</span>
-                    <span class="nav-text">Прогресс</span>
-                </div>
                 <div class="nav-item" data-section="profile">
                     <span class="nav-icon">👤</span>
                     <span class="nav-text">Профиль</span>
@@ -282,8 +278,18 @@
                         <input type="text" id="user-name" placeholder="Введите ваше имя">
                     </div>
                     <div class="form-group">
-                        <label for="user-birthdate">Дата рождения</label>
-                        <input type="date" id="user-birthdate">
+                        <label for="user-age">Возраст</label>
+                        <input type="number" id="user-age" placeholder="Введите ваш возраст" min="1" max="120">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="user-gender">Пол</label>
+                        <select id="user-gender">
+                            <option value="">Выберите пол</option>
+                            <option value="male">Мужской</option>
+                            <option value="female">Женский</option>
+                            <option value="other">Другой</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="user-problem">Проблемная зона</label>
