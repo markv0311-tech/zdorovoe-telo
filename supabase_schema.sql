@@ -57,8 +57,9 @@ CREATE TABLE IF NOT EXISTS user_progress (
     program_id INTEGER REFERENCES programs(id) ON DELETE CASCADE,
     day_index INTEGER NOT NULL,
     completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(tg_user_id, program_id, day_index, DATE(completed_at))
+    UNIQUE(tg_user_id, program_id, day_index, completed_date)
 );
 
 -- Create user_levels table for tracking user progression
@@ -303,7 +304,7 @@ BEGIN
     WHERE tg_user_id = p_tg_user_id 
       AND program_id = p_program_id 
       AND day_index = p_day_index 
-      AND DATE(completed_at) = v_today;
+      AND completed_date = v_today;
     
     IF v_existing_count > 0 THEN
         RETURN json_build_object(
@@ -313,8 +314,8 @@ BEGIN
     END IF;
     
     -- Insert progress record
-    INSERT INTO user_progress (tg_user_id, program_id, day_index, completed_at)
-    VALUES (p_tg_user_id, p_program_id, p_day_index, NOW());
+    INSERT INTO user_progress (tg_user_id, program_id, day_index, completed_at, completed_date)
+    VALUES (p_tg_user_id, p_program_id, p_day_index, NOW(), v_today);
     
     -- Update or create user level
     INSERT INTO user_levels (tg_user_id, current_level, total_days_completed, current_streak, longest_streak, last_activity_date)

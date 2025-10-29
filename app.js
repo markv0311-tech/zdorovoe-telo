@@ -1855,6 +1855,9 @@ async function loadUserProgress() {
         // Update UI with progress data
         updateProgressUI();
         
+        // Update calendar highlighting
+        updateCalendarHighlighting();
+        
     } catch (error) {
         console.error('Failed to load user progress:', error);
     }
@@ -1868,6 +1871,14 @@ async function markDayCompleted(programId, dayIndex) {
             return;
         }
 
+        // Disable button immediately to prevent double-clicks
+        const button = document.querySelector(`button[onclick="markDayCompleted(${programId}, ${dayIndex})"]`);
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '⏳ Сохранение...';
+            button.style.opacity = '0.6';
+        }
+
         const { data, error } = await supabase
             .rpc('mark_day_completed', {
                 p_tg_user_id: user.id,
@@ -1878,11 +1889,26 @@ async function markDayCompleted(programId, dayIndex) {
         if (error) {
             console.error('Error marking day as completed:', error);
             showNotification('Ошибка при сохранении прогресса', 'error');
+            
+            // Re-enable button on error
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '✅ Отметить выполненным';
+                button.style.opacity = '1';
+            }
             return;
         }
 
         if (data.success) {
             showNotification(data.message, 'success');
+            
+            // Update button to show completed state
+            if (button) {
+                button.innerHTML = '✅ Выполнено';
+                button.style.background = 'rgba(40, 167, 69, 0.6)';
+                button.style.cursor = 'default';
+                button.onclick = null; // Remove click handler
+            }
             
             // Update local progress data
             userProgress = data.level_info;
@@ -1896,11 +1922,27 @@ async function markDayCompleted(programId, dayIndex) {
             }
         } else {
             showNotification(data.message, 'warning');
+            
+            // Re-enable button if already completed
+            if (button) {
+                button.innerHTML = '✅ Выполнено';
+                button.style.background = 'rgba(40, 167, 69, 0.6)';
+                button.style.cursor = 'default';
+                button.onclick = null;
+            }
         }
         
     } catch (error) {
         console.error('Failed to mark day as completed:', error);
         showNotification('Ошибка при сохранении прогресса', 'error');
+        
+        // Re-enable button on error
+        const button = document.querySelector(`button[onclick="markDayCompleted(${programId}, ${dayIndex})"]`);
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✅ Отметить выполненным';
+            button.style.opacity = '1';
+        }
     }
 }
 
@@ -2023,6 +2065,40 @@ function updateCalendar() {
     console.log('Calendar update requested');
 }
 
+// Update calendar highlighting for completed days
+function updateCalendarHighlighting() {
+    if (!userProgress || !userProgress.completed_days) return;
+    
+    // Find all day buttons in the calendar
+    const dayButtons = document.querySelectorAll('.day-button');
+    
+    dayButtons.forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        if (onclick) {
+            // Extract programId and dayIndex from onclick
+            const match = onclick.match(/openExerciseModule\('(\d+)',\s*(\d+)\)/);
+            if (match) {
+                const programId = parseInt(match[1]);
+                const dayIndex = parseInt(match[2]);
+                
+                // Check if this day is completed
+                const isCompleted = userProgress.completed_days.some(day => 
+                    day.program_id === programId && 
+                    day.day_index === dayIndex && 
+                    new Date(day.completed_at).toDateString() === new Date().toDateString()
+                );
+                
+                if (isCompleted) {
+                    button.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    button.style.color = 'white';
+                    button.style.borderColor = '#28a745';
+                    button.innerHTML = `День ${dayIndex} ✅`;
+                }
+            }
+        }
+    });
+}
+
 // Show level up notification
 function showLevelUpNotification(newLevel) {
     const notification = document.createElement('div');
@@ -2052,8 +2128,10 @@ function isDayCompletedToday(programId, dayIndex) {
     if (!userProgress || !userProgress.completed_days) return false;
     
     const today = new Date().toDateString();
+    const programIdNum = parseInt(programId);
+    
     return userProgress.completed_days.some(day => 
-        day.program_id === programId && 
+        day.program_id === programIdNum && 
         day.day_index === dayIndex && 
         new Date(day.completed_at).toDateString() === today
     );
@@ -2639,6 +2717,11 @@ async function openDaySelection(programId) {
             modal.classList.remove('hidden');
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            
+            // Update calendar highlighting after modal is shown
+            setTimeout(() => {
+                updateCalendarHighlighting();
+            }, 100);
         } else {
             console.error('Modal elements not found');
         }
@@ -2801,7 +2884,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
         // Add completion button
         const isCompleted = isDayCompletedToday(programId, dayIndex);
         const completionButton = isCompleted 
-            ? `<div class="completion-status" style="text-align: center; margin: 20px 0; padding: 15px; background: #d4edda; color: #155724; border-radius: 10px; border: 1px solid #c3e6cb;">
+            ? `<div class="completion-status" style="text-align: center; margin: 30px 0 20px 0; padding: 15px; background: #d4edda; color: #155724; border-radius: 25px; border: 1px solid #c3e6cb;">
                 <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
                 <div style="font-weight: 600;">День выполнен!</div>
                 <div style="font-size: 14px; margin-top: 5px;">Вы уже отметили этот день как выполненный сегодня</div>
