@@ -4869,6 +4869,13 @@ function initializeHomepage() {
 // Update welcome message with user name
 function updateWelcomeMessage() {
     const userName = user?.first_name || 'Пользователь';
+    
+    // Check if userProfile exists
+    if (!userProfile) {
+        console.log('userProfile is null, skipping welcome message update');
+        return;
+    }
+    
     const registrationDate = userProfile.registrationDate || new Date();
     const daysSinceRegistration = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24)) + 1;
     
@@ -4885,6 +4892,12 @@ function updateWelcomeMessage() {
 
 // Update progress display
 function updateProgressDisplay() {
+    // Check if userProgress exists
+    if (!userProgress) {
+        console.log('userProgress is null, skipping progress display update');
+        return;
+    }
+    
     const completedDays = userProgress.completedDays || 0;
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
@@ -5119,6 +5132,12 @@ function loadLeaderboardModal() {
 
 // Update progress modal
 function updateProgressModal() {
+    // Check if userProgress exists
+    if (!userProgress) {
+        console.log('userProgress is null, skipping progress modal update');
+        return;
+    }
+    
     const completedDays = userProgress.completedDays || 0;
     const currentLevel = getCurrentLevel(completedDays);
     const levelProgress = getLevelProgress(completedDays, currentLevel);
