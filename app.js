@@ -347,6 +347,7 @@ window.addEventListener('orientationchange', () => {
 // Telegram WebApp initialization
 let tg = window.Telegram?.WebApp;
 let user = null;
+let userProgress = null;
 let currentMonth = new Date();
 let programs = [];
 
@@ -370,7 +371,6 @@ function safeGetElement(id, context = '') {
     return element;
 }
 
-let userProgress = safeGetStorage('userProgress', {});
 let userProfile = safeGetStorage('userProfile', {});
 let isDeveloperMode = false;
 let isEditor = false;
@@ -1443,6 +1443,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Удалены все принудительные стили - это задача CSS, а не JavaScript
     loadUserData();
     
+    // Load user progress
+    loadUserProgress();
+    
     // Ensure only one HTML5 video plays at a time
     setupExclusiveVideoPlayback();
     
@@ -1743,11 +1746,11 @@ function setupOrientationLock() {
     try {
         // Check if we're on main screen
         const isMainScreen = () => {
-            const mainScreen = document.querySelector('.main-screen');
+            const homeSection = document.getElementById('home');
             const exerciseModal = document.getElementById('exercise-modal');
             const programModal = document.getElementById('program-modal');
             
-            return mainScreen && mainScreen.style.display !== 'none' && 
+            return homeSection && homeSection.classList.contains('active') && 
                    (!exerciseModal || exerciseModal.classList.contains('hidden')) &&
                    (!programModal || programModal.classList.contains('hidden'));
         };
@@ -1790,8 +1793,25 @@ function setupOrientationLock() {
             }, 100);
         });
         
+        // Listen for section changes
+        const sectionObserver = new MutationObserver(() => {
+            setTimeout(() => {
+                if (isMainScreen()) {
+                    lockOrientation();
+                } else {
+                    unlockOrientation();
+                }
+            }, 100);
+        });
+        
+        // Observe changes to section classes
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(section => {
+            sectionObserver.observe(section, { attributes: true, attributeFilter: ['class'] });
+        });
+        
         // Listen for modal changes
-        const observer = new MutationObserver(() => {
+        const modalObserver = new MutationObserver(() => {
             if (isMainScreen()) {
                 lockOrientation();
             } else {
@@ -1799,7 +1819,7 @@ function setupOrientationLock() {
             }
         });
         
-        observer.observe(document.body, {
+        modalObserver.observe(document.body, {
             childList: true,
             subtree: true,
             attributes: true,
@@ -1809,6 +1829,282 @@ function setupOrientationLock() {
     } catch (error) {
         console.warn('Orientation lock setup failed:', error);
     }
+}
+
+// ===== PROGRESS TRACKING FUNCTIONS =====
+
+// Load user progress from database
+async function loadUserProgress() {
+    try {
+        if (!user?.id) {
+            console.warn('No user ID available for progress tracking');
+            return;
+        }
+
+        const { data, error } = await supabase
+            .rpc('get_user_progress', { p_tg_user_id: user.id });
+
+        if (error) {
+            console.error('Error loading user progress:', error);
+            return;
+        }
+
+        userProgress = data;
+        console.log('User progress loaded:', userProgress);
+        
+        // Update UI with progress data
+        updateProgressUI();
+        
+    } catch (error) {
+        console.error('Failed to load user progress:', error);
+    }
+}
+
+// Mark a day as completed
+async function markDayCompleted(programId, dayIndex) {
+    try {
+        if (!user?.id) {
+            showNotification('Ошибка: пользователь не авторизован', 'error');
+            return;
+        }
+
+        const { data, error } = await supabase
+            .rpc('mark_day_completed', {
+                p_tg_user_id: user.id,
+                p_program_id: programId,
+                p_day_index: dayIndex
+            });
+
+        if (error) {
+            console.error('Error marking day as completed:', error);
+            showNotification('Ошибка при сохранении прогресса', 'error');
+            return;
+        }
+
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Update local progress data
+            userProgress = data.level_info;
+            
+            // Reload progress to get updated data
+            await loadUserProgress();
+            
+            // Show level up notification if applicable
+            if (data.level_info.current_level > 1) {
+                showLevelUpNotification(data.level_info.current_level);
+            }
+        } else {
+            showNotification(data.message, 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Failed to mark day as completed:', error);
+        showNotification('Ошибка при сохранении прогресса', 'error');
+    }
+}
+
+// Update progress UI elements
+function updateProgressUI() {
+    if (!userProgress) return;
+
+    // Update progress tab if it exists
+    const progressTab = document.getElementById('progress-content');
+    if (progressTab) {
+        updateProgressTab();
+    }
+
+    // Update calendar if it exists
+    updateCalendar();
+}
+
+// Update progress tab content
+function updateProgressTab() {
+    const progressTab = document.getElementById('progress-content');
+    if (!progressTab || !userProgress) return;
+
+    const levelInfo = userProgress.level_info;
+    
+    progressTab.innerHTML = `
+        <div class="progress-stats">
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-content">
+                    <div class="stat-value">${levelInfo.current_level}</div>
+                    <div class="stat-label">Текущий уровень</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <div class="stat-value">${levelInfo.total_days}</div>
+                    <div class="stat-label">Всего дней</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <div class="stat-value">${levelInfo.current_streak}</div>
+                    <div class="stat-label">Текущая серия</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <div class="stat-value">${levelInfo.longest_streak}</div>
+                    <div class="stat-label">Лучшая серия</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-calendar">
+            <h3>Календарь активности</h3>
+            <div id="progress-calendar-grid" class="calendar-grid">
+                <!-- Calendar will be generated here -->
+            </div>
+        </div>
+    `;
+    
+    // Generate calendar
+    generateProgressCalendar();
+}
+
+// Generate progress calendar
+function generateProgressCalendar() {
+    const calendarGrid = document.getElementById('progress-calendar-grid');
+    if (!calendarGrid || !userProgress) return;
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
+    
+    // Create completed days map for quick lookup
+    const completedDays = new Map();
+    if (userProgress.completed_days) {
+        userProgress.completed_days.forEach(day => {
+            const date = new Date(day.completed_at);
+            const dayOfMonth = date.getDate();
+            completedDays.set(dayOfMonth, true);
+        });
+    }
+    
+    // Generate calendar HTML
+    let calendarHTML = '';
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDayOfWeek; i++) {
+        calendarHTML += '<div class="calendar-day empty"></div>';
+    }
+    
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isCompleted = completedDays.has(day);
+        const isToday = day === today.getDate();
+        const dayClass = `calendar-day ${isCompleted ? 'completed' : ''} ${isToday ? 'today' : ''}`;
+        
+        calendarHTML += `<div class="${dayClass}">${day}</div>`;
+    }
+    
+    calendarGrid.innerHTML = calendarHTML;
+}
+
+// Update main calendar
+function updateCalendar() {
+    // This will be called when calendar is implemented
+    console.log('Calendar update requested');
+}
+
+// Show level up notification
+function showLevelUpNotification(newLevel) {
+    const notification = document.createElement('div');
+    notification.className = 'level-up-notification';
+    notification.innerHTML = `
+        <div class="level-up-content">
+            <div class="level-up-icon">🎉</div>
+            <div class="level-up-text">
+                <h3>Поздравляем!</h3>
+                <p>Вы достигли ${newLevel} уровня!</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+// Check if day is already completed today
+function isDayCompletedToday(programId, dayIndex) {
+    if (!userProgress || !userProgress.completed_days) return false;
+    
+    const today = new Date().toDateString();
+    return userProgress.completed_days.some(day => 
+        day.program_id === programId && 
+        day.day_index === dayIndex && 
+        new Date(day.completed_at).toDateString() === today
+    );
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <div class="notification-icon">
+                ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            </div>
+            <div class="notification-message">${message}</div>
+        </div>
+    `;
+    
+    // Add styles
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : type === 'warning' ? '#fff3cd' : '#d1ecf1'};
+        color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : type === 'warning' ? '#856404' : '#0c5460'};
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : type === 'warning' ? '#ffeaa7' : '#bee5eb'};
+        border-radius: 10px;
+        padding: 15px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        max-width: 300px;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 4000);
 }
 
 // Setup event listeners
@@ -2501,6 +2797,23 @@ async function openExerciseModule(programId, dayIndex = 1) {
         });
         
         exercisesHTML += `</div>`;
+        
+        // Add completion button
+        const isCompleted = isDayCompletedToday(programId, dayIndex);
+        const completionButton = isCompleted 
+            ? `<div class="completion-status" style="text-align: center; margin: 20px 0; padding: 15px; background: #d4edda; color: #155724; border-radius: 10px; border: 1px solid #c3e6cb;">
+                <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
+                <div style="font-weight: 600;">День выполнен!</div>
+                <div style="font-size: 14px; margin-top: 5px;">Вы уже отметили этот день как выполненный сегодня</div>
+               </div>`
+            : `<div class="completion-actions" style="text-align: center; margin: 30px 0 20px 0;">
+                <button class="btn btn-success glass-button" onclick="markDayCompleted(${programId}, ${dayIndex})" 
+                        style="padding: 12px 24px; font-size: 14px; font-weight: 600; border-radius: 25px; background: rgba(40, 167, 69, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);">
+                    ✅ Отметить выполненным
+                </button>
+               </div>`;
+        
+        exercisesHTML += completionButton;
         
         modalBody.innerHTML = exercisesHTML;
             modal.classList.remove('hidden');
@@ -3599,46 +3912,44 @@ let diagnosisModules = {
     'neck': {
         name: 'Шея',
         videos: [
-            { id: 1, title: 'Диагностика шеи - часть 1', url: 'https://kinescope.io/aCxDPyeGfjeJe2A6ig3dZ3', order: 1 },
-            { id: 2, title: 'Диагностика шеи - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
-            { id: 3, title: 'Диагностика шеи - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+            { id: 1, title: 'Диагностика причин боли в шее', url: 'https://kinescope.io/embed/aCxDPyeGfjeJe2A6ig3dZ3', order: 1 }
         ]
     },
     'shoulder': {
         name: 'Плечо',
         videos: [
-            { id: 4, title: 'Диагностика плеча - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
-            { id: 5, title: 'Диагностика плеча - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
-            { id: 6, title: 'Диагностика плеча - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+            { id: 4, title: 'Причины формирования боли в плече', url: 'https://kinescope.io/embed/n4UynK2rDAktaQTRp9NauS', order: 1 },
+            { id: 5, title: 'Тесты на воспаления плечевого пояса', url: 'https://kinescope.io/embed/oPi1ygi7uCtZMEzRHdyBsC', order: 2 },
+            { id: 6, title: 'Тест подвижности плеча и лопатки', url: 'https://kinescope.io/embed/taSAgMQYtxc6CL2UPwd6Jr', order: 3 }
         ]
     },
     'lower-back': {
         name: 'Поясница',
         videos: [
-            { id: 7, title: 'Диагностика поясницы - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
-            { id: 8, title: 'Диагностика поясницы - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 },
-            { id: 9, title: 'Диагностика поясницы - часть 3', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 3 }
+            { id: 7, title: 'Причины формирования боли в пояснице', url: 'https://kinescope.io/embed/aLuoeSZQvQamqwPunDjh1d', order: 1 },
+            { id: 8, title: 'Тест флексии', url: 'https://kinescope.io/embed/it6kqgKz8LJjzd4nspzi32', order: 2 },
+            { id: 9, title: 'Тестирование мобильности и наличия зажимов', url: 'https://kinescope.io/embed/7evM23kmSBXJHAmrfjBTgr', order: 3 }
         ]
     },
     'hip': {
         name: 'Таз',
         videos: [
-            { id: 10, title: 'Диагностика таза - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
-            { id: 11, title: 'Диагностика таза - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+            { id: 10, title: 'Тестирование мобильности ТБС', url: 'https://kinescope.io/embed/jvv9XhNpXLqfJXGwicPGG4', order: 1 },
+            { id: 11, title: 'Тест внутренней ротации ТБС', url: 'https://kinescope.io/embed/ifHokeHydGFFa82oLB4uUv', order: 2 }
         ]
     },
     'knee': {
         name: 'Колено',
         videos: [
-            { id: 12, title: 'Диагностика колена - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
-            { id: 13, title: 'Диагностика колена - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+            { id: 12, title: 'Здоровье коленного сустава', url: 'https://kinescope.io/embed/x7D2hBEbGAMSaqFEn2Tf6m', order: 1 },
+            { id: 13, title: 'Тест на мобильность голеностопного сустава', url: 'https://kinescope.io/embed/gSWF4KXpgg1KrAiqbjmduD', order: 2 }
         ]
     },
     'foot': {
         name: 'Стопа',
         videos: [
-            { id: 14, title: 'Диагностика стопы - часть 1', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 1 },
-            { id: 15, title: 'Диагностика стопы - часть 2', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1', order: 2 }
+            { id: 14, title: 'Тест на формирование вальгусной деформации + тест Джека', url: 'https://kinescope.io/embed/8LB499BGcPk1hB3Y6oYLXr', order: 1 },
+            { id: 15, title: 'Ходьба на носках', url: 'https://kinescope.io/embed/suP3abRPm8Fe2RvSbB1HRN', order: 2 }
         ]
     }
 };
@@ -3852,24 +4163,67 @@ function showDiagnosticVideo(module, videoUrl) {
     stopAllVideos();
     
     const moduleName = getModuleName(module);
+    const moduleData = diagnosisModules[module];
     
-    // Simple iframe for predefined videos
-    const videoHTML = `
-        <div class="video-container-universal">
-            <iframe class="exercise-video" 
-                    src="${videoUrl}" 
-                    frameborder="0" 
-                    allowfullscreen
-                    style="width: 100%; height: 300px; border-radius: 10px;">
-            </iframe>
-        </div>
-    `;
+    // Convert Kinoscope links to proper iframe format
+    let videoHTML;
+    if (videoUrl.includes('kinescope.io/') && !videoUrl.includes('/embed/')) {
+        // Convert direct Kinoscope link to embed format
+        const videoId = videoUrl.split('/').pop();
+        const embedUrl = `https://kinescope.io/embed/${videoId}`;
+        
+        videoHTML = `
+            <div class="video-container-universal">
+                <div style="position: relative; padding-top: 56.25%; width: 100%; border-radius: 10px; overflow: hidden;">
+                    <iframe class="exercise-video" 
+                            src="${embedUrl}" 
+                            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock;"
+                            frameborder="0" 
+                            allowfullscreen
+                            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
+                    </iframe>
+                </div>
+            </div>
+        `;
+    } else if (videoUrl.includes('kinescope.io/embed/')) {
+        // Already in embed format, use responsive wrapper
+        videoHTML = `
+            <div class="video-container-universal">
+                <div style="position: relative; padding-top: 56.25%; width: 100%; border-radius: 10px; overflow: hidden;">
+                    <iframe class="exercise-video" 
+                            src="${videoUrl}" 
+                            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock;"
+                            frameborder="0" 
+                            allowfullscreen
+                            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
+                    </iframe>
+                </div>
+            </div>
+        `;
+    } else {
+        // For other video types (YouTube, etc.) use existing format
+        videoHTML = `
+            <div class="video-container-universal">
+                <iframe class="exercise-video" 
+                        src="${videoUrl}" 
+                        frameborder="0" 
+                        allowfullscreen
+                        style="width: 100%; height: 300px; border-radius: 10px;">
+                </iframe>
+            </div>
+        `;
+    }
     
     // Show diagnostic modal with video
     const modal = document.getElementById('exercise-modal');
     const modalBody = document.getElementById('exercise-modal-body');
     
     if (modal && modalBody) {
+        // Determine if we should show "back to selection" or "back to diagnostics"
+        const hasMultipleVideos = moduleData && moduleData.videos.length > 1;
+        const backButtonText = hasMultipleVideos ? 'Назад к выбору' : 'Назад';
+        const backButtonAction = hasMultipleVideos ? `showDiagnosticVideoSelection('${module}', diagnosisModules['${module}'])` : 'goToDiagnostics()';
+        
         modalBody.innerHTML = `
             <div class="diagnostic-video-player">
                 <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleName}</h2>
@@ -3880,7 +4234,7 @@ function showDiagnosticVideo(module, videoUrl) {
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn btn-secondary" onclick="goToDiagnostics()" style="flex: 1;">Назад</button>
+                    <button class="btn btn-secondary" onclick="${backButtonAction}" style="flex: 1;">${backButtonText}</button>
                     <button class="btn btn-primary" onclick="goToExercises()" style="flex: 1;">К упражнениям</button>
                 </div>
             </div>

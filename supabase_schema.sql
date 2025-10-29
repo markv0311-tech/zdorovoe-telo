@@ -50,6 +50,30 @@ CREATE TABLE IF NOT EXISTS editors (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create user_progress table for tracking daily completions
+CREATE TABLE IF NOT EXISTS user_progress (
+    id SERIAL PRIMARY KEY,
+    tg_user_id BIGINT NOT NULL,
+    program_id INTEGER REFERENCES programs(id) ON DELETE CASCADE,
+    day_index INTEGER NOT NULL,
+    completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(tg_user_id, program_id, day_index, DATE(completed_at))
+);
+
+-- Create user_levels table for tracking user progression
+CREATE TABLE IF NOT EXISTS user_levels (
+    id SERIAL PRIMARY KEY,
+    tg_user_id BIGINT UNIQUE NOT NULL,
+    current_level INTEGER DEFAULT 1,
+    total_days_completed INTEGER DEFAULT 0,
+    current_streak INTEGER DEFAULT 0,
+    longest_streak INTEGER DEFAULT 0,
+    last_activity_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_programs_slug ON programs(slug);
 CREATE INDEX IF NOT EXISTS idx_programs_published ON programs(is_published);
@@ -58,12 +82,18 @@ CREATE INDEX IF NOT EXISTS idx_program_days_day_index ON program_days(day_index)
 CREATE INDEX IF NOT EXISTS idx_exercises_program_day_id ON exercises(program_day_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_order_index ON exercises(order_index);
 CREATE INDEX IF NOT EXISTS idx_editors_tg_user_id ON editors(tg_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_tg_user_id ON user_progress(tg_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_completed_at ON user_progress(completed_at);
+CREATE INDEX IF NOT EXISTS idx_user_progress_program_day ON user_progress(program_id, day_index);
+CREATE INDEX IF NOT EXISTS idx_user_levels_tg_user_id ON user_levels(tg_user_id);
 
 -- Enable Row Level Security on all tables
 ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE program_days ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE editors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_levels ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for programs table
 -- Public can read published programs
@@ -158,6 +188,40 @@ CREATE POLICY "Authenticated users can update editors" ON editors
 CREATE POLICY "Authenticated users can delete editors" ON editors
     FOR DELETE USING (auth.role() = 'authenticated');
 
+-- RLS Policies for user_progress table
+-- Users can only access their own progress
+CREATE POLICY "Users can read own progress" ON user_progress
+    FOR SELECT USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can insert their own progress
+CREATE POLICY "Users can insert own progress" ON user_progress
+    FOR INSERT WITH CHECK (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can update their own progress
+CREATE POLICY "Users can update own progress" ON user_progress
+    FOR UPDATE USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can delete their own progress
+CREATE POLICY "Users can delete own progress" ON user_progress
+    FOR DELETE USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- RLS Policies for user_levels table
+-- Users can only access their own levels
+CREATE POLICY "Users can read own levels" ON user_levels
+    FOR SELECT USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can insert their own levels
+CREATE POLICY "Users can insert own levels" ON user_levels
+    FOR INSERT WITH CHECK (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can update their own levels
+CREATE POLICY "Users can update own levels" ON user_levels
+    FOR UPDATE USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
+-- Users can delete their own levels
+CREATE POLICY "Users can delete own levels" ON user_levels
+    FOR DELETE USING (tg_user_id = (auth.jwt() ->> 'tg_user_id')::bigint);
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -175,6 +239,9 @@ CREATE TRIGGER update_program_days_updated_at BEFORE UPDATE ON program_days
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_exercises_updated_at BEFORE UPDATE ON exercises
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_levels_updated_at BEFORE UPDATE ON user_levels
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample data (optional - you can remove this section if you don't want sample data)
@@ -219,7 +286,118 @@ INSERT INTO editors (tg_user_id, username, first_name, last_name) VALUES
 (886689538, 'vladimir_antt', 'Владимир', 'Антощук')
 ON CONFLICT (tg_user_id) DO NOTHING;
 
+-- Create function to mark day as completed
+CREATE OR REPLACE FUNCTION mark_day_completed(
+    p_tg_user_id BIGINT,
+    p_program_id INTEGER,
+    p_day_index INTEGER
+) RETURNS JSON AS $$
+DECLARE
+    v_result JSON;
+    v_existing_count INTEGER;
+    v_today DATE := CURRENT_DATE;
+BEGIN
+    -- Check if already completed today
+    SELECT COUNT(*) INTO v_existing_count
+    FROM user_progress 
+    WHERE tg_user_id = p_tg_user_id 
+      AND program_id = p_program_id 
+      AND day_index = p_day_index 
+      AND DATE(completed_at) = v_today;
+    
+    IF v_existing_count > 0 THEN
+        RETURN json_build_object(
+            'success', false,
+            'message', 'День уже отмечен как выполненный сегодня'
+        );
+    END IF;
+    
+    -- Insert progress record
+    INSERT INTO user_progress (tg_user_id, program_id, day_index, completed_at)
+    VALUES (p_tg_user_id, p_program_id, p_day_index, NOW());
+    
+    -- Update or create user level
+    INSERT INTO user_levels (tg_user_id, current_level, total_days_completed, current_streak, longest_streak, last_activity_date)
+    VALUES (p_tg_user_id, 1, 1, 1, 1, v_today)
+    ON CONFLICT (tg_user_id) DO UPDATE SET
+        total_days_completed = user_levels.total_days_completed + 1,
+        current_streak = CASE 
+            WHEN user_levels.last_activity_date = v_today - INTERVAL '1 day' 
+            THEN user_levels.current_streak + 1
+            ELSE 1
+        END,
+        longest_streak = GREATEST(
+            user_levels.longest_streak,
+            CASE 
+                WHEN user_levels.last_activity_date = v_today - INTERVAL '1 day' 
+                THEN user_levels.current_streak + 1
+                ELSE 1
+            END
+        ),
+        last_activity_date = v_today,
+        current_level = LEAST(10, (user_levels.total_days_completed + 1) / 7 + 1),
+        updated_at = NOW();
+    
+    -- Get updated user level info
+    SELECT json_build_object(
+        'success', true,
+        'message', 'День успешно отмечен как выполненный!',
+        'level_info', json_build_object(
+            'current_level', current_level,
+            'total_days', total_days_completed,
+            'current_streak', current_streak,
+            'longest_streak', longest_streak
+        )
+    ) INTO v_result
+    FROM user_levels 
+    WHERE tg_user_id = p_tg_user_id;
+    
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create function to get user progress
+CREATE OR REPLACE FUNCTION get_user_progress(p_tg_user_id BIGINT)
+RETURNS JSON AS $$
+DECLARE
+    v_result JSON;
+BEGIN
+    SELECT json_build_object(
+        'level_info', COALESCE(
+            (SELECT json_build_object(
+                'current_level', current_level,
+                'total_days', total_days_completed,
+                'current_streak', current_streak,
+                'longest_streak', longest_streak,
+                'last_activity', last_activity_date
+            ) FROM user_levels WHERE tg_user_id = p_tg_user_id),
+            json_build_object(
+                'current_level', 1,
+                'total_days', 0,
+                'current_streak', 0,
+                'longest_streak', 0,
+                'last_activity', null
+            )
+        ),
+        'completed_days', COALESCE(
+            (SELECT json_agg(
+                json_build_object(
+                    'program_id', program_id,
+                    'day_index', day_index,
+                    'completed_at', completed_at
+                ) ORDER BY completed_at DESC
+            ) FROM user_progress WHERE tg_user_id = p_tg_user_id),
+            '[]'::json
+        )
+    ) INTO v_result;
+    
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION mark_day_completed TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_user_progress TO anon, authenticated;
