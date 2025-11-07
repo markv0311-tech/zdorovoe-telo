@@ -2136,10 +2136,25 @@ function normalizeUserProgress(raw) {
 
     // Normalize items to objects with completed_at
     completedDaysArray = completedDaysArray.map(d => {
-        if (d && typeof d === 'object' && d.completed_at) return d;
-        // If string or timestamp
-        const dateStr = typeof d === 'string' ? d : (d?.date || d?.completedAt);
-        return { completed_at: dateStr || new Date().toISOString(), program_id: d?.program_id, day_index: d?.day_index };
+        if (!d || typeof d !== 'object') {
+            const fallbackDate = typeof d === 'string' ? d : (d?.date || d?.completedAt);
+            const iso = fallbackDate || new Date().toISOString();
+            return {
+                program_id: d?.program_id || null,
+                day_index: d?.day_index || null,
+                completed_at: iso,
+                completed_date_utc: toUtcDateString(iso)
+            };
+        }
+
+        const completedAt = d.completed_at || d.completedAt || d.date || d.completed_date || new Date().toISOString();
+        const completedDateUtc = d.completed_date_utc || toUtcDateString(d.completed_date || completedAt);
+
+        return {
+            ...d,
+            completed_at: completedAt,
+            completed_date_utc: completedDateUtc
+        };
     });
 
     // Ensure level_info exists and consistent
@@ -2260,6 +2275,23 @@ async function loadUserProgress() {
     }
 }
 
+function toUtcDateString(value) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().slice(0, 10);
+}
+
+function getTodayUtcDateString() {
+    return toUtcDateString(new Date());
+}
+
+function getCompletedDayUtc(day) {
+    if (!day) return null;
+    if (day.completed_date_utc) return day.completed_date_utc;
+    return toUtcDateString(day.completed_at);
+}
+
 // Mark a day as completed
 async function markDayCompleted(programId, dayIndex) {
     try {
@@ -2311,11 +2343,13 @@ async function markDayCompleted(programId, dayIndex) {
             if (userProgress) {
                 userProgress.level_info = data.level_info;
                 // Add the completed day to the list
-                const today = new Date();
+                const programIdNum = parseInt(programId);
+                const nowIso = new Date().toISOString();
                 const completedDay = {
-                    program_id: parseInt(programId),
+                    program_id: programIdNum,
                     day_index: dayIndex,
-                    completed_at: today.toISOString()
+                    completed_at: nowIso,
+                    completed_date_utc: getTodayUtcDateString()
                 };
                 if (!userProgress.completed_days) {
                     userProgress.completed_days = [];
@@ -2500,22 +2534,28 @@ function generateProgressCalendar() {
     if (!calendarGrid || !userProgress) return;
 
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    
-    // Get first day of month and number of days
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDayOfWeek = firstDay.getDay();
-    
-    // Create completed days map for quick lookup
-    const completedDays = new Map();
+    const currentMonth = today.getUTCMonth();
+    const currentYear = today.getUTCFullYear();
+
+    // Get first day of month and number of days (UTC-based)
+    const firstDay = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const lastDay = new Date(Date.UTC(currentYear, currentMonth + 1, 0));
+    const daysInMonth = lastDay.getUTCDate();
+    const startDayOfWeek = firstDay.getUTCDay();
+
+    // Create completed days set for quick lookup (UTC-based)
+    const completedDays = new Set();
     if (userProgress.completed_days) {
         userProgress.completed_days.forEach(day => {
-            const date = new Date(day.completed_at);
-            const dayOfMonth = date.getDate();
-            completedDays.set(dayOfMonth, true);
+            const completedUtc = getCompletedDayUtc(day);
+            if (!completedUtc) return;
+            const [yearStr, monthStr, dayStr] = completedUtc.split('-');
+            const yearNum = parseInt(yearStr, 10);
+            const monthNum = parseInt(monthStr, 10) - 1;
+            const dayNum = parseInt(dayStr, 10);
+            if (yearNum === currentYear && monthNum === currentMonth) {
+                completedDays.add(dayNum);
+            }
         });
     }
     
@@ -2528,9 +2568,11 @@ function generateProgressCalendar() {
     }
     
     // Add days of month
+    const todayUtcDay = today.getUTCDate();
+
     for (let day = 1; day <= daysInMonth; day++) {
         const isCompleted = completedDays.has(day);
-        const isToday = day === today.getDate();
+        const isToday = day === todayUtcDay;
         const dayClass = `calendar-day ${isCompleted ? 'completed' : ''} ${isToday ? 'today' : ''}`;
         
         calendarHTML += `<div class="${dayClass}">${day}</div>`;
@@ -2549,6 +2591,21 @@ function updateCalendar() {
 function updateCalendarHighlighting() {
     if (!userProgress || !userProgress.completed_days) return;
     
+    const todayUtc = getTodayUtcDateString();
+    const completedTodayKeys = new Set();
+    const completedEverKeys = new Set();
+
+    userProgress.completed_days.forEach(day => {
+        if (day?.program_id == null || day?.day_index == null) return;
+        const key = `${day.program_id}:${day.day_index}`;
+        completedEverKeys.add(key);
+
+        const dayUtc = getCompletedDayUtc(day);
+        if (dayUtc === todayUtc) {
+            completedTodayKeys.add(key);
+        }
+    });
+
     // Find all day buttons in the calendar
     const dayButtons = document.querySelectorAll('.day-button');
     
@@ -2560,19 +2617,19 @@ function updateCalendarHighlighting() {
             if (match) {
                 const programId = parseInt(match[1]);
                 const dayIndex = parseInt(match[2]);
-                
-                // Check if this day is completed
-                const isCompleted = userProgress.completed_days.some(day => 
-                    day.program_id === programId && 
-                    day.day_index === dayIndex && 
-                    new Date(day.completed_at).toDateString() === new Date().toDateString()
-                );
-                
-                if (isCompleted) {
+                const key = `${programId}:${dayIndex}`;
+                const isCompletedEver = completedEverKeys.has(key);
+
+                if (isCompletedEver) {
                     button.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
                     button.style.color = 'white';
                     button.style.borderColor = '#28a745';
                     button.innerHTML = `День ${dayIndex} ✅`;
+                } else {
+                    button.style.background = 'white';
+                    button.style.color = '#007bff';
+                    button.style.borderColor = '#007bff';
+                    button.innerHTML = `День ${dayIndex}`;
                 }
             }
         }
@@ -2607,11 +2664,11 @@ function showLevelUpNotification(newLevel) {
 function isDayCompletedToday(programId, dayIndex) {
     if (!userProgress || !userProgress.completed_days) return false;
     
-    const today = new Date().toDateString();
-    
+    const todayUtc = getTodayUtcDateString();
+
     // Check if ANY day was completed today (not just this specific day)
     return userProgress.completed_days.some(day => 
-        new Date(day.completed_at).toDateString() === today
+        getCompletedDayUtc(day) === todayUtc
     );
 }
 
@@ -4726,79 +4783,93 @@ let diagnosisModules = {
 function startDiagnostic(module) {
     console.log('Starting diagnostic for:', module);
     
-    // Stop all videos before starting new diagnostic
     stopAllVideos();
     
-    // Get module data
     const moduleData = diagnosisModules[module];
-    if (!moduleData || moduleData.videos.length === 0) {
+    if (!moduleData || !Array.isArray(moduleData.videos) || moduleData.videos.length === 0) {
         showToast('Видео для диагностики не найдены', 'error');
         return;
     }
     
-    // If only one video, show it directly
-    if (moduleData.videos.length === 1) {
-        showDiagnosticVideo(module, moduleData.videos[0].url);
-        return;
-    }
-    
-    // If multiple videos, show selection modal
-    showDiagnosticVideoSelection(module, moduleData);
+    showDiagnosticModule(module, moduleData);
 }
 
-// Show diagnostic video selection modal
-function showDiagnosticVideoSelection(module, moduleData) {
+function buildDiagnosticVideoEmbed(videoUrl) {
+    if (!videoUrl) {
+        return '<p style="color: #dc3545;">Видео недоступно</p>';
+    }
+    
+    const isKinescopeDirect = videoUrl.includes('kinescope.io/') && !videoUrl.includes('/embed/');
+    let embedUrl = videoUrl;
+    
+    if (isKinescopeDirect) {
+        const videoId = videoUrl.split('/').pop();
+        embedUrl = `https://kinescope.io/embed/${videoId}`;
+    }
+    
+    const iframeAttributes = `class="exercise-video" allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock;" frameborder="0" allowfullscreen`;
+    
+    return `
+        <div class="video-container-universal">
+            <div style="position: relative; padding-top: 56.25%; width: 100%; border-radius: 10px; overflow: hidden;">
+                <iframe ${iframeAttributes}
+                        src="${embedUrl}"
+                        style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></iframe>
+            </div>
+        </div>
+    `;
+}
+
+function showDiagnosticModule(module, moduleDataOverride) {
     const modal = document.getElementById('exercise-modal');
     const modalBody = document.getElementById('exercise-modal-body');
+    if (!modal || !modalBody) return;
     
-    if (modal && modalBody) {
-        modalBody.innerHTML = `
-            <div class="diagnostic-video-selection">
-                <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleData.name}</h2>
-                <p style="color: #6c757d; margin-bottom: 25px;">Выберите видео для диагностики</p>
-                
-                <div class="video-selection-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
-                    ${moduleData.videos.map((video, index) => `
-                        <div class="video-selection-item" style="display: flex; align-items: center; padding: 15px; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" 
-                             onclick="selectDiagnosticVideo('${module}', ${video.id})"
-                             onmouseover="this.style.borderColor='#007bff'; this.style.backgroundColor='#e3f2fd';"
-                             onmouseout="this.style.borderColor='#e9ecef'; this.style.backgroundColor='#f8f9fa';">
-                            <div style="background: #007bff; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">
-                                ${video.order}
-                            </div>
-                            <div style="flex: 1;">
-                                <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 16px;">${video.title}</h4>
-                                <p style="margin: 0; color: #6c757d; font-size: 14px;">Нажмите для просмотра</p>
-                            </div>
-                            <div style="color: #007bff; font-size: 20px;">▶</div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn btn-secondary" onclick="closeDiagnosticModal()" style="flex: 1;">Отмена</button>
-                </div>
-            </div>
-        `;
-        
-        // Show modal
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-        modal.style.background = 'rgba(0,0,0,0.5)';
-        document.body.style.overflow = 'hidden';
+    const moduleData = moduleDataOverride || diagnosisModules[module];
+    if (!moduleData || !Array.isArray(moduleData.videos) || moduleData.videos.length === 0) {
+        showToast('Видео для диагностики не найдены', 'error');
+        return;
     }
-}
 
-// Select diagnostic video
-function selectDiagnosticVideo(module, videoId) {
-    const moduleData = diagnosisModules[module];
-    const video = moduleData.videos.find(v => v.id === videoId);
+    const moduleName = getModuleName(module);
+    const videoBlocks = moduleData.videos.map((video, index) => {
+        const videoHtml = buildDiagnosticVideoEmbed(video.url);
+        const divider = index < moduleData.videos.length - 1
+            ? '<hr style="margin: 28px 0; border: none; border-top: 1px solid rgba(15,23,42,0.08);">'
+            : '';
+        return `
+            <div class="diagnostic-video-block" style="margin-bottom: 12px;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; color: #0f172a;">${video.title}</h3>
+                ${videoHtml}
+            </div>
+            ${divider}
+        `;
+    }).join('');
     
-    if (video) {
-        showDiagnosticVideo(module, video.url);
-    } else {
-        showToast('Видео не найдено', 'error');
+    modalBody.innerHTML = `
+        <div class="diagnostic-module-player" style="max-width: 820px; width: 100%;">
+            <h2 style="color: #0f172a; margin-bottom: 10px; font-size: 22px;">Диагностика ${moduleName}</h2>
+            <p style="color: #475467; margin-bottom: 28px; font-size: 15px;">Следуйте инструкциям из видео</p>
+            ${videoBlocks}
+            <div style="display: flex; gap: 12px; margin-top: 32px;">
+                <button class="btn btn-secondary" onclick="goToDiagnostics()" style="flex: 1;">Назад</button>
+                <button class="btn btn-primary" onclick="goToExercises()" style="flex: 1;">К упражнениям</button>
+            </div>
+        </div>
+    `;
+    
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
     }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.position = 'fixed';
+    modal.style.inset = '0';
+    modal.style.zIndex = '9999';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    document.body.style.overflow = 'hidden';
 }
 
 // Show diagnostic video selection modal
@@ -4928,71 +4999,21 @@ function startDiagnosticWithVideo(module) {
 
 // Show diagnostic video player
 function showDiagnosticVideo(module, videoUrl) {
-    // Stop all videos before showing new diagnostic video
     stopAllVideos();
     
-    const moduleName = getModuleName(module);
     const moduleData = diagnosisModules[module];
+    const moduleName = getModuleName(module);
+    const videoHTML = buildDiagnosticVideoEmbed(videoUrl);
+    const canReturnToModule = moduleData && Array.isArray(moduleData.videos) && moduleData.videos.length > 0;
+    const backButtonAction = canReturnToModule
+        ? `showDiagnosticModule('${module}')`
+        : 'goToDiagnostics()';
+    const backButtonText = canReturnToModule ? 'Назад' : 'Закрыть';
     
-    // Convert Kinoscope links to proper iframe format
-    let videoHTML;
-    if (videoUrl.includes('kinescope.io/') && !videoUrl.includes('/embed/')) {
-        // Convert direct Kinoscope link to embed format
-        const videoId = videoUrl.split('/').pop();
-        const embedUrl = `https://kinescope.io/embed/${videoId}`;
-        
-        videoHTML = `
-            <div class="video-container-universal">
-                <div style="position: relative; padding-top: 56.25%; width: 100%; border-radius: 10px; overflow: hidden;">
-                    <iframe class="exercise-video" 
-                            src="${embedUrl}" 
-                            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock;"
-                            frameborder="0" 
-                            allowfullscreen
-                            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
-                    </iframe>
-                </div>
-            </div>
-        `;
-    } else if (videoUrl.includes('kinescope.io/embed/')) {
-        // Already in embed format, use responsive wrapper
-        videoHTML = `
-            <div class="video-container-universal">
-                <div style="position: relative; padding-top: 56.25%; width: 100%; border-radius: 10px; overflow: hidden;">
-                    <iframe class="exercise-video" 
-                            src="${videoUrl}" 
-                            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock;"
-                            frameborder="0" 
-                            allowfullscreen
-                            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
-                    </iframe>
-                </div>
-            </div>
-        `;
-    } else {
-        // For other video types (YouTube, etc.) use existing format
-        videoHTML = `
-            <div class="video-container-universal">
-                <iframe class="exercise-video" 
-                        src="${videoUrl}" 
-                        frameborder="0" 
-                        allowfullscreen
-                        style="width: 100%; height: 300px; border-radius: 10px;">
-                </iframe>
-            </div>
-        `;
-    }
-    
-    // Show diagnostic modal with video
     const modal = document.getElementById('exercise-modal');
     const modalBody = document.getElementById('exercise-modal-body');
     
     if (modal && modalBody) {
-        // Determine if we should show "back to selection" or "back to diagnostics"
-        const hasMultipleVideos = moduleData && moduleData.videos.length > 1;
-        const backButtonText = hasMultipleVideos ? 'Назад к выбору' : 'Назад';
-        const backButtonAction = hasMultipleVideos ? `showDiagnosticVideoSelection('${module}', diagnosisModules['${module}'])` : 'goToDiagnostics()';
-        
         modalBody.innerHTML = `
             <div class="diagnostic-video-player">
                 <h2 style="color: #2c3e50; margin-bottom: 20px;">🔍 Диагностика: ${moduleName}</h2>
@@ -5083,8 +5104,6 @@ window.closeDiagnosticModal = closeDiagnosticModal;
 window.getModuleName = getModuleName;
 window.goToDiagnostics = goToDiagnostics;
 window.goToExercises = goToExercises;
-window.showDiagnosticVideoSelection = showDiagnosticVideoSelection;
-window.selectDiagnosticVideo = selectDiagnosticVideo;
 
 // Diagnosis Editor Functions
 function loadDiagnosisModulesForEditor() {
