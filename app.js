@@ -1475,6 +1475,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Lock orientation to portrait on main screen only
     setupOrientationLock();
+
+    // Auto-generate video posters for HTML5 exercise videos
+    setupVideoPosterGenerator();
     
     console.log('App initialization complete');
 });
@@ -1763,6 +1766,266 @@ function setupLazyMediaLoading() {
     } catch (e) {
         console.warn('setupLazyMediaLoading failed', e);
     }
+}
+
+const VIDEO_POSTER_CACHE_KEY = 'exerciseVideoPosterCache.v1';
+let videoPosterCacheMemory = null;
+let videoPosterObserver = null;
+let posterGeneratorInitialized = false;
+
+function getVideoPosterCache() {
+    if (!videoPosterCacheMemory) {
+        try {
+            const raw = localStorage.getItem(VIDEO_POSTER_CACHE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    videoPosterCacheMemory = parsed;
+                } else {
+                    videoPosterCacheMemory = {};
+                }
+            } else {
+                videoPosterCacheMemory = {};
+            }
+        } catch (err) {
+            console.warn('Failed to parse video poster cache', err);
+            videoPosterCacheMemory = {};
+        }
+    }
+    return videoPosterCacheMemory;
+}
+
+function saveVideoPosterCache() {
+    if (!videoPosterCacheMemory) return;
+    try {
+        const entries = Object.entries(videoPosterCacheMemory)
+            .filter(([_, value]) => value && typeof value === 'object' && value.dataUrl)
+            .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+        const MAX_CACHE_ITEMS = 40;
+        if (entries.length > MAX_CACHE_ITEMS) {
+            const trimmed = entries.slice(0, MAX_CACHE_ITEMS);
+            videoPosterCacheMemory = Object.fromEntries(trimmed);
+        }
+        localStorage.setItem(VIDEO_POSTER_CACHE_KEY, JSON.stringify(videoPosterCacheMemory));
+    } catch (err) {
+        console.warn('Failed to save video poster cache', err);
+    }
+}
+
+function getCachedPoster(src) {
+    if (!src) return null;
+    const cache = getVideoPosterCache();
+    const entry = cache[src];
+    if (entry && entry.dataUrl) {
+        return entry.dataUrl;
+    }
+    return null;
+}
+
+function rememberPoster(src, dataUrl) {
+    if (!src || !dataUrl) return;
+    const cache = getVideoPosterCache();
+    cache[src] = { dataUrl, updatedAt: Date.now() };
+    saveVideoPosterCache();
+}
+
+function collectPosterCandidates(root) {
+    if (!root) return [];
+    if (root.tagName === 'VIDEO') {
+        return root.dataset && root.dataset.autoPoster === 'true' ? [root] : [];
+    }
+    if (root.querySelectorAll) {
+        return Array.from(root.querySelectorAll('video.exercise-video[data-auto-poster="true"]'));
+    }
+    return [];
+}
+
+function setupVideoPosterGenerator() {
+    if (posterGeneratorInitialized) return;
+    posterGeneratorInitialized = true;
+    try {
+        initializeAutoVideoPosters(document.body || document);
+        if ('IntersectionObserver' in window) {
+            videoPosterObserver = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    const video = entry.target;
+                    if (entry.isIntersecting) {
+                        videoPosterObserver.unobserve(video);
+                        queueVideoPosterGeneration(video);
+                    }
+                });
+            }, { rootMargin: '200px 0px', threshold: 0.05 });
+        }
+        const observer = new MutationObserver(mutations => {
+            try {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType !== 1) return;
+                        initializeAutoVideoPosters(node);
+                    });
+                });
+            } catch (err) {
+                console.warn('Video poster mutation observer error', err);
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    } catch (err) {
+        console.warn('setupVideoPosterGenerator failed', err);
+    }
+}
+
+function initializeAutoVideoPosters(root) {
+    try {
+        const videos = collectPosterCandidates(root);
+        if (!videos.length) return;
+        videos.forEach(video => {
+            if (!video || video.dataset.posterReady === 'true' || video.dataset.posterBlocked === 'true') return;
+            if (video.poster) {
+                video.dataset.posterReady = 'true';
+                return;
+            }
+            if (videoPosterObserver) {
+                videoPosterObserver.observe(video);
+            } else {
+                queueVideoPosterGeneration(video);
+            }
+        });
+    } catch (err) {
+        console.warn('initializeAutoVideoPosters failed', err);
+    }
+}
+
+function queueVideoPosterGeneration(video) {
+    if (!video || video.dataset.posterPending === 'true') return;
+    const src = getVideoSource(video);
+    if (!src) {
+        video.dataset.posterBlocked = 'true';
+        return;
+    }
+    const cached = getCachedPoster(src);
+    if (cached) {
+        video.poster = cached;
+        video.dataset.posterReady = 'true';
+        return;
+    }
+    video.dataset.posterPending = 'true';
+    const schedule = window.requestIdleCallback || function(cb) { return setTimeout(cb, 100); };
+    schedule(() => {
+        generatePosterFromVideoSource(src).then(dataUrl => {
+            if (dataUrl) {
+                rememberPoster(src, dataUrl);
+                if (!video.poster) {
+                    video.poster = dataUrl;
+                }
+            } else {
+                video.dataset.posterBlocked = 'true';
+            }
+        }).catch(err => {
+            console.warn('Poster generation failed for', src, err);
+            video.dataset.posterBlocked = 'true';
+        }).finally(() => {
+            delete video.dataset.posterPending;
+            video.dataset.posterReady = 'true';
+        });
+    });
+}
+
+function getVideoSource(video) {
+    if (!video) return null;
+    if (video.dataset && video.dataset.videoSrc) {
+        return video.dataset.videoSrc;
+    }
+    if (video.currentSrc) return video.currentSrc;
+    const sourceEl = video.querySelector('source');
+    return sourceEl ? sourceEl.src : null;
+}
+
+function generatePosterFromVideoSource(src) {
+    return new Promise(resolve => {
+        try {
+            const tempVideo = document.createElement('video');
+            let timeoutId;
+            let resolved = false;
+
+            const cleanup = () => {
+                if (timeoutId) clearTimeout(timeoutId);
+                tempVideo.pause && tempVideo.pause();
+                tempVideo.removeAttribute('src');
+                tempVideo.load();
+            };
+
+            const finalize = (dataUrl) => {
+                if (resolved) return;
+                resolved = true;
+                cleanup();
+                resolve(dataUrl || null);
+            };
+
+            const captureFrame = () => {
+                try {
+                    if (!tempVideo.videoWidth || !tempVideo.videoHeight) {
+                        finalize(null);
+                        return;
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = tempVideo.videoWidth;
+                    canvas.height = tempVideo.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        finalize(null);
+                        return;
+                    }
+                    ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+                    finalize(dataUrl);
+                } catch (err) {
+                    console.warn('Unable to capture video frame', err);
+                    finalize(null);
+                }
+            };
+
+            const handleLoadedData = () => {
+                try {
+                    if (Number.isFinite(tempVideo.duration) && tempVideo.duration > 0) {
+                        const targetTime = Math.min(Math.max(tempVideo.duration * 0.02, 0.05), Math.max(tempVideo.duration - 0.05, 0.05));
+                        if (Math.abs(tempVideo.currentTime - targetTime) > 0.01) {
+                            tempVideo.currentTime = targetTime;
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Error seeking temp video', err);
+                }
+                captureFrame();
+            };
+
+            const handleSeeked = () => {
+                captureFrame();
+            };
+
+            const handleError = (event) => {
+                console.warn('Temp video error', event?.message || event);
+                finalize(null);
+            };
+
+            tempVideo.crossOrigin = 'anonymous';
+            tempVideo.muted = true;
+            tempVideo.playsInline = true;
+            tempVideo.preload = 'auto';
+            tempVideo.addEventListener('loadeddata', handleLoadedData, { once: true });
+            tempVideo.addEventListener('seeked', handleSeeked, { once: true });
+            tempVideo.addEventListener('error', handleError, { once: true });
+
+            timeoutId = setTimeout(() => finalize(null), 8000);
+
+            const cacheBuster = src.includes('?') ? '&' : '?';
+            tempVideo.src = `${src}${cacheBuster}preview=${Date.now()}`;
+            tempVideo.load();
+        } catch (err) {
+            console.warn('generatePosterFromVideoSource failed', err);
+            resolve(null);
+        }
+    });
 }
 
 // Lock orientation to portrait on main screen only
@@ -3039,9 +3302,9 @@ async function openExerciseModule(programId, dayIndex = 1) {
                             // Direct video file - native controls, no custom overlay
                             videoHTML = `
                                 <div class="getcourse-video-container" style="margin: 10px 0; position: relative;">
-                                    <video class="exercise-video" 
-                                           controls 
-                                           preload="metadata" 
+                                    <video class="exercise-video"
+                                           controls
+                                           preload="metadata"
                                            style="width: 100%; max-width: 100%; height: 200px; border-radius: 10px;"
                                            playsinline
                                            webkit-playsinline
@@ -3049,6 +3312,10 @@ async function openExerciseModule(programId, dayIndex = 1) {
                                            webkitallowfullscreen
                                            mozallowfullscreen
                                            msallowfullscreen
+                                           muted
+                                           crossorigin="anonymous"
+                                           data-auto-poster="true"
+                                           data-video-src="${exercise.video_url}"
                                            onloadedmetadata="this.requestFullscreen = this.requestFullscreen || this.webkitRequestFullscreen || this.mozRequestFullScreen || this.msRequestFullscreen;"
                                            ondoubleclick="if(this.requestFullscreen) this.requestFullscreen();">
                                         <source src="${exercise.video_url}" type="video/mp4">
@@ -3122,6 +3389,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
         exercisesHTML += completionButton;
         
         modalBody.innerHTML = exercisesHTML;
+        initializeAutoVideoPosters(modalBody);
             modal.classList.remove('hidden');
         modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
