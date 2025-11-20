@@ -93,6 +93,7 @@ function updateAdaptiveScale() {
     const root = document.documentElement;
     const currentWidth = window.innerWidth;
     const currentHeight = window.innerHeight;
+    const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
     
     // Диапазон масштабирования: iPhone SE (320px) до iPad Pro Max (1366px)
     const minWidth = 320; // iPhone SE
@@ -127,23 +128,33 @@ function updateAdaptiveScale() {
     // Обновляем CSS переменные
     root.style.setProperty('--current-screen-width', `${currentWidth}px`);
     root.style.setProperty('--scale-factor', scaleFactor);
+    root.style.setProperty('--adaptive-scale', scaleFactor);
+    
+    const navBarHeight = clampValue(72 * scaleFactor, 60, 110);
+    const navBottomGap = clampValue(18 * scaleFactor, 12, 36);
+    const topHeaderHeight = clampValue(170 * scaleFactor, 140, 240);
+    const homeHorizontalPadding = clampValue(16 * scaleFactor, 10, 36);
+    const topExtraGap = clampValue(14 * scaleFactor, 8, 28);
+    const levelGap = clampValue(32 * scaleFactor, 18, 56);
+    
+    root.style.setProperty('--nav-bar-height', `${navBarHeight}px`);
+    root.style.setProperty('--nav-bottom-gap', `${navBottomGap}px`);
+    root.style.setProperty('--top-header-height', `${topHeaderHeight}px`);
+    root.style.setProperty('--home-horizontal-padding', `${homeHorizontalPadding}px`);
+    root.style.setProperty('--top-extra-gap', `${topExtraGap}px`);
+    root.style.setProperty('--level-gap', `${levelGap}px`);
     
     // Применяем масштабирование к основным элементам главного экрана
-    const scaledPadding = (10 * scaleFactor).toFixed(2);
-    const scaledHorizontalPadding = (15 * scaleFactor).toFixed(2);
-    const scaledProgressTop = (10 * scaleFactor).toFixed(2);
-    
     const elements = {
         '.top-header-container': {
             position: 'fixed',
-            top: '0',
+            top: 'var(--top-header-offset)',
             left: '0',
             width: '100%',
-            height: `calc(15.444vh + 13.2px)`, // Используем наше значение из CSS
+            height: 'var(--top-header-height)',
             zIndex: '1000',
             pointerEvents: 'none',
-            padding: `${scaledPadding}px ${scaledHorizontalPadding}px`,
-            paddingTop: `calc(${scaledPadding}px + var(--top-safe-offset, 12px))`,
+            padding: 'var(--top-extra-gap) var(--home-horizontal-padding)',
             boxSizing: 'border-box'
         },
         '.welcome-title': {
@@ -198,7 +209,7 @@ function updateAdaptiveScale() {
         },
         '.progress-tab': {
             position: 'absolute',
-            top: `calc(var(--top-safe-offset, 12px) + ${scaledProgressTop}px)`,
+            top: `calc(var(--top-extra-gap) + 4px)`,
             right: `${10 * scaleFactor}px`
         },
         '.leaderboard-tab': {
@@ -222,7 +233,7 @@ function updateAdaptiveScale() {
         },
         '.level-display-bottom': {
             position: 'fixed',
-            bottom: `${120 * scaleFactor}px`, // Между изображением и меню
+            bottom: 'var(--level-bottom-offset)',
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'auto',
@@ -234,28 +245,29 @@ function updateAdaptiveScale() {
         },
         // Удалено - изображение будет управляться только через CSS контейнера
         '.human-avatar-center': {
-            top: 'calc(15.444vh + 13.2px)', // Используем наше значение из CSS
-            left: '10px',
-            width: 'calc(100% - 20px)',
-            bottom: '180px',
-            padding: '10px',
+            top: 'var(--hero-top-offset)',
+            left: 'var(--home-horizontal-padding)',
+            width: 'calc(100% - (var(--home-horizontal-padding) * 2))',
+            bottom: 'var(--avatar-bottom-limit)',
+            padding: 'var(--top-extra-gap)',
             borderRadius: '12px'
         },
         '.navbar': {
             position: 'fixed',
-            bottom: `${20 * scaleFactor}px`,
+            bottom: 'var(--nav-bottom-gap)',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: `${80 * scaleFactor}%`,
+            width: `${Math.min(100, 80 * scaleFactor)}%`,
             background: 'rgba(135, 206, 250, 0.15)', // Голубой цвет для жидкого стекла
             backdropFilter: 'blur(20px)',
-            borderRadius: `${20 * scaleFactor}px`,
+            borderRadius: 'calc(var(--nav-bar-height) / 3)',
             border: '1px solid rgba(135, 206, 250, 0.3)',
             display: 'flex',
             justifyContent: 'space-around',
-            padding: `${6 * scaleFactor}px ${8 * scaleFactor}px`,
+            padding: `calc(var(--nav-bar-height) * 0.18) var(--home-horizontal-padding)`,
             zIndex: '1000',
-            boxShadow: '0 8px 32px rgba(135, 206, 250, 0.2)'
+            boxShadow: '0 8px 32px rgba(135, 206, 250, 0.2)',
+            minHeight: 'var(--nav-bar-height)'
         },
         '.nav-item': {
             display: 'flex',

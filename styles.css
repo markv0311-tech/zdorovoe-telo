@@ -14,8 +14,22 @@
     --max-screen-width: 1366px; /* iPad Pro Max как максимум */
     --current-screen-width: 100vw;
     --scale-factor: 1;
+    --adaptive-scale: 1;
     --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --top-safe-offset: calc(var(--safe-area-top) + 12px);
+    --nav-bar-height: 76px;
+    --nav-bottom-gap: 20px;
+    --top-extra-gap: 12px;
+    --home-horizontal-padding: 16px;
+    --level-gap: 28px;
+    --content-max-width: 500px;
+    --top-header-height: 180px;
+    --top-spacer-height: calc(var(--nav-bar-height) + var(--safe-area-top));
+    --top-header-offset: var(--top-spacer-height);
+    --hero-top-offset: calc(var(--top-header-offset) + var(--top-header-height));
+    --level-bottom-offset: calc(var(--nav-bar-height) + var(--nav-bottom-gap) + var(--safe-area-bottom));
+    --avatar-bottom-limit: calc(var(--level-bottom-offset) + var(--level-gap));
 }
 
 /* Reset and Base Styles */
@@ -37,6 +51,12 @@ html {
 
 .hidden {
     display: none;
+}
+
+.telegram-top-spacer {
+    width: 100%;
+    height: var(--top-spacer-height);
+    pointer-events: none;
 }
 
 /* Override hidden for modals when they should be visible */
@@ -891,12 +911,14 @@ video.exercise-video {
 /* Top Header Container - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ВВЕРХУ */
 .top-header-container {
     position: fixed;
-    top: 0;
+    top: var(--top-header-offset);
     left: 0;
     width: 100%;
-    height: calc(15.444vh + 13.2px); /* Увеличено на 10% от calc(14.04vh + 12px) */
+    height: var(--top-header-height); /* Увеличено на 10% от calc(14.04vh + 12px) */
     z-index: 1000;
     pointer-events: none;
+    padding: var(--top-extra-gap) var(--home-horizontal-padding);
+    box-sizing: border-box;
     /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ВВЕРХУ */
 }
 
@@ -1056,20 +1078,26 @@ video.exercise-video {
     line-height: 1.1;
 }
 
+.home-container {
+    position: relative;
+    padding: 0 var(--home-horizontal-padding);
+    box-sizing: border-box;
+}
+
 /* Human Avatar Center */
 /* Human Avatar Center - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ОТ УРОВНЯ ПРОГРЕССА ДО ВЕРХНЕГО КОНТЕЙНЕРА */
 .human-avatar-center {
     position: fixed;
-    top: calc(15.444vh + 13.2px); /* От верхнего контейнера (15.444vh + 13.2px) */
-    left: 10px;
-    width: calc(100% - 20px);
-    bottom: 180px; /* До уровня прогресса (160px + 20px отступ) */
+    top: var(--hero-top-offset); /* От верхнего контейнера + безопасная зона */
+    left: var(--home-horizontal-padding);
+    width: calc(100% - (var(--home-horizontal-padding) * 2));
+    bottom: var(--avatar-bottom-limit); /* До уровня прогресса */
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border-radius: 12px;
-    padding: 10px;
+    padding: var(--top-extra-gap);
     box-sizing: border-box;
     /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ПО ЦЕНТРУ, ОТ УРОВНЯ ПРОГРЕССА ДО ВЕРХНЕГО КОНТЕЙНЕРА */
 }
@@ -1331,7 +1359,7 @@ video.exercise-video {
 /* Level Display - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ЧУТЬ ВЫШЕ МЕНЮ */
 .level-display-bottom {
     position: fixed;
-    bottom: calc(6vh + 20px); /* Высота меню (6vh) + отступ 20px */
+    bottom: var(--level-bottom-offset); /* Привязан к высоте меню и safe-area */
     left: 50%;
     transform: translateX(-50%);
     width: auto;
@@ -1522,7 +1550,6 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding-bottom: 80px; /* Space for navbar */
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     background-attachment: scroll;
     background-repeat: no-repeat;
@@ -1539,12 +1566,15 @@ body {
 /* Navigation Container - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ВНИЗУ ПО ЦЕНТРУ - UPDATED 2024 */
 .nav-container {
     position: fixed !important;
-    bottom: 2vh !important;
+    bottom: var(--nav-bottom-gap) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 100vw !important;
-    max-width: none !important;
+    width: min(100vw, calc(var(--content-max-width) + 40px)) !important;
+    max-width: 100% !important;
     z-index: 1000 !important;
+    padding: 0 20px !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 .navbar {
@@ -1556,12 +1586,12 @@ body {
     display: flex !important;
     justify-content: space-evenly !important;
     align-items: center !important;
-    border-radius: 2.5vh !important;
+    border-radius: calc(var(--nav-bar-height) / 3) !important;
     box-shadow: 0 8px 32px rgba(0, 51, 102, 0.2), 
                 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
-    width: 100% !important;
-    min-height: 6vh !important;
-    padding: 0.8vh 2vw !important;
+    width: min(100%, var(--content-max-width)) !important;
+    min-height: var(--nav-bar-height) !important;
+    padding: calc(var(--nav-bar-height) * 0.18) var(--home-horizontal-padding) !important;
 }
 
 /* Дополнительная гарантия для первой загрузки */
@@ -1576,12 +1606,12 @@ body {
 @media (orientation: landscape) and (max-height: 500px) {
     /* Горизонтальная ориентация на маленьких экранах */
     .nav-container {
-        width: 100vw !important;
+        width: min(100vw, calc(var(--content-max-width) + 20px)) !important;
     }
     
     .navbar {
-        min-height: 6vh;
-        padding: 0.5vh 1vw;
+        min-height: var(--nav-bar-height);
+        padding: calc(var(--nav-bar-height) * 0.15) var(--home-horizontal-padding);
     }
     
     .nav-item {
@@ -1605,11 +1635,11 @@ body {
 @media (orientation: portrait) and (max-width: 480px) {
     /* Вертикальная ориентация на мобильных */
     .nav-container {
-        width: 100vw !important;
+        width: min(100vw, calc(var(--content-max-width) + 20px)) !important;
     }
     
     .navbar {
-        min-height: 7vh;
+        min-height: var(--nav-bar-height);
     }
     
     .nav-item {
@@ -1760,11 +1790,8 @@ body {
     .level-display-bottom {
         min-width: 120px;
         padding: 6px 8px;
-        bottom: calc(6vh + 15px); /* Высота меню + отступ */
     }
-    
-    /* Удалено - изображение управляется только контейнером */
-    
+
     .dark-theme .theme-slider-thumb {
         transform: translateX(20px);
     }
@@ -1820,36 +1847,12 @@ body {
     .level-display-bottom {
         min-width: 150px;
         padding: 8px 12px;
-        bottom: calc(6vh + 15px); /* Высота меню + отступ */
     }
     
     /* Удалено - изображение управляется только контейнером */
     
-    /* Адаптивное навигационное меню для очень маленьких экранов */
     .nav-container {
-        width: 100vw !important;
-    }
-    
-    .navbar {
-        min-height: 6vh;
-        padding: 0.3vh 0.5vw;
-    }
-    
-    .nav-item {
-        padding: 0.4vh 0.6vw;
-        width: 25% !important;
-        min-width: 25% !important;
-        flex: 0 0 auto;
-    }
-    
-    .nav-icon {
-        font-size: 1.6vh;
-        margin-bottom: 0.2vh;
-    }
-    
-    .nav-text {
-        font-size: 0.8vh;
-        letter-spacing: 0.04em;
+        width: min(100vw, calc(var(--content-max-width) + 20px)) !important;
     }
 }
 
@@ -1903,19 +1906,18 @@ body {
     .level-display-bottom {
         min-width: 160px;
         padding: 10px 14px;
-        bottom: calc(6.5vh + 15px); /* Высота меню + отступ */
+        bottom: var(--level-bottom-offset);
     }
     
     /* Удалено - изображение управляется только контейнером */
     
-    /* Адаптивное навигационное меню для маленьких мобильных */
     .nav-container {
-        width: 100vw !important;
+        width: min(100vw, calc(var(--content-max-width) + 20px)) !important;
     }
     
     .navbar {
-        min-height: 6.5vh;
-        padding: 0.5vh 1vw;
+        min-height: var(--nav-bar-height);
+        padding: calc(var(--nav-bar-height) * 0.15) var(--home-horizontal-padding);
     }
     
     .nav-item {
@@ -1942,8 +1944,15 @@ body {
 
 /* Mobile Responsive */
 @media (max-width: 480px) and (min-width: 361px) {
+    :root {
+        --top-header-height: 200px;
+        --home-horizontal-padding: 14px;
+        --nav-bar-height: 84px;
+        --nav-bottom-gap: 18px;
+        --level-gap: 26px;
+    }
+    
     .home-container {
-        padding: 15px;
         gap: 20px;
     }
     
@@ -1955,10 +1964,6 @@ body {
         font-size: 14px; /* Уменьшаем на 2px для мобильных */
     }
     
-    .top-header-container {
-        height: calc(17.16vh + 13.2px); /* Увеличено на 10% от calc(15.6vh + 12px) */
-    }
-    
     .welcome-section {
         padding: 10px; /* Уменьшаем отступы на мобильных */
         width: calc(100% - 20px); /* Ширина на мобильных */
@@ -1966,21 +1971,6 @@ body {
     
     .avatar-large {
         padding: 0;
-    }
-    
-    .human-avatar-center {
-        top: calc(17.16vh + 13.2px); /* Начинается после увеличенного контейнера на мобильных */
-        left: 10px; /* Отступ 10px от левого края */
-        width: calc(100% - 20px); /* Ширина на мобильных */
-        bottom: 140px; /* До верхнего края уровня прогресса */
-    }
-    
-    .level-display-bottom {
-        padding: 10px 0; /* Внутренние отступы на мобильных */
-        left: 50%; /* Центрируем на мобильных */
-        transform: translateX(-50%); /* Центрируем на мобильных */
-        width: auto; /* Автоматическая ширина на мобильных */
-        bottom: calc(7vh + 15px); /* Высота меню + отступ */
     }
     
     .avatar-image {
@@ -2953,68 +2943,59 @@ body {
 
 /* Large Desktop - iPad Pro and similar */
 @media (min-width: 1024px) {
-    .human-avatar-center {
-        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
-        bottom: calc(200px * var(--adaptive-scale)); /* Еще больше места для iPad Pro */
+    :root {
+        --home-horizontal-padding: 32px;
+        --top-header-height: 220px;
+        --nav-bar-height: 90px;
+        --nav-bottom-gap: 28px;
+        --level-gap: 48px;
     }
     
     .avatar-image {
         transform: scale(calc(0.6144 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.384 */
     }
     
-    .level-display-bottom {
-        bottom: calc(6vh + 20px); /* Высота меню + отступ */
-    }
-    
     .level-text {
         font-size: calc(36px * var(--adaptive-scale)); /* Крупнее на больших экранах */
     }
-    
-    /* Удалено - масштабирование через JavaScript */
 }
 
 /* Desktop */
 @media (min-width: 769px) and (max-width: 1023px) {
-    .human-avatar-center {
-        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
-        bottom: calc(190px * var(--adaptive-scale)); /* Больше места для iPad Air */
+    :root {
+        --home-horizontal-padding: 28px;
+        --top-header-height: 210px;
+        --nav-bar-height: 88px;
+        --nav-bottom-gap: 24px;
+        --level-gap: 40px;
     }
     
     .avatar-image {
         transform: scale(calc(0.7168 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.448 */
     }
     
-    .level-display-bottom {
-        bottom: calc(6vh + 20px); /* Высота меню + отступ */
-    }
-    
     .level-text {
         font-size: calc(34px * var(--adaptive-scale));
     }
-    
-    /* Удалено - масштабирование через JavaScript */
 }
 
 /* iPad Mini and similar tablets */
 @media (min-width: 481px) and (max-width: 768px) {
-    .human-avatar-center {
-        top: calc((15.444vh + 13.2px) * var(--adaptive-scale));
-        bottom: calc(180px * var(--adaptive-scale)); /* Больше места для iPad Mini */
+    :root {
+        --home-horizontal-padding: 22px;
+        --top-header-height: 200px;
+        --nav-bar-height: 86px;
+        --nav-bottom-gap: 22px;
+        --level-gap: 36px;
     }
     
     .avatar-image {
         transform: scale(calc(0.8192 * var(--adaptive-scale))); /* Увеличено еще на 60% от 0.512 */
     }
     
-    .level-display-bottom {
-        bottom: calc(6vh + 20px); /* Высота меню + отступ */
-    }
-    
     .level-text {
         font-size: calc(32px * var(--adaptive-scale));
     }
-    
-    /* Удалено - масштабирование через JavaScript */
 }
 
 /* Mobile devices */
@@ -3042,29 +3023,7 @@ body {
     
     /* Адаптивное навигационное меню для мобильных */
     .nav-container {
-        width: 100vw !important;
-    }
-    
-    .navbar {
-        min-height: 7.5vh;
-        padding: 0.8vh 1.5vw;
-    }
-    
-    .nav-item {
-        padding: 1.6vh 2vw;
-        width: 25% !important;
-        min-width: 25% !important;
-        flex: 0 0 auto;
-    }
-    
-    .nav-icon {
-        font-size: 2.1vh;
-        margin-bottom: 0.4vh;
-    }
-    
-    .nav-text {
-        font-size: 1.05vh;
-        letter-spacing: 0.07em;
+        width: min(100vw, calc(var(--content-max-width) + 20px)) !important;
     }
 }
 
