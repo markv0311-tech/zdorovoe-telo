@@ -2465,6 +2465,14 @@ body {
     position: relative;
 }
 
+#program-modal .modal-content {
+    transform: translateY(-12%);
+}
+
+#exercise-modal .modal-content {
+    transform: translateY(-10%);
+}
+
 .exercise-modal-content {
     max-width: 800px;
     max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset) - var(--level-gap) - 60px);
