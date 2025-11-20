@@ -42,30 +42,32 @@
             
             <!-- Top Container for all header elements -->
             <div class="top-header-container">
-                <!-- Theme Toggle - Top Left -->
-                <div id="switch" class="theme-toggle-top">
-                    <div class="theme-slider" onclick="toggleTheme()">
-                        <div class="theme-slider-track">
-                            <div class="theme-slider-thumb" id="theme-slider-thumb">
-                                <span class="theme-icon-slider" id="theme-icon-slider">🌙</span>
+                <div class="top-header-left">
+                    <!-- Welcome Section -->
+                    <div id="greeting" class="welcome-section">
+                        <h1 class="welcome-title" id="welcome-title">Привет!</h1>
+                        <p class="welcome-subtitle" id="welcome-subtitle">Добро пожаловать в ваше путешествие к здоровому образу жизни!</p>
+                    </div>
+                </div>
+                
+                <div class="top-header-right">
+                    <!-- Progress Tab - Top Right -->
+                    <div class="tab-button-vertical progress-tab" data-tab="progress" onclick="openTabModal('progress')">
+                        <span class="tab-icon-vertical">📊</span>
+                        <span class="tab-text-vertical">Прогресс</span>
+                    </div>
+                    
+                    <!-- Theme Toggle under progress tab -->
+                    <div id="switch" class="theme-toggle-top">
+                        <div class="theme-slider" onclick="toggleTheme()">
+                            <div class="theme-slider-track">
+                                <div class="theme-slider-thumb" id="theme-slider-thumb">
+                                    <span class="theme-icon-slider" id="theme-icon-slider">🌙</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Welcome Section - Bottom Left -->
-                <div id="greeting" class="welcome-section">
-                    <h1 class="welcome-title" id="welcome-title">Привет!</h1>
-                    <p class="welcome-subtitle" id="welcome-subtitle">Добро пожаловать в ваше путешествие к здоровому образу жизни!</p>
-                </div>
-                
-                <!-- Progress Tab - Top Right -->
-                <div class="tab-button-vertical progress-tab" data-tab="progress" onclick="openTabModal('progress')">
-                    <span class="tab-icon-vertical">📊</span>
-                    <span class="tab-text-vertical">Прогресс</span>
-                </div>
-                
-                
             </div>
             
             <!-- Tab Modals -->

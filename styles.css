@@ -1,3 +1,10 @@
+.top-header-right .progress-tab {
+    position: relative;
+}
+
+.top-header-right #switch.theme-toggle-top {
+    margin-top: 4px;
+}
 /* Simple CSS Variables */
 :root {
     --primary-color: #007bff;
@@ -25,6 +32,7 @@
     --level-gap: 28px;
     --content-max-width: 500px;
     --top-header-height: 180px;
+    --hero-scale: 0.92;
     --top-spacer-height: calc(var(--nav-bar-height) + var(--safe-area-top));
     --top-header-offset: var(--top-spacer-height);
     --hero-top-offset: calc(var(--top-header-offset) + var(--top-header-height));
@@ -288,11 +296,11 @@ video.exercise-video {
     }
 }
 
-/* Theme Toggle - Top Left in container */
+/* Theme Toggle */
 #switch.theme-toggle-top {
-    position: absolute;
-    top: var(--top-safe-offset, 12px); /* Отступ с учетом safe-area */
-    left: 10px; /* Фиксированный отступ слева */
+    position: relative;
+    top: 0;
+    left: 0;
     width: 50px; /* Фиксированная ширина */
     height: 25px; /* Фиксированная высота */
     z-index: 1001;
@@ -914,12 +922,28 @@ video.exercise-video {
     top: var(--top-header-offset);
     left: 0;
     width: 100%;
-    height: var(--top-header-height); /* Увеличено на 10% от calc(14.04vh + 12px) */
+    min-height: var(--top-header-height);
     z-index: 1000;
     pointer-events: none;
     padding: var(--top-extra-gap) var(--home-horizontal-padding);
     box-sizing: border-box;
-    /* НИКОГДА НЕ ИЗМЕНЯТЬ - ВСЕГДА ВВЕРХУ */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.top-header-left {
+    pointer-events: auto;
+    flex: 1;
+}
+
+.top-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: auto;
 }
 
 /* Top Right Tabs - Vertical */
@@ -1048,15 +1072,13 @@ video.exercise-video {
 /* Welcome Section */
 /* Welcome Section - Bottom Left in container */
 .welcome-section {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    width: calc(100% - 20px);
-    padding: 20px;
+    position: relative;
+    padding: 0;
     background: transparent;
     text-align: left;
     z-index: 10;
     pointer-events: auto;
+    max-width: min(70vw, 420px);
 }
 
 .welcome-title {
@@ -1082,6 +1104,8 @@ video.exercise-video {
     position: relative;
     padding: 0 var(--home-horizontal-padding);
     box-sizing: border-box;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
 }
 
 /* Human Avatar Center */
@@ -1089,8 +1113,9 @@ video.exercise-video {
 .human-avatar-center {
     position: fixed;
     top: var(--hero-top-offset); /* От верхнего контейнера + безопасная зона */
-    left: var(--home-horizontal-padding);
-    width: calc(100% - (var(--home-horizontal-padding) * 2));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100% - (var(--home-horizontal-padding) * 2)), var(--content-max-width));
     bottom: var(--avatar-bottom-limit); /* До уровня прогресса */
     display: flex;
     align-items: center;
@@ -1131,7 +1156,7 @@ video.exercise-video {
     background: transparent;
     transition: all 0.5s ease;
     opacity: 1;
-    transform: scale(1.024); /* Увеличено еще на 60% от scale(0.64) */
+    transform: scale(var(--hero-scale));
 }
 
 .avatar-image.loading {
@@ -2142,6 +2167,7 @@ body {
 .section {
     display: none;
     padding: 20px;
+    padding-bottom: calc(var(--level-bottom-offset) + var(--nav-bar-height) + 40px);
     min-height: calc(100vh - 80px);
 }
 
@@ -2395,12 +2421,12 @@ body {
 
 .modal-content {
     background-color: white;
-    margin: 5% auto;
+    margin: 0;
     padding: 0;
     border-radius: 15px;
     width: 90%;
     max-width: 600px;
-    max-height: 80vh;
+    max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset));
     overflow-y: auto;
     position: relative;
 }

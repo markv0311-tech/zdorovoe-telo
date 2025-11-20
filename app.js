@@ -135,7 +135,8 @@ function updateAdaptiveScale() {
     const topHeaderHeight = clampValue(170 * scaleFactor, 140, 240);
     const homeHorizontalPadding = clampValue(16 * scaleFactor, 10, 36);
     const topExtraGap = clampValue(14 * scaleFactor, 8, 28);
-    const levelGap = clampValue(32 * scaleFactor, 18, 56);
+    const levelGap = clampValue(48 * scaleFactor, 28, 80);
+    const heroScale = clampValue(0.75 + (scaleFactor * 0.2), 0.82, 1.05);
     
     root.style.setProperty('--nav-bar-height', `${navBarHeight}px`);
     root.style.setProperty('--nav-bottom-gap', `${navBottomGap}px`);
@@ -143,6 +144,7 @@ function updateAdaptiveScale() {
     root.style.setProperty('--home-horizontal-padding', `${homeHorizontalPadding}px`);
     root.style.setProperty('--top-extra-gap', `${topExtraGap}px`);
     root.style.setProperty('--level-gap', `${levelGap}px`);
+    root.style.setProperty('--hero-scale', heroScale.toString());
     
     // Применяем масштабирование к основным элементам главного экрана
     const elements = {
@@ -246,8 +248,9 @@ function updateAdaptiveScale() {
         // Удалено - изображение будет управляться только через CSS контейнера
         '.human-avatar-center': {
             top: 'var(--hero-top-offset)',
-            left: 'var(--home-horizontal-padding)',
-            width: 'calc(100% - (var(--home-horizontal-padding) * 2))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(calc(100% - (var(--home-horizontal-padding) * 2)), var(--content-max-width))',
             bottom: 'var(--avatar-bottom-limit)',
             padding: 'var(--top-extra-gap)',
             borderRadius: '12px'
