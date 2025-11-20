@@ -3,7 +3,7 @@
 }
 
 .top-header-right #switch.theme-toggle-top {
-    margin-top: 4px;
+    margin-top: -4px; /* Поднимаем переключатель выше */
 }
 /* Simple CSS Variables */
 :root {
@@ -29,15 +29,30 @@
     --nav-bottom-gap: 20px;
     --top-extra-gap: 12px;
     --home-horizontal-padding: 16px;
-    --level-gap: 28px;
+    --level-gap: 32px;
+    --hero-scale: 0.85;
     --content-max-width: 500px;
     --top-header-height: 180px;
-    --hero-scale: 0.92;
     --top-spacer-height: calc(var(--nav-bar-height) + var(--safe-area-top));
     --top-header-offset: var(--top-spacer-height);
     --hero-top-offset: calc(var(--top-header-offset) + var(--top-header-height));
     --level-bottom-offset: calc(var(--nav-bar-height) + var(--nav-bottom-gap) + var(--safe-area-bottom));
     --avatar-bottom-limit: calc(var(--level-bottom-offset) + var(--level-gap));
+    --tg-header-height: 0px;
+    --tg-viewport-height: 100vh;
+    --tg-viewport-stable-height: 100vh;
+}
+
+/* Режим с шапкой Telegram (компактный) */
+.tg-compact-mode {
+    --top-spacer-height: 0px; /* В компактном режиме спейсер не нужен - шапка Telegram уже создает отступ */
+    --top-header-offset: 0px; /* Верхний контейнер начинается сразу после шапки Telegram */
+}
+
+/* Полноэкранный режим */
+.tg-fullscreen-mode {
+    --top-spacer-height: calc(var(--nav-bar-height) + var(--safe-area-top));
+    --top-header-offset: var(--top-spacer-height); /* Используем спейсер для отступа */
 }
 
 /* Reset and Base Styles */
@@ -65,6 +80,16 @@ html {
     width: 100%;
     height: var(--top-spacer-height);
     pointer-events: none;
+}
+
+/* Скрываем спейсер в компактном режиме (с шапкой Telegram) */
+.tg-compact-mode .telegram-top-spacer {
+    display: none;
+}
+
+/* В полноэкранном режиме спейсер видим */
+.tg-fullscreen-mode .telegram-top-spacer {
+    display: block;
 }
 
 /* Override hidden for modals when they should be visible */
@@ -301,19 +326,23 @@ video.exercise-video {
     position: relative;
     top: 0;
     left: 0;
-    width: 50px; /* Фиксированная ширина */
-    height: 25px; /* Фиксированная высота */
+    width: 60px; /* Такая же ширина, как у таба прогресса */
+    height: 60px; /* Такая же высота, как у таба прогресса */
     z-index: 1001;
     background: transparent; /* Прозрачный фон */
     border: none; /* Убираем рамку */
-    border-radius: 18px;
+    border-radius: 15px;
     pointer-events: auto; /* Enable clicks on toggle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .theme-slider {
-    width: 50px; /* Фиксированная ширина */
-    height: 25px; /* Фиксированная высота */
+    width: 50px; /* Ширина самого слайдера */
+    height: 25px; /* Высота самого слайдера */
     cursor: pointer;
+    margin: 0 auto; /* Центрируем слайдер внутри контейнера */
 }
 
 .theme-slider-track {
@@ -1161,7 +1190,7 @@ video.exercise-video {
 
 .avatar-image.loading {
     opacity: 0.7;
-    transform: scale(1.024); /* Используем тот же масштаб, что и для обычного состояния */
+    transform: scale(var(--hero-scale)); /* Используем тот же масштаб, что и для обычного состояния */
 }
 
 /* Tab Content */
@@ -1384,7 +1413,7 @@ video.exercise-video {
 /* Level Display - ФИКСИРОВАННЫЙ ЭЛЕМЕНТ - ВСЕГДА ПО ЦЕНТРУ, ЧУТЬ ВЫШЕ МЕНЮ */
 .level-display-bottom {
     position: fixed;
-    bottom: var(--level-bottom-offset); /* Привязан к высоте меню и safe-area */
+    bottom: calc(var(--level-bottom-offset) + var(--level-gap)); /* Привязан к высоте меню и safe-area */
     left: 50%;
     transform: translateX(-50%);
     width: auto;
@@ -1416,6 +1445,7 @@ video.exercise-video {
 /* Self-Diagnosis Styles */
 .diagnosis-container {
     padding: 20px;
+    padding-bottom: calc(var(--level-bottom-offset) + var(--level-gap) + 60px);
     max-width: 600px;
     margin: 0 auto;
 }
@@ -2167,7 +2197,7 @@ body {
 .section {
     display: none;
     padding: 20px;
-    padding-bottom: calc(var(--level-bottom-offset) + var(--nav-bar-height) + 40px);
+    padding-bottom: calc(var(--level-bottom-offset) + var(--level-gap) + var(--nav-bar-height) + 40px);
     min-height: calc(100vh - 80px);
 }
 
@@ -2345,6 +2375,7 @@ body {
 .exercises-container {
     max-width: 800px;
     margin: 0 auto;
+    padding-bottom: calc(var(--level-bottom-offset) + var(--level-gap) + 60px);
 }
 
 .programs-grid {
@@ -2404,6 +2435,8 @@ body {
     justify-content: center;
     background-color: rgba(0,0,0,0.5);
     backdrop-filter: blur(5px);
+    padding: max(40px, calc(var(--level-bottom-offset) + var(--level-gap))) 15px 15px;
+    box-sizing: border-box;
 }
 
 /* Ensure navigation is always clickable */
@@ -2421,44 +2454,46 @@ body {
 
 .modal-content {
     background-color: white;
-    margin: 0;
+    margin: auto;
+    margin-top: calc(var(--hero-top-offset) - var(--top-header-offset));
     padding: 0;
     border-radius: 15px;
     width: 90%;
     max-width: 600px;
-    max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset));
+    max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset) - var(--level-gap));
     overflow-y: auto;
     position: relative;
 }
 
 .exercise-modal-content {
     max-width: 800px;
+    max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset) - var(--level-gap) - 60px);
+    margin-top: calc(var(--hero-top-offset) - var(--top-header-offset) + 20px);
 }
 
 .close {
     position: absolute;
-    right: 15px;
-    top: 15px;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    right: 8px;
+    top: 8px;
+    color: #dc3545;
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: bold;
     cursor: pointer;
     z-index: 1002;
     transition: all 0.3s ease;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    line-height: 1;
+    padding: 0;
 }
 
 .close:hover {
-    color: #fff;
-    background: rgba(220, 53, 69, 0.8);
-    border-color: rgba(255, 255, 255, 0.5);
+    color: #c82333;
     transform: scale(1.1);
 }
 

@@ -209,15 +209,10 @@ function updateAdaptiveScale() {
             fontSize: `${8 * scaleFactor}px`,
             letterSpacing: `${0.3 * scaleFactor}px`
         },
-        '.progress-tab': {
-            position: 'absolute',
-            top: `calc(var(--top-extra-gap) + 4px)`,
-            right: `${10 * scaleFactor}px`
-        },
-        '.leaderboard-tab': {
-            position: 'absolute',
-            bottom: `${10 * scaleFactor}px`,
-            right: `${10 * scaleFactor}px`
+        '#switch.theme-toggle-top': {
+            width: `${60 * scaleFactor}px`,
+            height: `${60 * scaleFactor}px`,
+            borderRadius: `${15 * scaleFactor}px`
         },
         '.theme-slider': {
             width: `${50 * scaleFactor}px`,
@@ -235,7 +230,7 @@ function updateAdaptiveScale() {
         },
         '.level-display-bottom': {
             position: 'fixed',
-            bottom: 'var(--level-bottom-offset)',
+            bottom: 'calc(var(--level-bottom-offset) + var(--level-gap))',
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'auto',
@@ -245,16 +240,7 @@ function updateAdaptiveScale() {
             padding: `${12 * scaleFactor}px ${20 * scaleFactor}px`,
             zIndex: '1000'
         },
-        // Удалено - изображение будет управляться только через CSS контейнера
-        '.human-avatar-center': {
-            top: 'var(--hero-top-offset)',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 'min(calc(100% - (var(--home-horizontal-padding) * 2)), var(--content-max-width))',
-            bottom: 'var(--avatar-bottom-limit)',
-            padding: 'var(--top-extra-gap)',
-            borderRadius: '12px'
-        },
+        // Управляется только через CSS контейнера - не устанавливаем инлайновые стили
         '.navbar': {
             position: 'fixed',
             bottom: 'var(--nav-bottom-gap)',
@@ -311,9 +297,7 @@ function updateAdaptiveScale() {
             textTransform: 'uppercase',
             transition: 'all 0.3s ease'
         },
-        '.avatar-image': {
-            transform: 'scale(1.024)' // Используем наше значение из CSS
-        }
+        // Управляется через CSS переменную --hero-scale - не устанавливаем инлайновые стили
     };
     
     // Применяем стили к элементам
@@ -1516,11 +1500,57 @@ function initializeSupabase() {
     }
 }
 
+// Определение режима отображения Telegram WebApp
+function detectTelegramDisplayMode() {
+    if (!tg) {
+        document.documentElement.classList.remove('tg-compact-mode');
+        document.documentElement.classList.add('tg-fullscreen-mode');
+        return;
+    }
+    
+    // isExpanded - true когда открыто в полноэкранном режиме
+    // viewportHeight vs viewportStableHeight - разница показывает, есть ли шапка
+    const isExpanded = tg.isExpanded || false;
+    const viewportHeight = tg.viewportHeight || window.innerHeight;
+    const viewportStableHeight = tg.viewportStableHeight || window.innerHeight;
+    const hasHeader = viewportHeight < viewportStableHeight || !isExpanded;
+    
+    const root = document.documentElement;
+    
+    if (hasHeader || !isExpanded) {
+        // Компактный режим (с шапкой Telegram)
+        root.classList.remove('tg-fullscreen-mode');
+        root.classList.add('tg-compact-mode');
+        root.style.setProperty('--tg-header-height', `${viewportStableHeight - viewportHeight}px`);
+        Logger.log('[TG] Compact mode detected - header height:', viewportStableHeight - viewportHeight);
+    } else {
+        // Полноэкранный режим
+        root.classList.remove('tg-compact-mode');
+        root.classList.add('tg-fullscreen-mode');
+        root.style.setProperty('--tg-header-height', '0px');
+        Logger.log('[TG] Fullscreen mode detected');
+    }
+    
+    // Обновляем переменные для адаптации
+    root.style.setProperty('--tg-viewport-height', `${viewportHeight}px`);
+    root.style.setProperty('--tg-viewport-stable-height', `${viewportStableHeight}px`);
+}
+
 // Initialize Telegram WebApp
 function initializeTelegram() {
     if (tg) {
     tg.ready();
     tg.expand();
+    
+        // Определяем режим отображения
+        detectTelegramDisplayMode();
+        
+        // Подписываемся на изменения viewport
+        tg.onEvent('viewportChanged', () => {
+            detectTelegramDisplayMode();
+            // Пересчитываем адаптивные стили после изменения режима
+            setTimeout(updateAdaptiveScale, 100);
+        });
     
         // Diagnostics and initData
         const initDataRaw = window.Telegram?.WebApp?.initData || '';
@@ -1553,6 +1583,7 @@ function initializeTelegram() {
         
     } else {
         // Local dev fallback
+        detectTelegramDisplayMode(); // Все равно определяем режим (для полноэкранного в браузере)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('dev') === '1') {
             console.log('Local dev mode - showing developer button');
@@ -1562,6 +1593,13 @@ function initializeTelegram() {
             showBrowserDevMode();
         }
     }
+    
+    // Повторная проверка режима после небольшой задержки (на случай, если Telegram API еще не готов)
+    setTimeout(() => {
+        if (tg) {
+            detectTelegramDisplayMode();
+        }
+    }, 200);
 }
 
 // Show browser dev mode button
