@@ -129,6 +129,10 @@ function updateAdaptiveScale() {
     root.style.setProperty('--scale-factor', scaleFactor);
     
     // Применяем масштабирование к основным элементам главного экрана
+    const scaledPadding = (10 * scaleFactor).toFixed(2);
+    const scaledHorizontalPadding = (15 * scaleFactor).toFixed(2);
+    const scaledProgressTop = (10 * scaleFactor).toFixed(2);
+    
     const elements = {
         '.top-header-container': {
             position: 'fixed',
@@ -138,7 +142,8 @@ function updateAdaptiveScale() {
             height: `calc(15.444vh + 13.2px)`, // Используем наше значение из CSS
             zIndex: '1000',
             pointerEvents: 'none',
-            padding: `${10 * scaleFactor}px ${15 * scaleFactor}px`,
+            padding: `${scaledPadding}px ${scaledHorizontalPadding}px`,
+            paddingTop: `calc(${scaledPadding}px + var(--top-safe-offset, 12px))`,
             boxSizing: 'border-box'
         },
         '.welcome-title': {
@@ -193,7 +198,7 @@ function updateAdaptiveScale() {
         },
         '.progress-tab': {
             position: 'absolute',
-            top: `${10 * scaleFactor}px`,
+            top: `calc(var(--top-safe-offset, 12px) + ${scaledProgressTop}px)`,
             right: `${10 * scaleFactor}px`
         },
         '.leaderboard-tab': {
