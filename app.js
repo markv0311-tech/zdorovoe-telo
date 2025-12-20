@@ -380,8 +380,9 @@ function safeGetElement(id, context = '') {
 let isDeveloperMode = false;
 let isEditor = false;
 
-// Supabase client
-let supabase = null;
+// Supabase client - используем глобальную переменную, созданную UMD скриптом
+// Не объявляем let supabase, чтобы избежать конфликта с глобальной переменной от Supabase UMD
+let supabaseClient = null;
 
 // Переопределяем console.* безопасно, используя оригинальные методы,
 // чтобы избежать рекурсии между Logger и перехватами console
@@ -505,7 +506,7 @@ async function adminCall(path, method, payload) {
 // Direct Supabase calls for dev mode
 async function adminCallDirect(path, method, payload) {
     if (method === 'POST' && path === '/programs') {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('programs')
             .insert([payload])
             .select()
@@ -516,7 +517,7 @@ async function adminCallDirect(path, method, payload) {
     
     if (method === 'PUT' && path.startsWith('/programs/')) {
         const programId = path.split('/')[2];
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('programs')
             .update(payload)
             .eq('id', programId)
@@ -528,7 +529,7 @@ async function adminCallDirect(path, method, payload) {
     
     if (method === 'DELETE' && path.startsWith('/programs/')) {
         const programId = path.split('/')[2];
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('programs')
             .delete()
             .eq('id', programId);
@@ -794,7 +795,7 @@ async function handleEditProgram(programId) {
     try {
         console.log('Fetching program data from Supabase...');
         // Get current program data
-        const { data: program, error } = await supabase
+        const { data: program, error } = await supabaseClient
             .from('programs')
             .select('*')
             .eq('id', programId)
@@ -871,7 +872,7 @@ async function handleToggleProgram(programId) {
     
     try {
         // Get current program
-        const { data: program, error: fetchError } = await supabase
+        const { data: program, error: fetchError } = await supabaseClient
             .from('programs')
             .select('id, title, is_published')
             .eq('id', programId)
@@ -999,7 +1000,7 @@ async function handleProgramDays(programId) {
     
     try {
         // Get program info
-        const { data: program, error: programError } = await supabase
+        const { data: program, error: programError } = await supabaseClient
             .from('programs')
             .select('*')
             .eq('id', programId)
@@ -1008,7 +1009,7 @@ async function handleProgramDays(programId) {
         if (programError) throw programError;
         
         // Get program days
-        const { data: days, error: daysError } = await supabase
+        const { data: days, error: daysError } = await supabaseClient
             .from('program_days')
             .select('*')
             .eq('program_id', programId)
@@ -1084,7 +1085,7 @@ async function handleAddDay(programId) {
     
     try {
         // Get next day_index
-        const { data: maxDay } = await supabase
+        const { data: maxDay } = await supabaseClient
             .from('program_days')
             .select('day_index')
             .eq('program_id', programId)
@@ -1094,7 +1095,7 @@ async function handleAddDay(programId) {
         
         const nextDayIndex = (maxDay?.day_index || 0) + 1;
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('program_days')
             .insert([{
                 program_id: programId,
@@ -1122,7 +1123,7 @@ async function handleEditDay(dayId) {
     
     try {
         // Get day data
-        const { data: day, error } = await supabase
+        const { data: day, error } = await supabaseClient
             .from('program_days')
             .select('*')
             .eq('id', dayId)
@@ -1183,13 +1184,13 @@ async function handleDeleteDay(dayId) {
     
     try {
         // Get program_id before deleting
-        const { data: day } = await supabase
+        const { data: day } = await supabaseClient
             .from('program_days')
             .select('program_id')
             .eq('id', dayId)
             .single();
         
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('program_days')
             .delete()
             .eq('id', dayId);
@@ -1218,7 +1219,7 @@ async function saveDayEditViaAdmin(dayId) {
         
         showToast('Сохраняем день...', 'info');
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('program_days')
             .update({
                 day_index: dayIndex
@@ -1232,7 +1233,7 @@ async function saveDayEditViaAdmin(dayId) {
         showToast('День обновлен', 'success');
         
         // Get the program_id to refresh the days list
-        const { data: day } = await supabase
+        const { data: day } = await supabaseClient
             .from('program_days')
             .select('program_id')
             .eq('id', dayId)
@@ -1261,7 +1262,7 @@ async function handleDayExercises(dayId) {
     
     try {
         // Get day info
-        const { data: day, error: dayError } = await supabase
+        const { data: day, error: dayError } = await supabaseClient
             .from('program_days')
             .select('*, programs(title)')
             .eq('id', dayId)
@@ -1270,7 +1271,7 @@ async function handleDayExercises(dayId) {
         if (dayError) throw dayError;
         
         // Get exercises for this day
-        const { data: exercises, error: exercisesError } = await supabase
+        const { data: exercises, error: exercisesError } = await supabaseClient
             .from('exercises')
             .select('*')
             .eq('program_day_id', dayId)
@@ -1490,7 +1491,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeSupabase() {
     try {
         if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
-            supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            // Также устанавливаем в глобальную переменную для обратной совместимости
+            window.supabaseClient = supabaseClient;
             console.log('Supabase client initialized');
         } else {
             console.warn('Supabase configuration not found, using fallback data');
@@ -2253,7 +2256,7 @@ async function loadUserProgress() {
         }
 
         console.log('Loading user progress for user ID:', user.id);
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_user_progress', { p_tg_user_id: user.id });
 
         console.log('Supabase response - data:', data);
@@ -2366,7 +2369,7 @@ async function markDayCompleted(programId, dayIndex) {
             button.style.opacity = '0.6';
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('mark_day_completed', {
                 p_tg_user_id: user.id,
                 p_program_id: programId,
@@ -3010,7 +3013,7 @@ async function loadPrograms() {
     
     // Load from Supabase if no cache
     console.log('[Load] Loading from Supabase...');
-    if (supabase) {
+    if (supabaseClient) {
         try {
             await loadProgramsFromSupabase();
         } catch (error) {
@@ -3028,12 +3031,12 @@ async function loadPrograms() {
 
 // Load programs from Supabase
 async function loadProgramsFromSupabase() {
-    if (!supabase) return;
+    if (!supabaseClient) return;
     
     console.log('Loading programs from Supabase...');
     
     // Load published programs only (lazy loading - no days/exercises yet)
-    const { data: programsData, error: programsError } = await supabase
+    const { data: programsData, error: programsError } = await supabaseClient
         .from('programs')
         .select('*')
         .eq('is_published', true)
@@ -3061,11 +3064,11 @@ async function loadProgramDays(programId) {
     }
     
     // Load from Supabase
-    if (!supabase) return [];
+    if (!supabaseClient) return [];
     
     try {
         console.log(`Loading days for program ${programId}...`);
-        const { data: daysData, error: daysError } = await supabase
+        const { data: daysData, error: daysError } = await supabaseClient
             .from('program_days')
             .select('*')
             .eq('program_id', programId)
@@ -3097,11 +3100,11 @@ async function loadDayExercises(dayId) {
     }
     
     // Load from Supabase
-    if (!supabase) return [];
+    if (!supabaseClient) return [];
     
     try {
         console.log(`Loading exercises for day ${dayId}...`);
-        const { data: exercisesData, error: exercisesError } = await supabase
+        const { data: exercisesData, error: exercisesError } = await supabaseClient
             .from('exercises')
             .select('*')
             .eq('program_day_id', dayId)
@@ -3247,7 +3250,7 @@ async function openDaySelection(programId) {
     try {
         let program;
         
-        if (supabase) {
+        if (supabaseClient) {
             // Convert programId to number for comparison
             const programIdNum = parseInt(programId);
             console.log('Looking for program ID:', programIdNum, 'in programs:', programs.map(p => p.id));
@@ -3338,7 +3341,7 @@ async function openExerciseModule(programId, dayIndex = 1) {
     try {
         let program, day, exercises;
         
-        if (supabase) {
+        if (supabaseClient) {
             // Convert programId to number for comparison
             const programIdNum = parseInt(programId);
             
@@ -3843,7 +3846,7 @@ async function loadDeveloperPrograms() {
     
     try {
         // Load ALL programs (not just published) for developer view
-        const { data: programsData, error: programsError } = await supabase
+        const { data: programsData, error: programsError } = await supabaseClient
             .from('programs')
             .select('*')
             .order('id');
@@ -3903,7 +3906,7 @@ async function publishToSupabase() {
             statusDiv.innerHTML = `<p>Публикуем: ${program.title}...</p>`;
             
             // Upsert program
-            const { data: programData, error: programError } = await supabase
+            const { data: programData, error: programError } = await supabaseClient
                 .from('programs')
                 .upsert({
                     slug: program.slug,
@@ -3924,7 +3927,7 @@ async function publishToSupabase() {
             
             // Upsert days
             for (const day of program.days) {
-                const { data: dayData, error: dayError } = await supabase
+                const { data: dayData, error: dayError } = await supabaseClient
                     .from('program_days')
                     .upsert({
                         program_id: programData.id,
@@ -3939,7 +3942,7 @@ async function publishToSupabase() {
                 
                 // Upsert exercises
                 for (const exercise of day.exercises) {
-                    const { error: exerciseError } = await supabase
+                    const { error: exerciseError } = await supabaseClient
                         .from('exercises')
                         .upsert({
                             program_day_id: dayData.id,
@@ -4027,7 +4030,7 @@ async function editProgram(programId) {
     
     try {
         // Get program data
-        const { data: program, error } = await supabase
+        const { data: program, error } = await supabaseClient
             .from('programs')
             .select('*')
             .eq('id', programId)
@@ -4094,7 +4097,7 @@ async function saveProgramEdit(programId) {
             return;
         }
         
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('programs')
             .update({
                 title: title.trim(),
@@ -4131,7 +4134,7 @@ async function deleteProgram(programId) {
     
     try {
         // Check if user is authenticated
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
         console.log('Current user:', user);
         
         if (authError) {
@@ -4139,7 +4142,7 @@ async function deleteProgram(programId) {
         }
         
         // First check if program exists
-        const { data: program, error: fetchError } = await supabase
+        const { data: program, error: fetchError } = await supabaseClient
             .from('programs')
             .select('id, title')
             .eq('id', programId)
@@ -4153,7 +4156,7 @@ async function deleteProgram(programId) {
         console.log('Deleting program:', program);
         
         // Delete program (cascade will handle days and exercises)
-        const { data: deleteData, error: deleteError } = await supabase
+        const { data: deleteData, error: deleteError } = await supabaseClient
             .from('programs')
             .delete()
             .eq('id', programId)
@@ -4183,7 +4186,7 @@ async function toggleProgramPublished(programId) {
     console.log('toggleProgramPublished called with ID:', programId);
     try {
         // Get current program
-        const { data: program, error: fetchError } = await supabase
+        const { data: program, error: fetchError } = await supabaseClient
             .from('programs')
             .select('id, title, is_published')
             .eq('id', programId)
@@ -4197,7 +4200,7 @@ async function toggleProgramPublished(programId) {
         console.log('Toggling program:', program);
         
         // Toggle published status
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
             .from('programs')
             .update({ is_published: !program.is_published })
             .eq('id', programId);
@@ -4296,7 +4299,7 @@ async function saveNewProgram() {
         
         console.log('Creating new program:', { title, slug, isPublished });
         
-        const { data: newProgram, error } = await supabase
+        const { data: newProgram, error } = await supabaseClient
             .from('programs')
             .insert({
                 title: title.trim(),
@@ -4363,7 +4366,7 @@ async function handleAddExercise(dayId) {
     
     try {
         // Get next order_index
-        const { data: maxExercise } = await supabase
+        const { data: maxExercise } = await supabaseClient
             .from('exercises')
             .select('order_index')
             .eq('program_day_id', dayId)
@@ -4373,7 +4376,7 @@ async function handleAddExercise(dayId) {
         
         const nextOrderIndex = (maxExercise?.order_index || 0) + 1;
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('exercises')
             .insert([{
                 program_day_id: dayId,
@@ -4404,7 +4407,7 @@ async function handleEditExercise(exerciseId) {
     
     try {
         // Get exercise data
-        const { data: exercise, error } = await supabase
+        const { data: exercise, error } = await supabaseClient
             .from('exercises')
             .select('*')
             .eq('id', exerciseId)
@@ -4480,7 +4483,7 @@ async function saveExerciseEditViaAdmin(exerciseId) {
         
         showToast('Сохраняем упражнение...', 'info');
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('exercises')
             .update({
                 title: title.trim(),
@@ -4497,7 +4500,7 @@ async function saveExerciseEditViaAdmin(exerciseId) {
         showToast('Упражнение обновлено', 'success');
         
         // Get the day_id to refresh the exercises list
-        const { data: exercise } = await supabase
+        const { data: exercise } = await supabaseClient
             .from('exercises')
             .select('program_day_id')
             .eq('id', exerciseId)
@@ -4531,13 +4534,13 @@ async function handleDeleteExercise(exerciseId) {
     
     try {
         // Get day_id before deleting
-        const { data: exercise } = await supabase
+        const { data: exercise } = await supabaseClient
             .from('exercises')
             .select('program_day_id')
             .eq('id', exerciseId)
             .single();
         
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('exercises')
             .delete()
             .eq('id', exerciseId);
@@ -4567,7 +4570,7 @@ async function loadUserProfile() {
             return;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_user_profile', { p_tg_user_id: user.id });
 
         if (error) {
@@ -4668,7 +4671,7 @@ async function saveProfile() {
             saveButton.textContent = 'Сохранение...';
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('save_user_profile', {
                 p_tg_user_id: user.id,
                 p_username: user.username || '',
