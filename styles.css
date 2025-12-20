@@ -2513,6 +2513,7 @@ body {
 .profile-container {
     max-width: 500px;
     margin: 0 auto;
+    padding-bottom: calc(var(--level-bottom-offset) + var(--level-gap) + 60px);
 }
 
 .profile-form {
