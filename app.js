@@ -1484,6 +1484,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-generate video posters for HTML5 exercise videos
     setupVideoPosterGenerator();
     
+    // Setup image error handling for external resources
+    setupImageErrorHandling();
+    
     console.log('App initialization complete');
 });
 
@@ -1935,6 +1938,65 @@ function setupVideoPosterGenerator() {
     }
 }
 
+// Setup image error handling for external resources
+function setupImageErrorHandling() {
+    try {
+        // Placeholder image for failed loads (you can replace with your own)
+        const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2U5ZWNlZiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7QndC10YIg0L7RgtC60LDQtyDQv9GA0L7QsdC10LvQtdC90LjQtTwvdGV4dD48L3N2Zz4=';
+        
+        const handleImageError = function(event) {
+            const img = event.target;
+            // Prevent infinite loop if placeholder also fails
+            if (img.dataset.errorHandled === 'true') {
+                return;
+            }
+            
+            // Only handle errors for external resources (getcourse.ru)
+            if (img.src && (img.src.includes('getcourse.ru') || img.src.includes('gcfs04.getcourse.ru'))) {
+                img.dataset.errorHandled = 'true';
+                // Set placeholder or hide image
+                img.style.opacity = '0.5';
+                img.alt = img.alt || 'Изображение не загружено';
+                // Optionally set placeholder: img.src = placeholderImage;
+            }
+        };
+        
+        // Add error handlers to existing images
+        const existingImages = document.querySelectorAll('img');
+        existingImages.forEach(img => {
+            if (!img.onerror) {
+                img.addEventListener('error', handleImageError, { once: true });
+            }
+        });
+        
+        // Watch for new images added dynamically
+        const imageObserver = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                        if (node.tagName === 'IMG') {
+                            node.addEventListener('error', handleImageError, { once: true });
+                        }
+                        // Also check for images inside added nodes
+                        const images = node.querySelectorAll && node.querySelectorAll('img');
+                        if (images) {
+                            images.forEach(img => {
+                                if (!img.onerror) {
+                                    img.addEventListener('error', handleImageError, { once: true });
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        });
+        
+        imageObserver.observe(document.body, { childList: true, subtree: true });
+    } catch (err) {
+        console.warn('setupImageErrorHandling failed', err);
+    }
+}
+
 function initializeAutoVideoPosters(root) {
     try {
         const videos = collectPosterCandidates(root);
@@ -2103,26 +2165,79 @@ function setupOrientationLock() {
                    (!programModal || programModal.classList.contains('hidden'));
         };
         
+        // Track if orientation lock is currently being attempted
+        let orientationLockInProgress = false;
+        let lastOrientationAction = null;
+        let orientationDebounceTimer = null;
+        
+        // Debounced orientation handler
+        const debouncedOrientationHandler = () => {
+            if (orientationDebounceTimer) {
+                clearTimeout(orientationDebounceTimer);
+            }
+            orientationDebounceTimer = setTimeout(() => {
+                if (isMainScreen()) {
+                    lockOrientation();
+                } else {
+                    unlockOrientation();
+                }
+            }, 300); // 300ms debounce
+        };
+        
         // Lock orientation to portrait when on main screen
         const lockOrientation = async () => {
-            if (isMainScreen() && 'screen' in window && 'orientation' in screen) {
+            // Check if API is supported
+            if (!('screen' in window) || !('orientation' in screen) || !screen.orientation || !screen.orientation.lock) {
+                return; // Silently return if not supported
+            }
+            
+            // Prevent multiple simultaneous calls
+            if (orientationLockInProgress) {
+                return;
+            }
+            
+            if (isMainScreen()) {
+                orientationLockInProgress = true;
                 try {
                     await screen.orientation.lock('portrait');
                     console.log('Orientation locked to portrait on main screen');
+                    lastOrientationAction = 'lock';
                 } catch (err) {
-                    console.warn('Could not lock orientation:', err);
+                    // Only log if it's not a known expected error
+                    if (err.name !== 'NotSupportedError' && err.name !== 'AbortError') {
+                        console.warn('Could not lock orientation:', err);
+                    }
+                } finally {
+                    orientationLockInProgress = false;
                 }
             }
         };
         
         // Unlock orientation when leaving main screen
         const unlockOrientation = async () => {
-            if (!isMainScreen() && 'screen' in window && 'orientation' in screen) {
+            // Check if API is supported
+            if (!('screen' in window) || !('orientation' in screen) || !screen.orientation || !screen.orientation.unlock) {
+                return; // Silently return if not supported
+            }
+            
+            // Prevent multiple simultaneous calls
+            if (orientationLockInProgress) {
+                return;
+            }
+            
+            if (!isMainScreen() && lastOrientationAction === 'lock') {
+                orientationLockInProgress = true;
                 try {
                     await screen.orientation.unlock();
                     console.log('Orientation unlocked');
+                    lastOrientationAction = 'unlock';
                 } catch (err) {
-                    console.warn('Could not unlock orientation:', err);
+                    // Only log if it's not a known expected error
+                    if (err.name !== 'NotSupportedError' && err.name !== 'AbortError') {
+                        console.warn('Could not unlock orientation:', err);
+                    }
+                } finally {
+                    orientationLockInProgress = false;
                 }
             }
         };
@@ -2131,26 +2246,10 @@ function setupOrientationLock() {
         lockOrientation();
         
         // Listen for orientation changes
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                if (isMainScreen()) {
-                    lockOrientation();
-                } else {
-                    unlockOrientation();
-                }
-            }, 100);
-        });
+        window.addEventListener('orientationchange', debouncedOrientationHandler);
         
         // Listen for section changes
-        const sectionObserver = new MutationObserver(() => {
-            setTimeout(() => {
-                if (isMainScreen()) {
-                    lockOrientation();
-                } else {
-                    unlockOrientation();
-                }
-            }, 100);
-        });
+        const sectionObserver = new MutationObserver(debouncedOrientationHandler);
         
         // Observe changes to section classes
         const sections = document.querySelectorAll('.section');
@@ -2159,13 +2258,7 @@ function setupOrientationLock() {
         });
         
         // Listen for modal changes
-        const modalObserver = new MutationObserver(() => {
-            if (isMainScreen()) {
-                lockOrientation();
-            } else {
-                unlockOrientation();
-            }
-        });
+        const modalObserver = new MutationObserver(debouncedOrientationHandler);
         
         modalObserver.observe(document.body, {
             childList: true,
@@ -2808,6 +2901,16 @@ function setupEventListeners() {
             }
         });
     });
+
+    // Live preview avatar change when gender changes in Profile
+    const genderField = document.getElementById('user-gender');
+    if (genderField) {
+        genderField.addEventListener('change', () => {
+            userProfile = userProfile || {};
+            userProfile.gender = genderField.value || '';
+            try { updateProgressDisplay(); } catch (_) {}
+        });
+    }
 }
 
 // Navigation functions
@@ -4698,6 +4801,8 @@ async function saveProfile() {
             localStorage.setItem('userProfile', JSON.stringify(userProfile));
             
             console.log('Profile saved successfully:', userProfile);
+            // Refresh avatar (gender-based) right away
+            try { updateProgressDisplay(); } catch (_) {}
         } else {
             showNotification('Ошибка при сохранении профиля', 'error');
         }
@@ -4724,6 +4829,8 @@ function loadProfileFromCache() {
             userProfile = JSON.parse(cachedProfile);
             console.log('User profile loaded from cache:', userProfile);
             populateProfileForm();
+            // Update avatar immediately if progress is already loaded
+            try { updateProgressDisplay(); } catch (_) {}
         } catch (e) {
             console.warn('Failed to parse cached profile:', e);
             userProfile = null;
@@ -5363,17 +5470,24 @@ function updateProgressDisplay() {
     // Update large avatar image based on level
     const avatarImage = document.getElementById('avatar-image');
     if (avatarImage) {
-        // Удалены принудительные стили - это задача CSS
-        // You can change the image source based on the level
-        // For now, we'll keep the same image but you can add different images for different levels
-            const imageUrls = {
-                1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Новичок
-                2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Начинающий
-                3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Продвинутый
-                4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png', // Опытный
-                5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/130/h/83ad7f33a185d049619b8a1b01c4c02d.png'  // Эксперт
-            };
-        
+        const gender = (userProfile?.gender || '').toString().toLowerCase();
+        const imageUrlsMale = {
+            1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/206/h/2b2a03cab1d383ec241d4c5b429aa180.png', // Новичок
+            2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/128/h/694d2d85c9d8d11bc8a57e8409e99427.png', // Начинающий
+            3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/267/h/6737c592ee593fb44475d68dca6c6fbe.png', // Продвинутый
+            4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/389/h/facd546dad166ff2b5c34971e1bbef58.png', // Опытный
+            5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/263/h/4b85845c4e6cd6d3e9b6d3778cbb493c.png'  // Эксперт
+        };
+
+        const imageUrlsFemale = {
+            1: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/235/h/a6da6f6b1dfdbbb13257d610d7382764.png', // Уровень 1 (жен.)
+            2: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/250/h/7f44000bbcdab177e984cff768b9419a.png', // Уровень 2 (жен.)
+            3: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/492/h/71a3683daea9ee97bdcecb61dcef8d45.png', // Уровень 3 (жен.)
+            4: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/259/h/e0eb9787ccb370906a35f758afef52f5.png', // Уровень 4 (жен.)
+            5: 'https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/149/h/407a653e78a8ad63ba3892d8ad3b4553.png'  // Уровень 5 (жен.)
+        };
+
+        const imageUrls = gender === 'female' ? imageUrlsFemale : imageUrlsMale;
         const imageUrl = imageUrls[currentLevel.level] || imageUrls[1];
         if (avatarImage.src !== imageUrl) {
             // Add loading class for smooth transition
