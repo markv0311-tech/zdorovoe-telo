@@ -1486,6 +1486,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup image error handling for external resources
     setupImageErrorHandling();
+
+    // Initial access UI sync (in case profile/progress loaded from cache)
+    try { updateAccessUI(); } catch (_) {}
     
     console.log('App initialization complete');
 });
@@ -2952,6 +2955,9 @@ function navigateToSection(sectionName) {
                 populateProfileForm();
             }
         }
+
+        // Always refresh access UI when switching sections (paywall overlay)
+        try { updateAccessUI(); } catch (_) {}
     } else {
         console.error('Section not found:', sectionName);
     }
@@ -5567,8 +5573,10 @@ function updateAccessUI() {
     
     if (hasActiveAccess()) {
         overlay.classList.add('hidden');
+        overlay.style.display = 'none';
     } else {
         overlay.classList.remove('hidden');
+        overlay.style.display = 'flex';
     }
 }
 
