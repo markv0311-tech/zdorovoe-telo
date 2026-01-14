@@ -3770,6 +3770,9 @@ function saveProfile() {
             button.style.background = '';
         }, 2000);
     }
+
+    // Update access UI in case local-only profile is used
+    try { updateAccessUI(); } catch (_) {}
 }
 
 // Load user data
@@ -4683,6 +4686,13 @@ async function loadUserProfile() {
 
         if (data && Object.keys(data).length > 0) {
             userProfile = data;
+            // Ensure new access fields exist with safe defaults
+            if (typeof userProfile.has_access === 'undefined' || userProfile.has_access === null) {
+                userProfile.has_access = false;
+            }
+            if (typeof userProfile.subscription_valid_until === 'undefined') {
+                userProfile.subscription_valid_until = null;
+            }
             console.log('User profile loaded:', userProfile);
             
             // Populate form fields
@@ -4699,7 +4709,9 @@ async function loadUserProfile() {
                 last_name: user.last_name || '',
                 age: null,
                 gender: '',
-                problem: ''
+                problem: '',
+                has_access: false,
+                subscription_valid_until: null
             };
         }
         
@@ -4827,10 +4839,18 @@ function loadProfileFromCache() {
     if (cachedProfile) {
         try {
             userProfile = JSON.parse(cachedProfile);
+            // Backward compatibility: ensure new fields exist
+            if (typeof userProfile.has_access === 'undefined' || userProfile.has_access === null) {
+                userProfile.has_access = false;
+            }
+            if (typeof userProfile.subscription_valid_until === 'undefined') {
+                userProfile.subscription_valid_until = null;
+            }
             console.log('User profile loaded from cache:', userProfile);
             populateProfileForm();
-            // Update avatar immediately if progress is already loaded
+            // Update avatar and access UI if progress is already loaded
             try { updateProgressDisplay(); } catch (_) {}
+            try { updateAccessUI(); } catch (_) {}
         } catch (e) {
             console.warn('Failed to parse cached profile:', e);
             userProfile = null;
@@ -4850,6 +4870,7 @@ function loadProgressFromCache() {
             console.log('User progress loaded from cache:', userProgress);
             updateProgressUI();
             updateCalendarHighlighting();
+            try { updateAccessUI(); } catch (_) {}
         } catch (e) {
             console.warn('Failed to parse cached progress:', e);
             userProgress = null;
@@ -4887,6 +4908,7 @@ window.saveNewProgramViaAdmin = saveNewProgramViaAdmin;
 window.handleProgramDays = handleProgramDays;
 window.handleAddDay = handleAddDay;
 window.handleDayExercises = handleDayExercises;
+window.openAccessBot = openAccessBot;
 window.handleAddExercise = handleAddExercise;
 window.handleEditExercise = handleEditExercise;
 window.saveExerciseEditViaAdmin = saveExerciseEditViaAdmin;
@@ -5427,6 +5449,8 @@ function initializeHomepage() {
     updateProgressDisplay();
     generateCalendar();
     loadThemePreference();
+    // Ensure access UI is in sync when homepage initializes
+    try { updateAccessUI(); } catch (_) {}
 }
 
 // Update welcome message with user name
@@ -5520,6 +5544,44 @@ function updateProgressDisplay() {
     const levelText = document.getElementById('level-text');
     
     if (levelText) levelText.textContent = `Уровень ${currentLevel.level}. ${currentLevel.name}`;
+}
+
+// Determine if user currently has active access to exercise programs
+function hasActiveAccess() {
+    if (!userProfile) return false;
+    if (userProfile.has_access === true) return true;
+    
+    if (userProfile.subscription_valid_until) {
+        const expiry = new Date(userProfile.subscription_valid_until);
+        if (!Number.isNaN(expiry.getTime()) && expiry.getTime() > Date.now()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Update UI of access-dependent elements (e.g. exercises overlay)
+function updateAccessUI() {
+    const overlay = document.getElementById('exercises-access-overlay');
+    if (!overlay) return;
+    
+    if (hasActiveAccess()) {
+        overlay.classList.add('hidden');
+    } else {
+        overlay.classList.remove('hidden');
+    }
+}
+
+// Open Telegram bot (or payment link) to purchase access
+function openAccessBot() {
+    // TODO: замените на реальную ссылку на вашего бота
+    const botUrl = 'https://t.me/your_bot_username?start=pay';
+    
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openTelegramLink === 'function') {
+        window.Telegram.WebApp.openTelegramLink(botUrl);
+    } else {
+        window.open(botUrl, '_blank');
+    }
 }
 
 // Get current level based on completed days
