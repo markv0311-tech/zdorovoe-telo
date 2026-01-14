@@ -1626,7 +1626,7 @@ body {
     transform: translateX(-50%) !important;
     width: min(100vw, calc(var(--content-max-width) + 40px)) !important;
     max-width: 100% !important;
-    z-index: 1000 !important;
+    z-index: 5000 !important; /* выше любых оверлеев */
     padding: 0 20px !important;
     display: flex !important;
     justify-content: center !important;
