@@ -5583,7 +5583,7 @@ function updateAccessUI() {
 // Open Telegram bot (or payment link) to purchase access
 function openAccessBot() {
     // TODO: замените на реальную ссылку на вашего бота
-    const botUrl = 'https://t.me/podderzhka_ast';
+    const botUrl = 'https://t.me/zdorovoe_telo_appbot?start=pay';
     
     if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openTelegramLink === 'function') {
         window.Telegram.WebApp.openTelegramLink(botUrl);
