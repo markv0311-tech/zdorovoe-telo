@@ -289,35 +289,120 @@ video.exercise-video {
 
 /* УДАЛЕН - больше не нужен общий контейнер */
 
-/* Orientation lock for main screen */
+/* ============================================
+   LANDSCAPE ADAPTATION - COMPACT VERTICAL LAYOUT
+   ============================================
+   ВСЕ ИЗМЕНЕНИЯ ДЛЯ LANDSCAPE ЗДЕСЬ
+   Чтобы вернуть обратно - просто удали или закомментируй этот блок
+   ============================================ */
 @media screen and (orientation: landscape) {
+    /* Убираем поворот экрана */
     #home.active {
-        transform: rotate(90deg);
-        transform-origin: center center;
-        width: 100vh;
-        height: 100vw;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        margin-left: -50vh;
-        margin-top: -50vw;
-        overflow: hidden;
+        transform: none;
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        top: auto;
+        left: auto;
+        margin: 0;
+        overflow: visible;
     }
     
     #home.active::before {
-        content: "Поверните устройство в портретную ориентацию для лучшего просмотра";
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-90deg);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        font-size: 18px;
-        z-index: 9999;
-        white-space: nowrap;
+        display: none; /* Убираем сообщение о повороте */
+    }
+    
+    /* Компактный верхний контейнер */
+    .top-header-container {
+        padding: 10px var(--home-horizontal-padding);
+        min-height: auto;
+    }
+    
+    /* Уменьшаем приветствие - делаем еще меньше */
+    .welcome-title {
+        font-size: 20px; /* было 40px, уменьшили на 50% */
+        margin-bottom: 4px;
+        line-height: 1.2;
+    }
+    
+    .welcome-subtitle {
+        font-size: 12px; /* было 22px, уменьшили на ~45% */
+        margin-top: -2px;
+        line-height: 1.3;
+    }
+    
+    /* Компактные кнопки прогресса и темы */
+    .tab-button-vertical {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+    
+    .tab-icon-vertical {
+        font-size: 16px;
+    }
+    
+    .theme-toggle-top {
+        transform: scale(0.7);
+    }
+    
+    /* Увеличиваем аватар для landscape и четко ограничиваем его пространство */
+    .human-avatar-center {
+        padding: 10px var(--top-extra-gap);
+        top: calc(var(--hero-top-offset) + 10px);
+        /* Аватар заканчивается за 70px до уровня прогресса (чтобы не пересекаться) */
+        bottom: calc(var(--level-bottom-offset) + var(--level-gap) + 70px);
+        /* Ограничиваем максимальную высоту аватара */
+        max-height: calc(100vh - var(--hero-top-offset) - var(--level-bottom-offset) - var(--level-gap) - 90px);
+    }
+    
+    .avatar-image {
+        transform: scale(0.75); /* было 0.85, теперь 0.75 */
+    }
+    
+    /* Уровень прогресса - четко позиционируем между аватаром и меню */
+    .level-display-bottom {
+        padding: 6px 0;
+        /* Уровень находится на фиксированном расстоянии от меню (30px) */
+        bottom: calc(var(--level-bottom-offset) + var(--level-gap) + 30px);
+        /* z-index выше аватара, чтобы быть поверх него если что-то пойдет не так */
+        z-index: 1000;
+    }
+    
+    .level-info {
+        padding: 6px 14px;
+    }
+    
+    .level-text {
+        font-size: 14px; /* уменьшаем шрифт уровня */
+    }
+    
+    /* Уменьшаем отступы контейнера */
+    .home-container {
+        padding: 0 var(--home-horizontal-padding);
+    }
+    
+    /* Растягиваем меню и делаем его чуть уже */
+    .nav-container {
+        width: min(90vw, calc(var(--content-max-width) + 60px)) !important; /* Растягиваем на 90% ширины */
+        max-width: 600px !important; /* Но ограничиваем максимальной шириной */
+        padding: 0 15px !important; /* Уменьшаем боковые отступы */
+    }
+    
+    .navbar {
+        width: 100% !important;
+        padding: 8px 12px !important; /* Компактнее по вертикали */
+    }
+    
+    .nav-item {
+        padding: 6px 8px !important; /* Компактнее элементы меню */
+    }
+    
+    .nav-text {
+        font-size: 10px !important; /* Уменьшаем текст меню */
+    }
+    
+    .nav-icon {
+        font-size: 18px !important; /* Немного уменьшаем иконки */
     }
 }
 
@@ -2435,8 +2520,10 @@ body {
     justify-content: center;
     background-color: rgba(0,0,0,0.5);
     backdrop-filter: blur(5px);
-    padding: max(40px, calc(var(--level-bottom-offset) + var(--level-gap))) 15px 15px;
+    padding: 20px;
     box-sizing: border-box;
+    /* Убеждаемся, что модальное окно всегда по центру */
+    overflow: auto;
 }
 
 /* Ensure navigation is always clickable */
@@ -2455,7 +2542,6 @@ body {
 .modal-content {
     background-color: white;
     margin: auto;
-    margin-top: calc(var(--hero-top-offset) - var(--top-header-offset));
     padding: 0;
     border-radius: 15px;
     width: 90%;
@@ -2463,20 +2549,22 @@ body {
     max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset) - var(--level-gap));
     overflow-y: auto;
     position: relative;
+    /* Центрирование по вертикали и горизонтали */
+    align-self: center;
+    justify-self: center;
 }
 
 #program-modal .modal-content {
-    transform: translateY(-12%);
+    /* Убираем transform для правильного центрирования */
 }
 
 #exercise-modal .modal-content {
-    transform: translateY(-10%);
+    /* Убираем transform для правильного центрирования */
 }
 
 .exercise-modal-content {
     max-width: 800px;
     max-height: calc(100vh - var(--safe-area-top) - var(--level-bottom-offset) - var(--level-gap) - 60px);
-    margin-top: calc(var(--hero-top-offset) - var(--top-header-offset) + 20px);
 }
 
 .close {
@@ -3145,6 +3233,47 @@ body {
         text-align: center;
         z-index: 9999;
         pointer-events: none;
+    }
+    
+    /* Исправление модальных окон для landscape */
+    .modal {
+        padding: 15px;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
+    
+    .modal-content {
+        margin: 0 !important;
+        width: 85%;
+        max-width: 700px;
+        max-height: 90vh;
+        transform: none !important;
+        align-self: center;
+    }
+    
+    #program-modal .modal-content,
+    #exercise-modal .modal-content {
+        transform: none !important;
+        margin: 0 !important;
+    }
+    
+    .exercise-modal-content {
+        max-width: 900px;
+        max-height: 90vh;
+        margin: 0 !important;
+    }
+    
+    /* Для маленьких экранов в landscape */
+    @media (max-height: 500px) {
+        .modal-content {
+            max-height: 85vh;
+            width: 90%;
+        }
+        
+        .exercise-modal-content {
+            max-height: 85vh;
+        }
     }
 }
 
