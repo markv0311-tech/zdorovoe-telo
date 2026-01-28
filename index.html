@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Здоровое тело</title>
+    
+    <!-- Preload критических ресурсов для ускорения загрузки -->
+    <link rel="preload" href="styles.css?v=20250128" as="style">
+    <link rel="preload" href="app.js?v=20250129" as="script">
+    <link rel="preconnect" href="https://rrwlgfpshzpasfhfpbik.supabase.co" crossorigin>
+    <link rel="dns-prefetch" href="https://fs.getcourse.ru">
+    <link rel="dns-prefetch" href="https://telegram.org">
+    
+    <!-- Content Security Policy для защиты от XSS -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' https://telegram.org https://unpkg.com; 
+                   style-src 'self' 'unsafe-inline'; 
+                   img-src 'self' https://fs.getcourse.ru https://*.getcourse.ru data: https:; 
+                   font-src 'self' data:; 
+                   connect-src 'self' https://*.supabase.co https://*.supabase.in; 
+                   frame-src 'self' https://*.getcourse.ru https://kinescope.io https://*.kinescope.io;">
     <!-- Версионирование для кеширования: меняй версию при обновлении файлов -->
     <link rel="stylesheet" href="styles.css?v=20250128">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -118,7 +135,7 @@
                 <!-- Human Avatar Center -->
                 <div id="hero" class="human-avatar-center">
                     <div class="avatar-large" id="human-avatar-large">
-                        <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/206/h/2b2a03cab1d383ec241d4c5b429aa180.png" alt="Human Avatar" class="avatar-image" id="avatar-image">
+                        <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/206/h/2b2a03cab1d383ec241d4c5b429aa180.png" alt="Human Avatar" class="avatar-image" id="avatar-image" loading="eager" decoding="async">
                     </div>
                 </div>
                 
@@ -142,7 +159,7 @@
                 <div class="diagnostic-modules">
                     <div class="diagnostic-card" data-module="neck">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/d43da3dc0773925a7694d715d5a6be64.png" alt="Шея">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/d43da3dc0773925a7694d715d5a6be64.png" alt="Шея" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Шея</h3>
@@ -155,7 +172,7 @@
                     
                     <div class="diagnostic-card" data-module="shoulder">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/122/h/88d3c43acbf8f6163b65999a33f67049.png" alt="Плечо">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/122/h/88d3c43acbf8f6163b65999a33f67049.png" alt="Плечо" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Плечо</h3>
@@ -168,7 +185,7 @@
                     
                     <div class="diagnostic-card" data-module="lower-back">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/104/h/f69a46b9571ebfb0618402272cae8682.png" alt="Поясница">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/104/h/f69a46b9571ebfb0618402272cae8682.png" alt="Поясница" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Поясница</h3>
@@ -181,7 +198,7 @@
                     
                     <div class="diagnostic-card" data-module="hip">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/76/h/525464899868ed16dd4e670e47a6da08.png" alt="Таз">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/76/h/525464899868ed16dd4e670e47a6da08.png" alt="Таз" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Таз</h3>
@@ -194,7 +211,7 @@
                     
                     <div class="diagnostic-card" data-module="knee">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/64/h/b91a73a368295f98cc55480ba7815b64.png" alt="Колено">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/64/h/b91a73a368295f98cc55480ba7815b64.png" alt="Колено" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Колено</h3>
@@ -207,7 +224,7 @@
                     
                     <div class="diagnostic-card" data-module="foot">
                         <div class="diagnostic-icon">
-                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/d43da3dc0773925a7694d715d5a6be64.png" alt="Стопа">
+                            <img src="https://fs.getcourse.ru/fileservice/file/download/a/612441/sc/152/h/d43da3dc0773925a7694d715d5a6be64.png" alt="Стопа" loading="lazy" decoding="async">
                         </div>
                         <div class="diagnostic-content">
                             <h3 class="diagnostic-title">Стопа</h3>

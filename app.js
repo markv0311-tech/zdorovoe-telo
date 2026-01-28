@@ -88,6 +88,206 @@ const SafeStorage = {
     }
 };
 
+// ============================================
+// БЕЗОПАСНАЯ РАБОТА С DOM - ЗАЩИТА ОТ XSS
+// ============================================
+
+/**
+ * Безопасная утилита для работы с DOM элементами
+ * Заменяет опасный innerHTML на безопасные методы
+ */
+const SafeDOM = {
+    /**
+     * Безопасно устанавливает текстовое содержимое элемента
+     * @param {HTMLElement|string} element - Элемент или его ID
+     * @param {string} text - Текст для вставки (автоматически экранируется)
+     */
+    setText: function(element, text) {
+        const el = typeof element === 'string' ? document.getElementById(element) : element;
+        if (!el) {
+            Logger.warn('[SafeDOM] Element not found:', element);
+            return false;
+        }
+        el.textContent = String(text || '');
+        return true;
+    },
+
+    /**
+     * Безопасно создает элемент из HTML строки
+     * Использует DOMParser для безопасного парсинга
+     * @param {string} html - HTML строка
+     * @param {string} tag - Тег контейнера (по умолчанию 'div')
+     * @returns {HTMLElement|null} - Созданный элемент или null
+     */
+    createFromHTML: function(html, tag = 'div') {
+        if (!html || typeof html !== 'string') {
+            Logger.warn('[SafeDOM] Invalid HTML string');
+            return null;
+        }
+        
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<${tag}>${html}</${tag}>`, 'text/html');
+            const element = doc.body.firstElementChild;
+            
+            // Проверка на ошибки парсинга (XSS попытки)
+            if (doc.body.querySelector('parsererror')) {
+                Logger.error('[SafeDOM] HTML parsing error - possible XSS attempt');
+                return null;
+            }
+            
+            return element;
+        } catch (error) {
+            Logger.error('[SafeDOM] Error creating element:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Безопасно вставляет HTML в элемент
+     * Использует DOMParser и очищает от потенциально опасных элементов
+     * @param {HTMLElement|string} element - Элемент или его ID
+     * @param {string} html - HTML строка
+     * @param {boolean} append - Добавить к существующему содержимому (false = заменить)
+     */
+    setHTML: function(element, html, append = false) {
+        const el = typeof element === 'string' ? document.getElementById(element) : element;
+        if (!el) {
+            Logger.warn('[SafeDOM] Element not found:', element);
+            return false;
+        }
+        
+        if (!html || typeof html !== 'string') {
+            Logger.warn('[SafeDOM] Invalid HTML string');
+            return false;
+        }
+        
+        try {
+            // Используем DOMParser для безопасного парсинга
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Проверка на ошибки парсинга
+            if (doc.body.querySelector('parsererror')) {
+                Logger.error('[SafeDOM] HTML parsing error - possible XSS attempt');
+                // Fallback: используем textContent для безопасности
+                if (!append) el.textContent = '';
+                el.textContent += html.replace(/<[^>]*>/g, ''); // Удаляем все теги
+                return false;
+            }
+            
+            // Очищаем от опасных элементов и атрибутов
+            const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input'];
+            const dangerousAttrs = ['onclick', 'onerror', 'onload', 'onmouseover', 'href', 'src'];
+            
+            doc.body.querySelectorAll('*').forEach(node => {
+                // Удаляем опасные теги
+                if (dangerousTags.includes(node.tagName.toLowerCase())) {
+                    node.remove();
+                    return;
+                }
+                
+                // Удаляем опасные атрибуты
+                dangerousAttrs.forEach(attr => {
+                    if (node.hasAttribute(attr)) {
+                        const value = node.getAttribute(attr);
+                        // Разрешаем только безопасные значения (без javascript:)
+                        if (value && value.toLowerCase().startsWith('javascript:')) {
+                            node.removeAttribute(attr);
+                        }
+                    }
+                });
+            });
+            
+            // Вставляем очищенный контент
+            if (!append) el.innerHTML = '';
+            doc.body.childNodes.forEach(node => {
+                el.appendChild(node.cloneNode(true));
+            });
+            
+            return true;
+        } catch (error) {
+            Logger.error('[SafeDOM] Error setting HTML:', error);
+            // Fallback: используем textContent
+            if (!append) el.textContent = '';
+            el.textContent += html.replace(/<[^>]*>/g, '');
+            return false;
+        }
+    },
+
+    /**
+     * Безопасно создает и вставляет элемент
+     * @param {HTMLElement|string} parent - Родительский элемент или его ID
+     * @param {string} tag - Тег создаваемого элемента
+     * @param {Object} attributes - Атрибуты элемента
+     * @param {string} textContent - Текстовое содержимое
+     * @returns {HTMLElement|null} - Созданный элемент
+     */
+    createElement: function(parent, tag, attributes = {}, textContent = '') {
+        const parentEl = typeof parent === 'string' ? document.getElementById(parent) : parent;
+        if (!parentEl) {
+            Logger.warn('[SafeDOM] Parent element not found:', parent);
+            return null;
+        }
+        
+        try {
+            const element = document.createElement(tag);
+            
+            // Безопасно устанавливаем атрибуты
+            Object.entries(attributes).forEach(([key, value]) => {
+                if (key.startsWith('on')) {
+                    Logger.warn(`[SafeDOM] Blocked dangerous attribute: ${key}`);
+                    return; // Блокируем event handlers
+                }
+                if (key === 'href' || key === 'src') {
+                    // Проверяем на javascript: протокол
+                    if (String(value).toLowerCase().startsWith('javascript:')) {
+                        Logger.warn(`[SafeDOM] Blocked dangerous ${key} value`);
+                        return;
+                    }
+                }
+                element.setAttribute(key, String(value));
+            });
+            
+            if (textContent) {
+                element.textContent = String(textContent);
+            }
+            
+            parentEl.appendChild(element);
+            return element;
+        } catch (error) {
+            Logger.error('[SafeDOM] Error creating element:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Экранирует HTML специальные символы
+     * @param {string} text - Текст для экранирования
+     * @returns {string} - Экранированный текст
+     */
+    escapeHTML: function(text) {
+        const div = document.createElement('div');
+        div.textContent = String(text || '');
+        return div.innerHTML;
+    },
+
+    /**
+     * Безопасно очищает элемент
+     * @param {HTMLElement|string} element - Элемент или его ID
+     */
+    clear: function(element) {
+        const el = typeof element === 'string' ? document.getElementById(element) : element;
+        if (el) {
+            el.textContent = '';
+            // Также очищаем innerHTML для полной очистки
+            while (el.firstChild) {
+                el.removeChild(el.firstChild);
+            }
+        }
+    }
+};
+
 // Динамическое масштабирование для главного экрана
 function updateAdaptiveScale() {
     const root = document.documentElement;
@@ -453,6 +653,294 @@ function clearCache() {
     console.log('[Cache] Cleared all cache');
 }
 
+// ============================================
+// БЕЗОПАСНЫЕ ФУНКЦИИ ДЛЯ СОЗДАНИЯ ФОРМ
+// ============================================
+
+/**
+ * Безопасно экранирует значение для использования в HTML
+ */
+function escapeHTML(str) {
+    if (str == null) return '';
+    return SafeDOM.escapeHTML(String(str));
+}
+
+// ============================================
+// ВАЛИДАЦИЯ ВХОДНЫХ ДАННЫХ
+// ============================================
+
+/**
+ * Утилита для валидации входных данных
+ */
+const Validator = {
+    /**
+     * Валидация имени пользователя
+     */
+    validateName: function(name) {
+        if (!name || typeof name !== 'string') {
+            return { valid: false, error: 'Имя обязательно для заполнения' };
+        }
+        const trimmed = name.trim();
+        if (trimmed.length < 2) {
+            return { valid: false, error: 'Имя должно содержать минимум 2 символа' };
+        }
+        if (trimmed.length > 100) {
+            return { valid: false, error: 'Имя слишком длинное (максимум 100 символов)' };
+        }
+        // Проверка на опасные символы
+        if (/[<>\"'&]/.test(trimmed)) {
+            return { valid: false, error: 'Имя содержит недопустимые символы' };
+        }
+        return { valid: true, value: trimmed };
+    },
+
+    /**
+     * Валидация возраста
+     */
+    validateAge: function(age) {
+        if (age === null || age === undefined || age === '') {
+            return { valid: false, error: 'Возраст обязателен для заполнения' };
+        }
+        const ageNum = typeof age === 'string' ? parseInt(age, 10) : age;
+        if (isNaN(ageNum)) {
+            return { valid: false, error: 'Возраст должен быть числом' };
+        }
+        if (ageNum < 1 || ageNum > 120) {
+            return { valid: false, error: 'Возраст должен быть от 1 до 120 лет' };
+        }
+        return { valid: true, value: ageNum };
+    },
+
+    /**
+     * Валидация пола
+     */
+    validateGender: function(gender) {
+        const validGenders = ['male', 'female', 'other'];
+        if (!gender || !validGenders.includes(gender)) {
+            return { valid: false, error: 'Пожалуйста, выберите пол' };
+        }
+        return { valid: true, value: gender };
+    },
+
+    /**
+     * Валидация URL
+     */
+    validateURL: function(url) {
+        if (!url || typeof url !== 'string') {
+            return { valid: false, error: 'URL обязателен для заполнения' };
+        }
+        const trimmed = url.trim();
+        if (trimmed.length === 0) {
+            return { valid: true, value: '' }; // Пустой URL допустим
+        }
+        try {
+            const urlObj = new URL(trimmed);
+            // Проверка на безопасные протоколы
+            if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                return { valid: false, error: 'URL должен использовать протокол HTTP или HTTPS' };
+            }
+            return { valid: true, value: trimmed };
+        } catch (e) {
+            return { valid: false, error: 'Некорректный формат URL' };
+        }
+    },
+
+    /**
+     * Валидация текстового поля (описание, проблема и т.д.)
+     */
+    validateText: function(text, options = {}) {
+        const { required = false, maxLength = 1000, minLength = 0 } = options;
+        
+        if (!text && required) {
+            return { valid: false, error: 'Поле обязательно для заполнения' };
+        }
+        
+        if (!text) {
+            return { valid: true, value: '' };
+        }
+        
+        const trimmed = String(text).trim();
+        
+        if (required && trimmed.length < minLength) {
+            return { valid: false, error: `Текст должен содержать минимум ${minLength} символов` };
+        }
+        
+        if (trimmed.length > maxLength) {
+            return { valid: false, error: `Текст слишком длинный (максимум ${maxLength} символов)` };
+        }
+        
+        // Проверка на опасные паттерны
+        if (/<script|javascript:|on\w+\s*=/i.test(trimmed)) {
+            return { valid: false, error: 'Текст содержит потенциально опасный код' };
+        }
+        
+        return { valid: true, value: trimmed };
+    },
+
+    /**
+     * Валидация ID (число)
+     */
+    validateID: function(id) {
+        if (id === null || id === undefined || id === '') {
+            return { valid: false, error: 'ID обязателен' };
+        }
+        const idNum = typeof id === 'string' ? parseInt(id, 10) : id;
+        if (isNaN(idNum) || idNum < 1) {
+            return { valid: false, error: 'Некорректный ID' };
+        }
+        return { valid: true, value: idNum };
+    }
+};
+
+/**
+ * Безопасно создает форму редактирования программы
+ */
+function createProgramEditForm(program) {
+    const title = escapeHTML(program.title || '');
+    const description = escapeHTML(program.description || '');
+    const imageUrl = escapeHTML(program.image_url || '');
+    const programId = escapeHTML(program.id);
+    const checked = program.is_published ? 'checked' : '';
+    
+    return `
+        <div class="program-edit-form">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
+            <form id="edit-program-form">
+                <div class="form-group">
+                    <label>Название программы</label>
+                    <input type="text" id="edit-title" value="${title}" required>
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="edit-description" rows="3">${description}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL изображения</label>
+                    <input type="url" id="edit-image-url" value="${imageUrl}">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="edit-published" ${checked}>
+                        <span class="checkmark"></span>
+                        Опубликовано
+                    </label>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="saveProgramEditViaAdmin('${programId}')">Сохранить</button>
+                    <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+/**
+ * Безопасно создает список дней программы
+ */
+function createDaysListHTML(program, days) {
+    const programTitle = escapeHTML(program.title || '');
+    const programId = escapeHTML(program.id);
+    
+    const daysHTML = days.map(day => {
+        const dayIndex = escapeHTML(String(day.day_index || ''));
+        const dayId = escapeHTML(String(day.id || ''));
+        
+        return `
+            <div class="day-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">День ${dayIndex}</h4>
+                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${dayId}</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button data-action="day-exercises" data-id="${dayId}" style="padding: 6px 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Упражнения</button>
+                        <button data-action="day-edit" data-id="${dayId}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
+                        <button data-action="day-delete" data-id="${dayId}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    return `
+        <div class="program-days-management">
+            <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Управление днями: ${programTitle}</h2>
+            <div style="margin-bottom: 20px;">
+                <button data-action="day-add" data-id="${programId}" class="btn btn-primary" style="margin-bottom: 15px;">
+                    ➕ Добавить день
+                </button>
+            </div>
+            <div id="days-list" style="max-height: 400px; overflow-y: auto;">
+                ${daysHTML}
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="loadDeveloperPrograms()">
+                    ← Назад к программам
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Безопасно создает список упражнений
+ */
+function createExercisesListHTML(day, exercises) {
+    const programTitle = escapeHTML(day.programs?.title || '');
+    const dayIndex = escapeHTML(String(day.day_index || ''));
+    const dayId = escapeHTML(String(day.id || ''));
+    
+    const exercisesHTML = exercises.map(exercise => {
+        const exerciseTitle = escapeHTML(exercise.title || '');
+        const exerciseDescription = escapeHTML(exercise.description || '');
+        const exerciseVideoUrl = escapeHTML(exercise.video_url || '');
+        const exerciseId = escapeHTML(String(exercise.id || ''));
+        const exerciseOrder = escapeHTML(String(exercise.order_index || ''));
+        
+        const videoHTML = exerciseVideoUrl 
+            ? `<p style="margin: 0; color: #007bff; font-size: 12px;">📹 ${exerciseVideoUrl}</p>`
+            : '';
+        
+        return `
+            <div class="exercise-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${exerciseOrder}. ${exerciseTitle}</h4>
+                        <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${exerciseDescription || 'Без описания'}</p>
+                        ${videoHTML}
+                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${exerciseId}</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button data-action="exercise-edit" data-id="${exerciseId}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
+                        <button data-action="exercise-delete" data-id="${exerciseId}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    const programId = escapeHTML(String(day.program_id || ''));
+    
+    return `
+        <div class="exercises-management">
+            <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Упражнения: ${programTitle} - День ${dayIndex}</h2>
+            <div style="margin-bottom: 20px;">
+                <button data-action="exercise-add" data-id="${dayId}" class="btn btn-primary" style="margin-bottom: 15px;">
+                    ➕ Добавить упражнение
+                </button>
+            </div>
+            <div id="exercises-list" style="max-height: 400px; overflow-y: auto;">
+                ${exercisesHTML}
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="handleProgramDays('${programId}')">
+                    ← Назад к дням
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 // Clear cache when data is modified
 function invalidateCache(type, id = null) {
     if (type === 'program') {
@@ -815,36 +1303,8 @@ async function handleEditProgram(programId) {
         
         if (modal && modalBody) {
             console.log('Creating edit form...');
-            modalBody.innerHTML = `
-                <div class="program-edit-form">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px;">Редактировать программу</h2>
-                    <form id="edit-program-form">
-                        <div class="form-group">
-                            <label>Название программы</label>
-                            <input type="text" id="edit-title" value="${program.title}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Описание</label>
-                            <textarea id="edit-description" rows="3">${program.description || ''}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>URL изображения</label>
-                            <input type="url" id="edit-image-url" value="${program.image_url || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="edit-published" ${program.is_published ? 'checked' : ''}>
-                                <span class="checkmark"></span>
-                                Опубликовано
-                            </label>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <button type="button" class="btn btn-primary" onclick="saveProgramEditViaAdmin('${programId}')">Сохранить</button>
-                            <button type="button" class="btn btn-secondary" onclick="loadDeveloperPrograms()">Отмена</button>
-                        </div>
-                    </form>
-                </div>
-            `;
+            // Безопасная вставка HTML с экранированием пользовательских данных
+            SafeDOM.setHTML(modalBody, createProgramEditForm(program), false);
             
             // Ensure modal is attached to body and visible above all content
             if (modal.parentElement !== document.body) {
@@ -999,22 +1459,24 @@ async function handleProgramDays(programId) {
     showToast('Загружаем дни программы...', 'info');
     
     try {
-        // Get program info
-        const { data: program, error: programError } = await supabaseClient
-            .from('programs')
-            .select('*')
-            .eq('id', programId)
-            .single();
+        // Оптимизация: загружаем программу и дни параллельно
+        const [programResult, daysResult] = await Promise.all([
+            supabaseClient
+                .from('programs')
+                .select('*')
+                .eq('id', programId)
+                .single(),
+            supabaseClient
+                .from('program_days')
+                .select('*')
+                .eq('program_id', programId)
+                .order('day_index')
+        ]);
+        
+        const { data: program, error: programError } = programResult;
+        const { data: days, error: daysError } = daysResult;
         
         if (programError) throw programError;
-        
-        // Get program days
-        const { data: days, error: daysError } = await supabaseClient
-            .from('program_days')
-            .select('*')
-            .eq('program_id', programId)
-            .order('day_index');
-        
         if (daysError) throw daysError;
         
         // Open days management modal
@@ -1022,41 +1484,8 @@ async function handleProgramDays(programId) {
         const modalBody = document.getElementById('program-modal-body');
         
         if (modal && modalBody) {
-            modalBody.innerHTML = `
-                <div class="program-days-management">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Управление днями: ${program.title}</h2>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <button data-action="day-add" data-id="${programId}" class="btn btn-primary" style="margin-bottom: 15px;">
-                            ➕ Добавить день
-                        </button>
-                    </div>
-                    
-                    <div id="days-list" style="max-height: 400px; overflow-y: auto;">
-                        ${days.map(day => `
-                            <div class="day-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">День ${day.day_index}</h4>
-                                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${day.id}</p>
-                                    </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button data-action="day-exercises" data-id="${day.id}" style="padding: 6px 10px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Упражнения</button>
-                                        <button data-action="day-edit" data-id="${day.id}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
-                                        <button data-action="day-delete" data-id="${day.id}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-secondary" onclick="loadDeveloperPrograms()">
-                            ← Назад к программам
-                        </button>
-                    </div>
-                </div>
-            `;
+            // Безопасная вставка HTML с экранированием пользовательских данных
+            SafeDOM.setHTML(modalBody, createDaysListHTML(program, days), false);
             
             // Ensure modal is attached to body and visible
             if (modal.parentElement !== document.body) {
@@ -1284,42 +1713,8 @@ async function handleDayExercises(dayId) {
         const modalBody = document.getElementById('program-modal-body');
         
         if (modal && modalBody) {
-            modalBody.innerHTML = `
-                <div class="exercises-management">
-                    <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 20px;">Упражнения: ${day.programs.title} - День ${day.day_index}</h2>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <button data-action="exercise-add" data-id="${dayId}" class="btn btn-primary" style="margin-bottom: 15px;">
-                            ➕ Добавить упражнение
-                        </button>
-                    </div>
-                    
-                    <div id="exercises-list" style="max-height: 400px; overflow-y: auto;">
-                        ${exercises.map(exercise => `
-                            <div class="exercise-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 5px 0; color: #2c3e50;">${exercise.order_index}. ${exercise.title}</h4>
-                                        <p style="margin: 0 0 5px 0; color: #6c757d; font-size: 14px;">${exercise.description || 'Без описания'}</p>
-                                        ${exercise.video_url ? `<p style="margin: 0; color: #007bff; font-size: 12px;">📹 ${exercise.video_url}</p>` : ''}
-                                        <p style="margin: 0; color: #999; font-size: 12px;">ID: ${exercise.id}</p>
-                                    </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button data-action="exercise-edit" data-id="${exercise.id}" style="padding: 6px 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Редактировать</button>
-                                        <button data-action="exercise-delete" data-id="${exercise.id}" style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Удалить</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-secondary" onclick="handleProgramDays('${day.program_id}')">
-                            ← Назад к дням
-                        </button>
-                    </div>
-                </div>
-            `;
+            // Безопасная вставка HTML с экранированием пользовательских данных
+            SafeDOM.setHTML(modalBody, createExercisesListHTML(day, exercises), false);
             
             // Ensure modal is attached to body and visible
             if (modal.parentElement !== document.body) {
@@ -1470,9 +1865,14 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProfileFromCache();
     
     // Load fresh data from database (this will override cache if user is logged in)
+    // Оптимизация: загружаем параллельно для ускорения
     if (user?.id) {
-        loadUserProgress();
-        loadUserProfile();
+        Promise.all([
+            loadUserProgress(),
+            loadUserProfile()
+        ]).catch(error => {
+            console.error('Error loading user data:', error);
+        });
     }
     
     // Ensure only one HTML5 video plays at a time
@@ -3291,11 +3691,15 @@ function renderPrograms() {
     publishedPrograms.forEach(program => {
         const programCard = document.createElement('div');
         programCard.className = 'program-card';
+        const imageUrl = escapeHTML(program.image_url || '');
+        const title = escapeHTML(program.title || '');
+        const description = escapeHTML(program.description || '');
+        
         programCard.innerHTML = `
-            <img src="${program.image_url}" alt="${program.title}" class="program-image">
+            <img src="${imageUrl}" alt="${title}" class="program-image" loading="lazy" decoding="async">
             <div class="program-content">
-                <h3 class="program-title">${program.title}</h3>
-                <p class="program-description">${program.description}</p>
+                <h3 class="program-title">${title}</h3>
+                <p class="program-description">${description}</p>
             </div>
         `;
         
@@ -3312,11 +3716,16 @@ function openProgramModal(program) {
     
     if (modal && modalBody) {
         // Don't show days count since we're using lazy loading
+        const imageUrl = escapeHTML(program.image_url || '');
+        const title = escapeHTML(program.title || '');
+        const description = escapeHTML(program.description || '');
+        const programId = escapeHTML(program.id);
+        
         modalBody.innerHTML = `
             <div class="program-detail">
-                <img src="${program.image_url}" alt="${program.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;">
-                <h2 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px;">${program.title}</h2>
-                <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${program.description}</p>
+                <img src="${imageUrl}" alt="${title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;" loading="lazy" decoding="async">
+                <h2 style="color: #2c3e50; margin-bottom: 15px; font-size: 20px;">${title}</h2>
+                <p style="color: #6c757d; margin-bottom: 25px; line-height: 1.6;">${description}</p>
                 <p style="color: #007bff; font-weight: 600; margin-bottom: 25px;">Нажмите "Выбрать программу" для просмотра дней</p>
                 <button class="cta-button" onclick="openDaySelection('${program.id}')" style="width: 100%;">
                     Выбрать программу
@@ -4764,26 +5173,36 @@ async function saveProfile() {
         const gender = genderField?.value || '';
         const problem = problemField?.value || '';
         
-        // Validate required fields
-        if (!firstName) {
-            showNotification('Пожалуйста, введите имя', 'warning');
+        // Валидация полей с использованием Validator
+        const nameValidation = Validator.validateName(firstName);
+        if (!nameValidation.valid) {
+            showNotification(nameValidation.error, 'warning');
             return;
         }
         
-        if (!age || age < 1 || age > 120) {
-            showNotification('Пожалуйста, введите корректный возраст (1-120 лет)', 'warning');
+        const ageValidation = Validator.validateAge(age);
+        if (!ageValidation.valid) {
+            showNotification(ageValidation.error, 'warning');
             return;
         }
         
-        if (!gender) {
-            showNotification('Пожалуйста, выберите пол', 'warning');
+        const genderValidation = Validator.validateGender(gender);
+        if (!genderValidation.valid) {
+            showNotification(genderValidation.error, 'warning');
             return;
         }
         
-        if (!problem) {
-            showNotification('Пожалуйста, выберите проблемную зону', 'warning');
+        const problemValidation = Validator.validateText(problem, { required: true, maxLength: 50 });
+        if (!problemValidation.valid) {
+            showNotification(problemValidation.error, 'warning');
             return;
         }
+        
+        // Используем валидированные значения
+        const validatedFirstName = nameValidation.value;
+        const validatedAge = ageValidation.value;
+        const validatedGender = genderValidation.value;
+        const validatedProblem = problemValidation.value;
 
         // Show loading state
         const saveButton = document.querySelector('.save-button');
@@ -4796,11 +5215,11 @@ async function saveProfile() {
             .rpc('save_user_profile', {
                 p_tg_user_id: user.id,
                 p_username: user.username || '',
-                p_first_name: firstName,
+                p_first_name: validatedFirstName,
                 p_last_name: user.last_name || '',
-                p_age: age,
-                p_gender: gender,
-                p_problem: problem
+                p_age: validatedAge,
+                p_gender: validatedGender,
+                p_problem: validatedProblem
             });
 
         if (error) {

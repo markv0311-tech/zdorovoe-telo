@@ -15,15 +15,35 @@ serve(async (req) => {
   try {
     // Parse request body
     const body = await req.json()
-    console.log('Received webhook from Salebot:', body)
-
-    // Extract tg_user_id from request
-    const tgUserId = body.tg_user_id || body.telegram_id || body.platform_id
+    console.log('Received webhook from Salebot - FULL BODY:', JSON.stringify(body, null, 2))
+    console.log('All available fields in body:', Object.keys(body))
+    
+    // Extract tg_user_id from request - check multiple possible fields
+    const tgUserId = body.tg_user_id || body.telegram_id || body.platform_id || body.user_id || body.client_id || body.id
+    
+    // Log which field was used
+    let usedField = 'none'
+    if (body.tg_user_id) usedField = 'tg_user_id'
+    else if (body.telegram_id) usedField = 'telegram_id'
+    else if (body.platform_id) usedField = 'platform_id'
+    else if (body.user_id) usedField = 'user_id'
+    else if (body.client_id) usedField = 'client_id'
+    else if (body.id) usedField = 'id'
+    
+    console.log(`Extracted tg_user_id from field "${usedField}":`, tgUserId)
+    console.log('All ID-like fields:', {
+      tg_user_id: body.tg_user_id,
+      telegram_id: body.telegram_id,
+      platform_id: body.platform_id,
+      user_id: body.user_id,
+      client_id: body.client_id,
+      id: body.id
+    })
     
     if (!tgUserId) {
-      console.error('No tg_user_id provided in request')
+      console.error('No tg_user_id provided in request. Available fields:', Object.keys(body))
       return new Response(
-        JSON.stringify({ success: false, error: 'tg_user_id is required' }),
+        JSON.stringify({ success: false, error: 'tg_user_id is required', received_fields: Object.keys(body) }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -91,7 +111,24 @@ serve(async (req) => {
       )
     }
 
-    console.log('Successfully updated access for user:', tgUserIdNumber, data)
+    // Check if the operation was actually successful
+    if (data && data.success === false) {
+      console.error('Failed to update access for user:', tgUserIdNumber, 'Reason:', data.message)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: data.message || 'User not found',
+          received_tg_user_id: tgUserIdNumber,
+          used_field: usedField
+        }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    console.log('Successfully updated access for user:', tgUserIdNumber, 'Used field:', usedField, 'Result:', data)
 
     return new Response(
       JSON.stringify({ 
