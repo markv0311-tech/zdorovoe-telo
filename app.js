@@ -3391,6 +3391,20 @@ function navigateToSection(sectionName) {
         initializeHomepage();
     } else if (sectionName === 'exercises') {
         loadPrograms();
+        // Картинки в сетке имеют loading="lazy" и рендерятся при скрытом блоке — браузер их не грузит.
+        // После показа раздела принудительно запускаем загрузку обложек.
+        setTimeout(function() {
+            const grid = document.getElementById('programs-grid');
+            if (grid) {
+                grid.querySelectorAll('img.program-image[src]').forEach(function(img) {
+                    var src = img.src;
+                    if (src && !img.complete) {
+                        img.src = '';
+                        img.src = src;
+                    }
+                });
+            }
+        }, 300);
     } else if (sectionName === 'reports') {
         updateCalendar();
         updateProgressStats();
